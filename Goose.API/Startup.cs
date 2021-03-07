@@ -19,12 +19,12 @@ namespace Goose.API
 {
     public class Startup
     {
+        private readonly IConfiguration _configuration;
+        
         public Startup(IConfiguration configuration)
         {
-            Configuration = configuration;
+            _configuration = configuration;
         }
-
-        public IConfiguration Configuration { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
@@ -44,7 +44,7 @@ namespace Goose.API
         /// <param name="services"></param>
         private void RegisterService(IServiceCollection services)
         {
-            services.Configure<DbSettings>(Configuration.GetSection(nameof(DbSettings)));
+            services.Configure<DbSettings>(_configuration.GetSection(nameof(DbSettings)));
 
             services.AddSingleton<IDbContext, DbContext>();
 
