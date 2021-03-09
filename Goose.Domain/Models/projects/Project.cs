@@ -9,16 +9,9 @@ namespace Goose.Domain.Models.projects
 {
     public class Project: Document
     {
-        [BsonElement("company_id")] 
         public ObjectId CompanyId { get; set; }
-        
-        [BsonElement("users")] 
         public IList<PropertyUser> ProjectUsers { get; set; }
-        
-        [BsonElement("projectDetail")] 
         public ProjectDetail ProjectDetail { get; set; }
-        
-        [BsonElement("states")] 
         public IList<State> States { get; set; }
     }
 }
