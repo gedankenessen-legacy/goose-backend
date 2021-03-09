@@ -6,8 +6,5 @@ namespace Goose.Domain.Models.projects
     {
         [BsonElement("name")] 
         public string Name { get; set; }
-        
-        [BsonElement("printInterval")] 
-        public int SprintInterval { get; set; }
     }
 }
