@@ -11,8 +11,8 @@ namespace Goose.API.Services
     public interface IProjectService
     {
         Task<ProjectDTO> CreateNewProjectAsync(ProjectDTO requestedProject);
-        Task<ProjectDTO> UpdateProject(string id, ProjectDTO projectDTO);
-        IAsyncEnumerable<ProjectDTO> GetProjects();
+        Task UpdateProject(string id, ProjectDTO projectDTO);
+        Task<IList<ProjectDTO>> GetProjects();
         Task<ProjectDTO> GetProject(string id);
     }
 
@@ -25,24 +25,49 @@ namespace Goose.API.Services
             _projectRepository = projectRepository;
         }
 
-        public Task<ProjectDTO> CreateNewProjectAsync(ProjectDTO requestedProject)
+        public async Task<ProjectDTO> CreateNewProjectAsync(ProjectDTO requestedProject)
         {
-            throw new NotImplementedException();
+            var newProject = new Project()
+            {
+                // TODO do we get this is or do we need to generate one?
+                Id = requestedProject.Id,
+                CompanyId = requestedProject.CompanyId,
+                Details = new ProjectDetails()
+                {
+                    Name = requestedProject.Name,
+                }
+            };
+
+            await _projectRepository.CreateAsync(newProject);
+
+            return new ProjectDTO(newProject);
         }
 
-        public Task<ProjectDTO> GetProject(string id)
+        public async Task<ProjectDTO> GetProject(string id)
         {
-            throw new NotImplementedException();
+            var project = await _projectRepository.GetAsync(id);
+            return new ProjectDTO(project);
         }
 
-        public IAsyncEnumerable<ProjectDTO> GetProjects()
+        public async Task<IList<ProjectDTO>> GetProjects()
         {
-            throw new NotImplementedException();
+            var projects = await _projectRepository.GetAsync();
+
+            var projectDTOs = from project in projects
+                              select new ProjectDTO(project);
+
+            return projectDTOs.ToList();
         }
 
-        public Task<ProjectDTO> UpdateProject(string id, ProjectDTO projectDTO)
+        public async Task UpdateProject(string id, ProjectDTO projectDTO)
         {
-            throw new NotImplementedException();
+            if (projectDTO.Id != id)
+            {
+                // TODO what to do in this case?
+                throw new Exception("Cannot Update: Project ID does not match");
+            }
+
+            await _projectRepository.UpdateProject(id, projectDTO.Name, projectDTO.CompanyId);
         }
     }
 }

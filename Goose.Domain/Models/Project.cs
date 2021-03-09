@@ -11,6 +11,7 @@ namespace Goose.Domain.Models
 {
     public class Project : Document
     {
+        public string CompanyId { get; set; }
         public ProjectUsers[] Users { get; set; }
         public ProjectDetails Details { get; set; }
         public State[] States { get; set; }
@@ -32,9 +33,9 @@ namespace Goose.Domain.Models
     public class State : Document
     {
         // These are the only valid values for Phase
-        const string NegotiationPhase = "Negotiation";
-        const string InProcessPhase = "InProcess";
-        const string ConclusionPhase = "Conclusion";
+        public const string NegotiationPhase = "Negotiation";
+        public const string InProgressPhase = "InProgress";
+        public const string ConclusionPhase = "Conclusion";
 
         public string Name { get; set; }
         public string Phase { get; set; }
