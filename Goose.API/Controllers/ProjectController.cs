@@ -27,24 +27,23 @@ namespace Goose.API.Controllers
 
         // PUT: api/project/{id}
         [HttpPut("{id}")]
-        public async Task<ActionResult<ProjectDTO>> UpdateProject(string id, [FromBody] ProjectDTO projectDTO)
+        public async Task<ActionResult> UpdateProject(string id, [FromBody] ProjectDTO projectDTO)
         {
-            var updatedProject = await _projectService.UpdateProject(id, projectDTO);
-            return Ok(updatedProject);
+            await _projectService.UpdateProject(id, projectDTO);
+            return Ok();
         }
 
         // GET: api/project
         [HttpGet]
-        public async Task<ActionResult<ProjectDTO[]>> GetProjects()
+        public async Task<ActionResult<IList<ProjectDTO>>> GetProjects()
         {
-            var projectIter = _projectService.GetProjects();
-            var projects = await projectIter.ToArrayAsync();
-            return Ok(projects);
+            var projectIter = await _projectService.GetProjects();
+            return Ok(projectIter);
         }
 
         // GET: api/project/{id}
         [HttpGet("{id}")]
-        public async Task<ActionResult<ProjectDTO>> GetProjects(string id)
+        public async Task<ActionResult<ProjectDTO>> GetProject(string id)
         {
             var projects = await _projectService.GetProject(id);
             return Ok(projects);
