@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
+using MongoDB.Bson.Serialization.Conventions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,6 +30,7 @@ namespace Goose.API
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            ConfigureMongoDB();
             RegisterService(services);
 
             services.AddControllers();
@@ -36,6 +38,16 @@ namespace Goose.API
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "Goose.API", Version = "v1" });
             });
+        }
+
+        /// <summary>
+        /// This method is used to configure the mongodb driver.
+        /// </summary>
+        private void ConfigureMongoDB()
+        {
+            // In order prevent the [BsonElement("...")] Attribute on each property we configure the drive to assume this as default. Thanks @LuksTrackmaniaCorner
+            var conventionPack = new ConventionPack { new CamelCaseElementNameConvention() };
+            ConventionRegistry.Register("camelCase", conventionPack, t => true);
         }
 
         /// <summary>
