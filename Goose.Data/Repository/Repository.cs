@@ -28,11 +28,9 @@ namespace Goose.Data.Repository
             return await _dbCollection.Find(Builders<TEntity>.Filter.Empty).ToListAsync();
         }
 
-        public virtual async Task<TEntity> GetAsync(string id)
+        public virtual async Task<TEntity> GetAsync(ObjectId id)
         {
-            var objectId = new ObjectId(id);
-
-            FilterDefinition<TEntity> filter = Builders<TEntity>.Filter.Eq("_id", objectId);
+            FilterDefinition<TEntity> filter = Builders<TEntity>.Filter.Eq("_id", id);
 
             return await _dbCollection.Find(filter).FirstOrDefaultAsync();
         }
@@ -68,7 +66,7 @@ namespace Goose.Data.Repository
 
         #region Delete
 
-        public virtual Task<DeleteResult> DeleteAsync(string id)
+        public virtual Task<DeleteResult> DeleteAsync(ObjectId id)
         {
             return _dbCollection.DeleteOneAsync(Builders<TEntity>.Filter.Eq("_id", id));
         }

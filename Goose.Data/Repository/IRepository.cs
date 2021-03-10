@@ -4,6 +4,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Goose.Data.Models;
+using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace Goose.Data.Repository
@@ -13,7 +14,7 @@ namespace Goose.Data.Repository
         IQueryable<TEntity> AsQueryable();
         IMongoCollection<TEntity> Collection();
 
-        Task<TEntity> GetAsync(string id);
+        Task<TEntity> GetAsync(ObjectId id);
         Task<IList<TEntity>> GetAsync();
         Task<IList<TEntity>> FilterByAsync(Expression<Func<TEntity, bool>> filterExpression);
 
@@ -21,6 +22,6 @@ namespace Goose.Data.Repository
 
         Task<ReplaceOneResult> UpdateAsync(TEntity obj);
 
-        Task<DeleteResult> DeleteAsync(string id);
+        Task<DeleteResult> DeleteAsync(ObjectId id);
     }
 }
