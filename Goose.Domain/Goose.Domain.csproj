@@ -5,11 +5,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AutoMapper" Version="10.1.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Goose.Data\Goose.Data.csproj" />
+    <Folder Include="DTOs\" />
+    <Folder Include="Models\" />
   </ItemGroup>
 
   <ItemGroup>
