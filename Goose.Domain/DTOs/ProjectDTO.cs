@@ -1,4 +1,5 @@
 ﻿using Goose.Domain.Models;
+using Goose.Domain.Models.projects;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,9 +22,9 @@ namespace Goose.Domain.DTOs
 
         public ProjectDTO(Project project)
         {
-            Id = project.Id;
-            Name = project.Details.Name;
-            CompanyId = project.CompanyId;
+            Id = project.Id.ToString();
+            Name = project.ProjectDetail.Name;
+            CompanyId = project.CompanyId.ToString();
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Goose.Data.Context;
 using Goose.Data.Repository;
 using Goose.Domain.Models;
+using Goose.Domain.Models.projects;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using System;
@@ -12,7 +13,7 @@ namespace Goose.API.Repositories
 {
     public interface IProjectRepository : IRepository<Project>
     {
-        Task<UpdateResult> UpdateProject(string id, string name, string companyId);
+        Task<UpdateResult> UpdateProject(ObjectId projectId, string name, ObjectId companyId);
     }
 
     public class ProjectRepository : Repository<Project>, IProjectRepository
@@ -22,10 +23,10 @@ namespace Goose.API.Repositories
 
         }
 
-        public Task<UpdateResult> UpdateProject(string id, string name, string companyId)
+        public Task<UpdateResult> UpdateProject(ObjectId projectId, string name, ObjectId companyId)
         {
-            var update = Builders<Project>.Update.Set(x => x.Details.Name, name).Set(x => x.CompanyId, companyId);
-            return _dbCollection.UpdateOneAsync(x => x.Id == id, update);
+            var update = Builders<Project>.Update.Set(x => x.ProjectDetail.Name, name).Set(x => x.CompanyId, companyId);
+            return _dbCollection.UpdateOneAsync(x => x.Id == projectId, update);
         }
     }
 }

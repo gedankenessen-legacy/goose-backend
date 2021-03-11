@@ -1,6 +1,8 @@
 ﻿using Goose.API.Repositories;
 using Goose.Domain.DTOs;
 using Goose.Domain.Models;
+using Goose.Domain.Models.projects;
+using MongoDB.Bson;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,9 +13,9 @@ namespace Goose.API.Services
     public interface IProjectService
     {
         Task<ProjectDTO> CreateNewProjectAsync(ProjectDTO requestedProject);
-        Task UpdateProject(string id, ProjectDTO projectDTO);
+        Task UpdateProject(ObjectId id, ProjectDTO projectDTO);
         Task<IList<ProjectDTO>> GetProjects();
-        Task<ProjectDTO> GetProject(string id);
+        Task<ProjectDTO> GetProject(ObjectId id);
     }
 
     public class ProjectService : IProjectService
@@ -30,9 +32,9 @@ namespace Goose.API.Services
             var newProject = new Project()
             {
                 // TODO do we get this is or do we need to generate one?
-                Id = requestedProject.Id,
-                CompanyId = requestedProject.CompanyId,
-                Details = new ProjectDetails()
+                Id = new ObjectId(requestedProject.Id),
+                CompanyId = new ObjectId(requestedProject.CompanyId),
+                ProjectDetail = new ProjectDetail()
                 {
                     Name = requestedProject.Name,
                 }
@@ -43,7 +45,7 @@ namespace Goose.API.Services
             return new ProjectDTO(newProject);
         }
 
-        public async Task<ProjectDTO> GetProject(string id)
+        public async Task<ProjectDTO> GetProject(ObjectId id)
         {
             var project = await _projectRepository.GetAsync(id);
             return new ProjectDTO(project);
@@ -59,15 +61,15 @@ namespace Goose.API.Services
             return projectDTOs.ToList();
         }
 
-        public async Task UpdateProject(string id, ProjectDTO projectDTO)
+        public async Task UpdateProject(ObjectId id, ProjectDTO projectDTO)
         {
-            if (projectDTO.Id != id)
+            if (projectDTO.Id != id.ToString())
             {
                 // TODO what to do in this case?
                 throw new Exception("Cannot Update: Project ID does not match");
             }
 
-            await _projectRepository.UpdateProject(id, projectDTO.Name, projectDTO.CompanyId);
+            await _projectRepository.UpdateProject(id, projectDTO.Name, new ObjectId(projectDTO.CompanyId));
         }
     }
 }

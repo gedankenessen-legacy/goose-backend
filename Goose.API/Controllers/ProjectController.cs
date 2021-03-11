@@ -1,6 +1,7 @@
 ﻿using Goose.API.Services;
 using Goose.Domain.DTOs;
 using Microsoft.AspNetCore.Mvc;
+using MongoDB.Bson;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,6 +9,7 @@ using System.Threading.Tasks;
 
 namespace Goose.API.Controllers
 {
+    [Route("api/company/{companyId}/project")]
     public class ProjectController : ControllerBase
     {
         private readonly IProjectService _projectService;
@@ -17,23 +19,23 @@ namespace Goose.API.Controllers
             _projectService = projectService;
         }
 
-        // POST: api/project
+        // POST: api/company/{companyId}/project
         [HttpPost]
-        public async Task<ActionResult<ProjectDTO>> CreateProject([FromBody] ProjectDTO projectDTO)
+        public async Task<ActionResult<ProjectDTO>> CreateProject([FromBody] ProjectDTO projectDTO, [FromRoute] string companyId)
         {
             var newCompany = await _projectService.CreateNewProjectAsync(projectDTO);
             return Ok(newCompany); 
         }
 
-        // PUT: api/project/{id}
+        // PUT: api/company/{companyId}/project/{id}
         [HttpPut("{id}")]
         public async Task<ActionResult> UpdateProject(string id, [FromBody] ProjectDTO projectDTO)
         {
-            await _projectService.UpdateProject(id, projectDTO);
+            await _projectService.UpdateProject(new ObjectId(id), projectDTO);
             return Ok();
         }
 
-        // GET: api/project
+        // GET: api/company/{companyId}/project
         [HttpGet]
         public async Task<ActionResult<IList<ProjectDTO>>> GetProjects()
         {
@@ -41,11 +43,11 @@ namespace Goose.API.Controllers
             return Ok(projectIter);
         }
 
-        // GET: api/project/{id}
+        // GET: api/company/{companyId}/project/{id}
         [HttpGet("{id}")]
         public async Task<ActionResult<ProjectDTO>> GetProject(string id)
         {
-            var projects = await _projectService.GetProject(id);
+            var projects = await _projectService.GetProject(new ObjectId(id));
             return Ok(projects);
         }
     }
