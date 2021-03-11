@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Goose.API.Repositories;
+using Goose.Domain.DTOs;
 using Goose.Domain.Models.identity;
 using MongoDB.Bson;
 using System;
@@ -11,8 +12,8 @@ namespace Goose.API.Services
 {
     public interface IUserService
     {
-        Task<User> GetUser(ObjectId id);
-        Task<IList<User>> GetUsersAsync();
+        Task<UserDTO> GetUser(ObjectId id);
+        Task<IList<UserDTO>> GetUsersAsync();
         Task<User> CreateNewUserAsync(User user);
         Task<User> UpdateUserAsync(User user);
     }
@@ -54,19 +55,26 @@ namespace Goose.API.Services
             return newUser;
         }
 
-        public async Task<User> GetUser(ObjectId id)
+        public async Task<UserDTO> GetUser(ObjectId id)
         {
             var user = await _userRepository.GetAsync(id);
 
             if (user == null)
                 throw new Exception();
 
-            return user;
+            return new UserDTO() { Id = user.Id, Firstname = user.Firstname, Lastname = user.Lastname};
         }
 
-        public async Task<IList<User>> GetUsersAsync()
+        public async Task<IList<UserDTO>> GetUsersAsync()
         {
-            return await _userRepository.GetAsync();
+            var userList = await _userRepository.GetAsync();
+
+            IList<UserDTO> userDTOList = new List<UserDTO>();
+
+            foreach (var user in userList)
+                userDTOList.Add(new UserDTO() { Id = user.Id, Firstname = user.Firstname, Lastname = user.Lastname });
+
+            return userDTOList;
         }
 
         public async Task<User> UpdateUserAsync(User user)

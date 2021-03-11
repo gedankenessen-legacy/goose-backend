@@ -1,4 +1,5 @@
 ﻿using Goose.API.Services;
+using Goose.Domain.DTOs;
 using Goose.Domain.Models.identity;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
@@ -21,14 +22,14 @@ namespace Goose.API.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IList<User>>> GetUsersAsync()
+        public async Task<ActionResult<IList<UserDTO>>> GetUsersAsync()
         {
             var Users = await _userService.GetUsersAsync();
             return Ok(Users);
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<User>> GetUserAsync(string id)
+        public async Task<ActionResult<UserDTO>> GetUserAsync(string id)
         {
             ObjectId objectId = new ObjectId(id);
             var User = await _userService.GetUser(objectId);
@@ -38,29 +39,15 @@ namespace Goose.API.Controllers
         [HttpPost]
         public async Task<ActionResult<User>> CreateUserAsync([FromBody] User User)
         {
-            try
-            {
-                var newUser = await _userService.CreateNewUserAsync(User);
-                return Ok(newUser);
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e);
-            }
+            var newUser = await _userService.CreateNewUserAsync(User);
+            return Ok(newUser);
         }
 
         [HttpPut]
         public async Task<ActionResult<User>> UpdateUserAsync([FromBody] User User)
         {
-            try
-            {
-                var UserToUpdate = await _userService.UpdateUserAsync(User);
-                return Ok(UserToUpdate);
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e);
-            }
+            var UserToUpdate = await _userService.UpdateUserAsync(User);
+            return Ok(UserToUpdate);
         }
     }
 }

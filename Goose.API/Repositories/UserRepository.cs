@@ -15,7 +15,7 @@ namespace Goose.API.Repositories
 
     public class UserRepository : Repository<User>, IUserRepository
     {
-        public UserRepository(IDbContext context) : base(context)
+        public UserRepository(IDbContext context) : base(context, "users")
         {
 
         }
