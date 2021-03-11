@@ -25,9 +25,9 @@ namespace Goose.API.Controllers
             throw new NotImplementedException();
         }
 
-        // PUT: api/company/{companyId}/project/{projectId}/state/{id}
-        [HttpPut("{id}")]
-        public async Task<ActionResult> UpdateState(string id, [FromBody] StateDTO stateDTO)
+        // PUT: api/company/{companyId}/project/{projectId}/state/{stateId}
+        [HttpPut("{stateId}")]
+        public async Task<ActionResult> UpdateState(string stateId, [FromBody] StateDTO stateDTO)
         {
             throw new NotImplementedException();
         }
@@ -39,9 +39,9 @@ namespace Goose.API.Controllers
             throw new NotImplementedException();
         }
 
-        // GET: api/company/{companyId}/project/{projectId}/state/{id}
-        [HttpGet("{id}")]
-        public async Task<ActionResult<StateDTO>> GetState(string id)
+        // GET: api/company/{companyId}/project/{projectId}/state/{stateId}
+        [HttpGet("{stateId}")]
+        public async Task<ActionResult<StateDTO>> GetState(string stateId)
         {
             throw new NotImplementedException();
         }
