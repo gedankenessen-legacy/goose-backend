@@ -43,7 +43,7 @@ namespace Goose.API.Controllers
             return Ok(newUser);
         }
 
-        [HttpPut]
+        [HttpPut("{id}")]
         public async Task<ActionResult<User>> UpdateUserAsync([FromBody] User User)
         {
             var UserToUpdate = await _userService.UpdateUserAsync(User);
