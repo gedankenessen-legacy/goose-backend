@@ -2,6 +2,8 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Goose.Domain.DTOs.issues;
+using Goose.Domain.Models.tickets;
 
 namespace Goose.Domain.Mapping
 {
@@ -9,7 +11,9 @@ namespace Goose.Domain.Mapping
     {
         public AutoMapping()
         {
-            
+            CreateMap<Issue, IssueDTOSimple>();
+            CreateMap<IList<Issue>, IList<IssueDTOSimple>>();
+            CreateMap<IList<IssueDTOSimple>, IList<Issue>>();
         }
     }
 }
