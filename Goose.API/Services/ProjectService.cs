@@ -31,8 +31,7 @@ namespace Goose.API.Services
         {
             var newProject = new Project()
             {
-                // TODO do we get this is or do we need to generate one?
-                Id = new ObjectId(requestedProject.Id),
+                Id = new ObjectId(),
                 CompanyId = companyId,
                 ProjectDetail = new ProjectDetail()
                 {

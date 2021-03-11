@@ -15,7 +15,6 @@ namespace Goose.API.Services
     {
         public Task<StateDTO> CreateState(StateDTO requestedState)
         {
-            // TODO which project
             throw new NotImplementedException();
         }
     }
