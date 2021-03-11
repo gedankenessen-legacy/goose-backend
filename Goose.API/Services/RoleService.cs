@@ -51,6 +51,11 @@ namespace Goose.API.Services
             if (string.IsNullOrWhiteSpace(role.Name))
                 throw new Exception();
 
+            var roleItem = (await _roleRepository.GetAsync()).Where(x => x.Name.Equals(role.Name)).FirstOrDefault();
+
+            if (roleItem != null)
+                throw new Exception();
+
             var newRole = new Role()
             {
                 Name = role.Name
@@ -69,7 +74,14 @@ namespace Goose.API.Services
             if (string.IsNullOrWhiteSpace(role.Name))
                 throw new Exception();
 
-            var roleToUpdate = await _roleRepository.GetAsync(role.Id);
+            var roleList = await _roleRepository.GetAsync();
+
+            var roleItem = roleList.Where(x => x.Name.Equals(role.Name)).FirstOrDefault();
+
+            if (roleItem != null)
+                throw new Exception();
+
+            var roleToUpdate = roleList.Where(x => x.Id == role.Id).FirstOrDefault();
 
             if (roleToUpdate == null)
                 throw new Exception();

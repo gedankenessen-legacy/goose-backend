@@ -38,29 +38,15 @@ namespace Goose.API.Controllers
         [HttpPost]
         public async Task<ActionResult<Role>> CreateRoleAsync([FromBody] Role role)
         {
-            try
-            {
-                var newRole = await _roleService.CreateRoleAsync(role);
-                return Ok(newRole);
-            } 
-            catch(Exception e)
-            {
-                return BadRequest(e);
-            }
+            var newRole = await _roleService.CreateRoleAsync(role);
+            return Ok(newRole);
         }
 
-        [HttpPut]
+        [HttpPut("{id}")]
         public async Task<ActionResult<Role>> UpdateRoleAsync([FromBody] Role role)
         {
-            try
-            {
-                var roleToUpdate = await _roleService.UpdateRoleAsync(role);
-                return Ok(roleToUpdate);
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e);
-            }
+            var roleToUpdate = await _roleService.UpdateRoleAsync(role);
+            return Ok(roleToUpdate);
         }
     }
 }
