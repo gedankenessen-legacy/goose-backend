@@ -13,7 +13,6 @@ namespace Goose.Domain.DTOs
     {
         public string Id { get; set; }
         public string Name { get; set; }
-        public string CompanyId { get; set; }
 
         public ProjectDTO()
         {
@@ -24,7 +23,6 @@ namespace Goose.Domain.DTOs
         {
             Id = project.Id.ToString();
             Name = project.ProjectDetail.Name;
-            CompanyId = project.CompanyId.ToString();
         }
     }
 }

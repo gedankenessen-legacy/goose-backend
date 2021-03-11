@@ -23,15 +23,15 @@ namespace Goose.API.Controllers
         [HttpPost]
         public async Task<ActionResult<ProjectDTO>> CreateProject([FromBody] ProjectDTO projectDTO, [FromRoute] string companyId)
         {
-            var newCompany = await _projectService.CreateNewProjectAsync(projectDTO);
+            var newCompany = await _projectService.CreateNewProjectAsync(new ObjectId(companyId), projectDTO);
             return Ok(newCompany); 
         }
 
-        // PUT: api/company/{companyId}/project/{id}
-        [HttpPut("{id}")]
-        public async Task<ActionResult> UpdateProject(string id, [FromBody] ProjectDTO projectDTO)
+        // PUT: api/company/{companyId}/project/{projectId}
+        [HttpPut("{projectId}")]
+        public async Task<ActionResult> UpdateProject(string projectId, [FromBody] ProjectDTO projectDTO)
         {
-            await _projectService.UpdateProject(new ObjectId(id), projectDTO);
+            await _projectService.UpdateProject(new ObjectId(projectId), projectDTO);
             return Ok();
         }
 
@@ -43,11 +43,11 @@ namespace Goose.API.Controllers
             return Ok(projectIter);
         }
 
-        // GET: api/company/{companyId}/project/{id}
-        [HttpGet("{id}")]
-        public async Task<ActionResult<ProjectDTO>> GetProject(string id)
+        // GET: api/company/{companyId}/project/{projectId}
+        [HttpGet("{projectId}")]
+        public async Task<ActionResult<ProjectDTO>> GetProject(string projectId)
         {
-            var projects = await _projectService.GetProject(new ObjectId(id));
+            var projects = await _projectService.GetProject(new ObjectId(projectId));
             return Ok(projects);
         }
     }
