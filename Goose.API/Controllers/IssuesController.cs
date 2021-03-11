@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Goose.API.Services;
+using Goose.Domain.DTOs.issues;
 using Goose.Domain.Models.tickets;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,7 +20,7 @@ namespace Goose.API.Controllers
 
 
         [HttpGet]
-        public async Task<ActionResult<IList<Issue>>> GetAll()
+        public async Task<ActionResult<IList<IssueDTOSimple>>> GetAll()
         {
             var res = await _issueService.GetAllIssues();
             return ActionResultOk(res);
