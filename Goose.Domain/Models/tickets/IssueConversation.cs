@@ -8,11 +8,12 @@ namespace Goose.Domain.Models.tickets
 {
     public class IssueConversation
     {
-        public ObjectId _id { get; set; }
+        [BsonId]
+        public ObjectId Id { get; set; }
         public ObjectId CreatorUserId { get; set; }
         public string Type { get; set; }
         public object Data { get; set; }
         public IList<ObjectId> RequirementIds { get; set; }
-        public DateTime CreatedAt { get; set; }
+        public DateTime CreatedAt { get => Id.CreationTime; }
     }
 }

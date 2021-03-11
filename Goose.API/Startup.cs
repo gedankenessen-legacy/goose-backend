@@ -1,3 +1,5 @@
+using Goose.API.Repositories;
+using Goose.API.Services;
 using Goose.Data.Context;
 using Goose.Data.Settings;
 using Goose.Domain.Mapping;
@@ -58,6 +60,9 @@ namespace Goose.API
         {
             services.Configure<DbSettings>(_configuration.GetSection(nameof(DbSettings)));
 
+            services.AddTransient<IIssueRepository, IssueRepository>();
+            services.AddTransient<IIssueConversationService, IssueConversationService>();
+
             services.AddSingleton<IDbContext, DbContext>();
 
             services.AddAutoMapper(typeof(AutoMapping));
@@ -66,14 +71,16 @@ namespace Goose.API
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            if (env.IsDevelopment())
-            {
+            if (env.IsDevelopment())  
                 app.UseDeveloperExceptionPage();
-                app.UseSwagger();
-                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Goose.API v1"));
-            }
+            else
+                app.UseExceptionHandler("/error");
+            
 
-            app.UseHttpsRedirection();
+            app.UseSwagger();
+            app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Goose.API v1"));
+
+            //app.UseHttpsRedirection();
 
             app.UseRouting();
 
