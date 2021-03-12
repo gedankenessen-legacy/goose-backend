@@ -32,7 +32,7 @@ namespace Goose.API.Controllers
         public async Task<ActionResult> UpdateProject(string projectId, [FromBody] ProjectDTO projectDTO)
         {
             await _projectService.UpdateProject(new ObjectId(projectId), projectDTO);
-            return Ok();
+            return NoContent();
         }
 
         // GET: api/company/{companyId}/project

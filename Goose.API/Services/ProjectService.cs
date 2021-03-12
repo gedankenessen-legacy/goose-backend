@@ -31,7 +31,7 @@ namespace Goose.API.Services
         {
             var newProject = new Project()
             {
-                Id = new ObjectId(),
+                Id = ObjectId.GenerateNewId(),
                 CompanyId = companyId,
                 ProjectDetail = new ProjectDetail()
                 {
@@ -62,7 +62,7 @@ namespace Goose.API.Services
 
         public async Task UpdateProject(ObjectId projectId, ProjectDTO projectDTO)
         {
-            if (projectDTO.Id != projectId.ToString())
+            if (projectDTO.Id != projectId)
             {
                 throw new Exception("Cannot Update: Project ID does not match");
             }

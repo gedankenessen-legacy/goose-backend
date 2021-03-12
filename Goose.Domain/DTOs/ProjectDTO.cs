@@ -1,5 +1,6 @@
 ﻿using Goose.Domain.Models;
 using Goose.Domain.Models.projects;
+using MongoDB.Bson;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,7 +12,7 @@ namespace Goose.Domain.DTOs
 {
     public class ProjectDTO
     {
-        public string Id { get; set; }
+        public ObjectId Id { get; set; }
         public string Name { get; set; }
 
         public ProjectDTO()
@@ -21,7 +22,7 @@ namespace Goose.Domain.DTOs
 
         public ProjectDTO(Project project)
         {
-            Id = project.Id.ToString();
+            Id = project.Id;
             Name = project.ProjectDetail.Name;
         }
     }
