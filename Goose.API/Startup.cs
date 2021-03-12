@@ -1,5 +1,3 @@
-using Goose.API.Repositories;
-using Goose.API.Services;
 using Goose.Data;
 using Goose.Data.Context;
 using Goose.Data.Settings;

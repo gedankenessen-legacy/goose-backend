@@ -18,7 +18,15 @@ namespace Goose.Data
                 throw new Exception($"Unexpected token parsing ObjectId. Expected String, got: {reader.TokenType}.");
 
             var value = reader.GetString();
-            return new ObjectId(value);
+            if (ObjectId.TryParse(value, out ObjectId objectId))
+            {
+                return objectId;
+            }
+            else
+            {
+                // Error werfen wäre auch möglich.
+                return new ObjectId();
+            }
         }
 
         public override void Write(Utf8JsonWriter writer, ObjectId value, JsonSerializerOptions options)
