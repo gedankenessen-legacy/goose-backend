@@ -34,15 +34,14 @@ namespace Goose.API
             ConfigureMongoDB();
             RegisterService(services);
 
-            services.AddControllers();
+            services.AddControllers().AddJsonOptions(options =>
+            {
+                options.JsonSerializerOptions.Converters.Add(new ObjectIdConverter());
+            });
+
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "Goose.API", Version = "v1" });
-            });
-
-            services.AddMvc().AddJsonOptions(options =>
-            {
-                options.JsonSerializerOptions.Converters.Add(new ObjectIdConverter());
             });
         }
 
