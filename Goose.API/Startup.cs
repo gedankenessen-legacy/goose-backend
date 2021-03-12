@@ -1,3 +1,6 @@
+using Goose.API.Repositories;
+using Goose.API.Services;
+using Goose.Data;
 using Goose.Data.Context;
 using Goose.Data.Settings;
 using Goose.Domain.Mapping;
@@ -37,6 +40,11 @@ namespace Goose.API
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "Goose.API", Version = "v1" });
+            });
+
+            services.AddMvc().AddJsonOptions(options =>
+            {
+                options.JsonSerializerOptions.Converters.Add(new ObjectIdConverter());
             });
         }
 
