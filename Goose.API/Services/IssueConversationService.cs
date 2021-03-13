@@ -36,23 +36,14 @@ namespace Goose.API.Services
         /// <returns>A list of conversation items from the provided issue.</returns>
         public async Task<IList<IssueConversationDTO>> GetConversationsFromIssueAsync(string issueId)
         {
-            // check if the parsed objectId is not the 000...000 default objectId.
-            if (ObjectId.TryParse(issueId, out ObjectId issueOid) is false)
-                throw new HttpStatusException(StatusCodes.Status400BadRequest, "Cannot parse issue string id to a valid object id.");
-
-            // fetch the issue that contains the conversation.
-            Issue issue = await _issueRepository.GetAsync(issueOid);
-
-            // show error if issue is not found.
-            if (issue is null)
-                throw new HttpStatusException(StatusCodes.Status404NotFound, $"No Issue found with Id={ issueId }.");
+            var conversationItems = (await _issueRepository.GetIssueByIdAsync(issueId)).ConversationItems;
 
             // if property is null, set default value => empty array of conversations which do not be saved to the database.
-            if (issue.ConversationItems is null)
-                issue.ConversationItems = new List<IssueConversation>();
+            if (conversationItems is null)
+                conversationItems = new List<IssueConversation>();
 
             // get all conversations from the issue, sorted after the creation date.
-            IList<IssueConversation> issueConversations = issue.ConversationItems.OrderBy(ci => ci.CreatedAt).ToList();
+            IList<IssueConversation> issueConversations = conversationItems.OrderBy(ci => ci.CreatedAt).ToList();
 
             // return empty list if null
             if (issueConversations is null)
@@ -75,24 +66,15 @@ namespace Goose.API.Services
         public async Task<IssueConversationDTO> GetConversationFromIssueAsync(string issueId, string conversationId)
         {
             // check if the parsed objectId is not the 000...000 default objectId.
-            if (ObjectId.TryParse(issueId, out ObjectId issueOid) is false)
-                throw new HttpStatusException(StatusCodes.Status400BadRequest, "Cannot parse issue string id to a valid object id.");
-
-            // check if the parsed objectId is not the 000...000 default objectId.
             if (ObjectId.TryParse(conversationId, out ObjectId conversationOid) is false)
                 throw new HttpStatusException(StatusCodes.Status400BadRequest, "Cannot parse conversation string id to a valid object id.");
 
-            // fetch the issue that contains the conversation.
-            Issue issue = await _issueRepository.GetAsync(issueOid);
+            var conversationItems = (await _issueRepository.GetIssueByIdAsync(issueId)).ConversationItems;
 
-            // show error if issue is not found.
-            if (issue is null)
-                throw new HttpStatusException(StatusCodes.Status404NotFound, $"No Issue found with Id={ issueId }");
-
-            if (issue.ConversationItems is null)
+            if (conversationItems is null)
                 throw new HttpStatusException(StatusCodes.Status400BadRequest, "No conversation items found.");
 
-            var conversationItem = issue.ConversationItems.SingleOrDefault(ci => ci.Id.Equals(conversationOid));
+            var conversationItem = conversationItems.SingleOrDefault(ci => ci.Id.Equals(conversationOid));
 
             if (conversationItem is null)
                 throw new HttpStatusException(StatusCodes.Status400BadRequest, $"No conversation item with Id={ conversationId } found.");
@@ -109,20 +91,12 @@ namespace Goose.API.Services
         /// <returns>The inserted conversation item.</returns>
         public async Task<IssueConversationDTO> CreateNewIssueConversationAsync(string issueId, IssueConversationDTO conversationItem)
         {
-            // check if the parsed objectId is not the 000...000 default objectId.
-            if (ObjectId.TryParse(issueId, out ObjectId issueOid) is false)
-                throw new HttpStatusException(StatusCodes.Status400BadRequest, "Cannot parse issue string id to a valid object id.");
-
-            // fetch the issue that contains the conversation.
-            Issue issue = await _issueRepository.GetAsync(issueOid);
-
-            // show error if issue is not found.
-            if (issue is null)
-                throw new HttpStatusException(StatusCodes.Status404NotFound, $"No Issue found with Id={ issueId }");
+            var issue = await _issueRepository.GetIssueByIdAsync(issueId);
+            var conversationItems = issue.ConversationItems;
 
             // if ConversationItems are null = empty, create a new list, which will gets appended.
-            if (issue.ConversationItems is null)
-                issue.ConversationItems = new List<IssueConversation>();
+            if (conversationItems is null)
+                conversationItems = new List<IssueConversation>();
 
             IssueConversation newConversation = new IssueConversation()
             {
@@ -134,10 +108,10 @@ namespace Goose.API.Services
             };
 
             // append the conversationItems with the new conversation item.
-            issue.ConversationItems.Add(newConversation);
+            conversationItems.Add(newConversation);
 
             // update the issue and the conversationItems withit.
-            //await _issueRepository.UpdateAsync(issue);
+            await _issueRepository.UpdateAsync(issue);
 
             // TODO: parameters missing.
             return new IssueConversationDTO(newConversation, null, null);
@@ -172,16 +146,8 @@ namespace Goose.API.Services
             if (conversationItemId.Equals(conversationItem.Id) is false)
                 throw new HttpStatusException(StatusCodes.Status400BadRequest, "Id missmatch.");
 
-            // check if the parsed objectId is not the 000...000 default objectId.
-            if (ObjectId.TryParse(issueId, out ObjectId issueOid) is false)
-                throw new HttpStatusException(StatusCodes.Status400BadRequest, "Cannot parse issue string id to a valid object id.");
-
-            // fetch the issue that contains the conversation.
-            Issue issue = await _issueRepository.GetAsync(issueOid);
-
-            // show error if issue is not found.
-            if (issue is null)
-                throw new HttpStatusException(StatusCodes.Status404NotFound, $"No Issue found with Id={ issueId }");
+            var issue = await _issueRepository.GetIssueByIdAsync(issueId);
+            var conversationItems = issue.ConversationItems;
 
             if (ObjectId.TryParse(conversationItem.Id, out ObjectId issueConversationOid) is false) throw new HttpStatusException(StatusCodes.Status400BadRequest, "The conversation item is missing a valid userId.");
 
@@ -194,25 +160,7 @@ namespace Goose.API.Services
                 Type = conversationItem.Type
             };
 
-            // if empty list => create new
-            if (issue.ConversationItems is null)
-            {
-                issue.ConversationItems = new List<IssueConversation>() { issueConversationModel };
-            }
-            // if not empty search for replace.
-            else
-            {
-                var issueConversation = issue.ConversationItems.Single(ci => ci.Id.Equals(issueConversationOid));
-
-                // if not found add it to list.
-                if (issueConversation is null)
-                    issue.ConversationItems.Add(issueConversationModel);
-                // if found, replace.
-                else
-                    (issue.ConversationItems as List<IssueConversation>).Replace(ci => ci.Id.Equals(issueConversationOid), issueConversationModel);
-            }
-
-            await _issueRepository.UpdateAsync(issue);
+            await _issueRepository.CreateOrUpdateConversationItemAsync(issueId, issueConversationModel);
         }
     }
 }
