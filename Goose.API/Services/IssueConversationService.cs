@@ -98,6 +98,8 @@ namespace Goose.API.Services
             if (conversationItems is null)
                 conversationItems = new List<IssueConversation>();
 
+            // TODO: after auth code impl. check if the user who creating this request is identical to the "conversationItem.Creator.Id" -> a client cannot create a conversation for other than himself.
+
             IssueConversation newConversation = new IssueConversation()
             {
                 Id = ObjectId.GenerateNewId(),

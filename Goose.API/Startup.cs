@@ -74,12 +74,12 @@ namespace Goose.API
             if (env.IsDevelopment())  
                 app.UseDeveloperExceptionPage();
             else
-                app.UseExceptionHandler("/error");
-            
+                app.UseExceptionHandler("/error");     
 
             app.UseSwagger();
             app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Goose.API v1"));
 
+            //! https will not be used for this project, one the one side it adds complexity and the server is only accessable via ip and an certificate cannot be applied without domain name.
             //app.UseHttpsRedirection();
 
             app.UseRouting();
