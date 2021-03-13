@@ -49,13 +49,30 @@ namespace Goose.API.Services
             if (issueConversations is null)
                 return new List<IssueConversationDTO>();
 
-            // TODO: parameters missing.
+            
             // map poco to dto.
-            var issueConversationsDTOs = issueConversations.Select(ci => new IssueConversationDTO(ci, null, null)).ToList();
+            var issueConversationsDTOs = issueConversations.Select(ic => 
+            {
+                // TODO: parameters missing.
+                //return MapIssueConversationDTO(ic);
+
+                return new IssueConversationDTO(ic, null, null);
+            }).ToList();
 
             // return the mapped conversation items.
             return issueConversationsDTOs;
         }
+
+        //private IssueConversationDTO MapIssueConversationDTO(IssueConversation ic)
+        //{
+        //    var creator = await _userRepository.GetUserByIdAsync(ic.CreatorUserId);
+        //    var creatorDto = new UserDTO(creator);
+
+        //    var requirements = ic.RequirementIds.Select(reqOid => await _issueRepository.GetRequirementByIdAsync(reqOid));
+        //    var requirementsDto = requirements.Select(req => new RequirementDTO(req));
+
+        //    return new IssueConversationDTO(ic, creatorDto, requirementsDto);
+        //}
 
         /// <summary>
         /// Returns the requested conversation for the provided issueId.
@@ -80,6 +97,7 @@ namespace Goose.API.Services
                 throw new HttpStatusException(StatusCodes.Status400BadRequest, $"No conversation item with Id={ conversationId } found.");
 
             // TODO: parameters missing.
+            //return MapIssueConversationDTO(ic);
             return new IssueConversationDTO(conversationItem, null, null);
         }
 
@@ -105,7 +123,7 @@ namespace Goose.API.Services
                 Id = ObjectId.GenerateNewId(),
                 CreatorUserId = ObjectId.TryParse(conversationItem.Creator.Id, out ObjectId creatorUserId) ? creatorUserId : throw new HttpStatusException(StatusCodes.Status400BadRequest, "The conversation item is missing a valid userId."),
                 Data = conversationItem.Data,
-                RequirementIds = SelectObjectIdsFromDto(conversationItem),
+                RequirementIds = SelectRequirementsObjectIdsFromDto(conversationItem),
                 Type = conversationItem.Type
             };
 
@@ -116,6 +134,7 @@ namespace Goose.API.Services
             await _issueRepository.UpdateAsync(issue);
 
             // TODO: parameters missing.
+            //return MapIssueConversationDTO(ic);
             return new IssueConversationDTO(newConversation, null, null);
         }
 
@@ -124,7 +143,7 @@ namespace Goose.API.Services
         /// </summary>
         /// <param name="conversationItem">The conversation which contains the requirements.</param>
         /// <returns>A list of ObjectIds from the requierments.</returns>
-        private IList<ObjectId> SelectObjectIdsFromDto(IssueConversationDTO conversationItem)
+        private IList<ObjectId> SelectRequirementsObjectIdsFromDto(IssueConversationDTO conversationItem)
         {
             if (conversationItem.Requirements is null)
                 return new List<ObjectId>();
@@ -158,7 +177,7 @@ namespace Goose.API.Services
                 Id = issueConversationOid,
                 CreatorUserId = ObjectId.TryParse(conversationItem.Creator?.Id, out ObjectId creatorUserId) ? creatorUserId : throw new HttpStatusException(StatusCodes.Status400BadRequest, "The conversation item is missing a valid userId."),
                 Data = conversationItem.Data,
-                RequirementIds = SelectObjectIdsFromDto(conversationItem),
+                RequirementIds = SelectRequirementsObjectIdsFromDto(conversationItem),
                 Type = conversationItem.Type
             };
 
