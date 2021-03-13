@@ -11,8 +11,8 @@ namespace Goose.Domain.Mapping
     {
         public AutoMapping()
         {
-            CreateMap<Issue, IssueDTOSimple>();
-            CreateMap<IssueDTOSimple, Issue>();
+            CreateMap<Issue, IssueDTO>();
+            CreateMap<IssueDTO, Issue>();
         }
     }
 }

@@ -9,7 +9,7 @@ namespace Goose.API.Services
 {
     public interface IIssueService
     {
-        Task<IList<IssueDTOSimple>> GetAllIssues();
+        Task<IList<IssueDTO>> GetAllIssues();
     }
 
     public class IssueService : IIssueService
@@ -23,10 +23,10 @@ namespace Goose.API.Services
             _mapper = mapper;
         }
 
-        public async Task<IList<IssueDTOSimple>> GetAllIssues()
+        public async Task<IList<IssueDTO>> GetAllIssues()
         {
             var res = await _issueRepo.GetAsync();
-            return _mapper.Map<List<IssueDTOSimple>>(res);
+            return _mapper.Map<List<IssueDTO>>(res);
         }
     }
 }

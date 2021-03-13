@@ -2,7 +2,7 @@
 
 namespace Goose.Domain.DTOs.issues
 {
-    public class IssueDTOSimple: Issue
+    public class IssueDTO: Issue
     {
         
     }

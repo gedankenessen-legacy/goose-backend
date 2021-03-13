@@ -20,7 +20,7 @@ namespace Goose.API.Controllers
 
 
         [HttpGet]
-        public async Task<ActionResult<IList<IssueDTOSimple>>> GetAll()
+        public async Task<ActionResult<IList<IssueDTO>>> GetAll()
         {
             var res = await _issueService.GetAllIssues();
             return ActionResultOk(res);
