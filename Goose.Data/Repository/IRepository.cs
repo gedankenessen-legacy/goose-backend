@@ -22,7 +22,7 @@ namespace Goose.Data.Repository
 
         Task<ReplaceOneResult> UpdateAsync(TEntity obj);
 
-        Task<UpdateResult> UpdateByIdAsync(ObjectId id, UpdateDefinition<TEntity> update);
+        Task<UpdateResult> UpdateByIdAsync(ObjectId id, UpdateDefinition<TEntity> update, UpdateOptions options = null);
 
         Task<DeleteResult> DeleteAsync(ObjectId id);
     }

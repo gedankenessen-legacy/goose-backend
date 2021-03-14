@@ -16,6 +16,7 @@ namespace Goose.API.Repositories
     {
         Task<UpdateResult> UpdateProject(ObjectId projectId, string name);
         Task<UpdateResult> AddState(ObjectId projectId, State state);
+        Task UpdateState(ObjectId projectId, ObjectId stateId, string name, string phase);
     }
 
     public class ProjectRepository : Repository<Project>, IProjectRepository
@@ -35,6 +36,22 @@ namespace Goose.API.Repositories
         {
             var update = Builders<Project>.Update.Set(x => x.ProjectDetail.Name, name);
             return UpdateByIdAsync(projectId, update);
+        }
+
+        public Task UpdateState(ObjectId projectId, ObjectId stateId, string name, string phase)
+        {
+            var update = Builders<Project>.Update
+                .Set("states.$[matches].name", name)
+                .Set("states.$[matches].phase", phase)
+                .Set("states.$[matches].updatedAt", DateTime.Now);
+
+            ArrayFilterDefinition<BsonDocument> filter = new BsonDocument("matches._id", stateId);
+
+            var options = new UpdateOptions()
+            {
+                ArrayFilters = new [] {filter},
+            };
+            return UpdateByIdAsync(projectId, update, options);
         }
     }
 }

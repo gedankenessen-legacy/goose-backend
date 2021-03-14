@@ -29,10 +29,10 @@ namespace Goose.API.Controllers
 
         // PUT: api/company/{companyId}/project/{projectId}/state/{stateId}
         [HttpPut("{stateId}")]
-        public async Task<ActionResult> UpdateState([FromBody] StateDTO stateDTO, string stateId)
+        public async Task<ActionResult> UpdateState([FromBody] StateDTO stateDTO, [FromRoute] string projectId, string stateId)
         {
-            ObjectIdConverter.Validate(stateId);
-            throw new NotImplementedException();
+            await _stateService.UpdateState(ObjectIdConverter.Validate(projectId), ObjectIdConverter.Validate(stateId), stateDTO);
+            return NoContent();
         }
 
         // GET: api/company/{companyId}/project/{projectId}/state

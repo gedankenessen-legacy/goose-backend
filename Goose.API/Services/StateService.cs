@@ -12,6 +12,7 @@ namespace Goose.API.Services
     public interface IStateService
     {
         Task<StateDTO> CreateStateAsync(ObjectId projectId, StateDTO requestedState);
+        Task UpdateState(ObjectId projectId, ObjectId stateId, StateDTO stateDTO);
     }
 
     public class StateService : IStateService
@@ -35,6 +36,16 @@ namespace Goose.API.Services
             await _projectRepository.AddState(projectId, state);
 
             return new StateDTO(state);
+        }
+
+        public async Task UpdateState(ObjectId projectId, ObjectId stateId, StateDTO stateDTO)
+        {
+            if (stateDTO.Id != stateId)
+            {
+                throw new Exception("Cannot Update: State ID does not match");
+            }
+
+            await _projectRepository.UpdateState(projectId, stateId, stateDTO.Name, stateDTO.Phase);
         }
     }
 }
