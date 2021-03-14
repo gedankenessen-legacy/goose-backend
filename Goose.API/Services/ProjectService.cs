@@ -12,7 +12,7 @@ namespace Goose.API.Services
 {
     public interface IProjectService
     {
-        Task<ProjectDTO> CreateNewProjectAsync(ObjectId companyId, ProjectDTO requestedProject);
+        Task<ProjectDTO> CreateProjectAsync(ObjectId companyId, ProjectDTO requestedProject);
         Task UpdateProject(ObjectId projectId, ProjectDTO projectDTO);
         Task<IList<ProjectDTO>> GetProjects();
         Task<ProjectDTO> GetProject(ObjectId projectId);
@@ -27,7 +27,7 @@ namespace Goose.API.Services
             _projectRepository = projectRepository;
         }
 
-        public async Task<ProjectDTO> CreateNewProjectAsync(ObjectId companyId, ProjectDTO requestedProject)
+        public async Task<ProjectDTO> CreateProjectAsync(ObjectId companyId, ProjectDTO requestedProject)
         {
             var newProject = new Project()
             {

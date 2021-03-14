@@ -1,4 +1,5 @@
 ﻿using Goose.API.Services;
+using Goose.Data;
 using Goose.Domain.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -20,15 +21,17 @@ namespace Goose.API.Controllers
 
         // POST: api/company/{companyId}/project/{projectId}/state/
         [HttpPost]
-        public async Task<ActionResult<StateDTO>> CreateState([FromBody] StateDTO stateDTO)
+        public async Task<ActionResult<StateDTO>> CreateState([FromBody] StateDTO stateDTO, [FromRoute] string projectId)
         {
-            throw new NotImplementedException();
+            var state = await _stateService.CreateStateAsync(ObjectIdConverter.Validate(projectId), stateDTO);
+            return Ok(state);
         }
 
         // PUT: api/company/{companyId}/project/{projectId}/state/{stateId}
         [HttpPut("{stateId}")]
-        public async Task<ActionResult> UpdateState(string stateId, [FromBody] StateDTO stateDTO)
+        public async Task<ActionResult> UpdateState([FromBody] StateDTO stateDTO, string stateId)
         {
+            ObjectIdConverter.Validate(stateId);
             throw new NotImplementedException();
         }
 
@@ -43,6 +46,7 @@ namespace Goose.API.Controllers
         [HttpGet("{stateId}")]
         public async Task<ActionResult<StateDTO>> GetState(string stateId)
         {
+            ObjectIdConverter.Validate(stateId);
             throw new NotImplementedException();
         }
     }
