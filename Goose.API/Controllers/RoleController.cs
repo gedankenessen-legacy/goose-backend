@@ -30,8 +30,7 @@ namespace Goose.API.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<Role>> GetRolesAsync(string id)
         {
-            ObjectId objectId = new ObjectId(id);
-            var role = await _roleService.GetRoleAsync(objectId);
+            var role = await _roleService.GetRoleAsync(new ObjectId(id));
             return Ok(role);
         }
 
@@ -43,9 +42,9 @@ namespace Goose.API.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<ActionResult<Role>> UpdateRoleAsync([FromBody] Role role)
+        public async Task<ActionResult<Role>> UpdateRoleAsync(string id, [FromBody] Role role)
         {
-            var roleToUpdate = await _roleService.UpdateRoleAsync(role);
+            var roleToUpdate = await _roleService.UpdateRoleAsync(new ObjectId(id), role);
             return Ok(roleToUpdate);
         }
     }

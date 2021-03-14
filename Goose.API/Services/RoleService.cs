@@ -14,7 +14,7 @@ namespace Goose.API.Services
         Task<Role> GetRoleAsync(ObjectId id);
         Task<IList<Role>> GetRolesAsync();
         Task<Role> CreateRoleAsync(Role role);
-        Task<Role> UpdateRoleAsync(Role role);
+        Task<Role> UpdateRoleAsync(ObjectId Id, Role role);
     }
 
     public class RoleService : IRoleService
@@ -51,9 +51,9 @@ namespace Goose.API.Services
             if (string.IsNullOrWhiteSpace(role.Name))
                 throw new Exception();
 
-            var roleItem = (await _roleRepository.GetAsync()).Where(x => x.Name.Equals(role.Name)).FirstOrDefault();
+            var roleItems = await _roleRepository.FilterByAsync(x => x.Name.Equals(role.Name));
 
-            if (roleItem != null)
+            if (roleItems.Count > 0)
                 throw new Exception();
 
             var newRole = new Role()
@@ -66,22 +66,23 @@ namespace Goose.API.Services
             return newRole;
         }
 
-        public async Task<Role> UpdateRoleAsync(Role role)
+        public async Task<Role> UpdateRoleAsync(ObjectId id, Role role)
         {
+            if (role.Id == id)
+                throw new Exception();
+
             if (role == null)
                 throw new Exception();
 
             if (string.IsNullOrWhiteSpace(role.Name))
                 throw new Exception();
 
-            var roleList = await _roleRepository.GetAsync();
+            var roleItems = await _roleRepository.FilterByAsync(x => x.Name.Equals(role.Name));
 
-            var roleItem = roleList.Where(x => x.Name.Equals(role.Name)).FirstOrDefault();
-
-            if (roleItem != null)
+            if (roleItems.Count > 0)
                 throw new Exception();
 
-            var roleToUpdate = roleList.Where(x => x.Id == role.Id).FirstOrDefault();
+            var roleToUpdate = (await _roleRepository.FilterByAsync(x => x.Id == role.Id)).FirstOrDefault();
 
             if (roleToUpdate == null)
                 throw new Exception();
