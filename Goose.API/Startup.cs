@@ -1,10 +1,6 @@
-
-
 using Goose.API.Repositories;
 using Goose.API.Services;
-
 using Goose.Data;
-
 using Goose.Data.Context;
 using Goose.Data.Settings;
 using Goose.Domain.Mapping;
@@ -78,6 +74,8 @@ namespace Goose.API
             services.AddScoped<IRoleRepository, RoleRepository>();
             services.AddScoped<IRoleService, RoleService>();
 
+            services.AddScoped<IProjectRepository, ProjectRepository>();
+            services.AddScoped<IProjectService, ProjectService>();
 
             services.AddAutoMapper(typeof(AutoMapping));
         }
