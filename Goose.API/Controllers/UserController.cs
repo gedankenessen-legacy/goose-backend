@@ -44,9 +44,9 @@ namespace Goose.API.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<ActionResult<User>> UpdateUserAsync([FromBody] User User)
+        public async Task<ActionResult<User>> UpdateUserAsync(string id, [FromBody] User User)
         {
-            var UserToUpdate = await _userService.UpdateUserAsync(User);
+            var UserToUpdate = await _userService.UpdateUserAsync(new ObjectId(id), User);
             return Ok(UserToUpdate);
         }
     }

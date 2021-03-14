@@ -15,7 +15,7 @@ namespace Goose.API.Services
         Task<UserDTO> GetUser(ObjectId id);
         Task<IList<UserDTO>> GetUsersAsync();
         Task<User> CreateNewUserAsync(User user);
-        Task<User> UpdateUserAsync(User user);
+        Task<User> UpdateUserAsync(ObjectId id, User user);
     }
 
     public class UserService : IUserService
@@ -77,9 +77,12 @@ namespace Goose.API.Services
             return userDTOList;
         }
 
-        public async Task<User> UpdateUserAsync(User user)
+        public async Task<User> UpdateUserAsync(ObjectId id, User user)
         {
             if (user == null)
+                throw new Exception();
+
+            if (id != user.Id)
                 throw new Exception();
 
             if (string.IsNullOrWhiteSpace(user.Firstname))
