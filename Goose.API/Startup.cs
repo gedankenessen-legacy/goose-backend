@@ -1,4 +1,5 @@
 
+
 using Goose.API.Repositories;
 using Goose.API.Services;
 
@@ -70,8 +71,13 @@ namespace Goose.API
 
             services.AddSingleton<IDbContext, DbContext>();
 
+
+            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IUserService, UserService>();
+
             services.AddScoped<IRoleRepository, RoleRepository>();
             services.AddScoped<IRoleService, RoleService>();
+
 
             services.AddAutoMapper(typeof(AutoMapping));
         }
