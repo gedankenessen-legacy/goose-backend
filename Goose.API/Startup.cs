@@ -1,5 +1,10 @@
+
+
 using Goose.API.Repositories;
 using Goose.API.Services;
+
+using Goose.Data;
+
 using Goose.Data.Context;
 using Goose.Data.Settings;
 using Goose.Domain.Mapping;
@@ -35,7 +40,11 @@ namespace Goose.API
             ConfigureMongoDB();
             RegisterService(services);
 
-            services.AddControllers();
+            services.AddControllers().AddJsonOptions(options =>
+            {
+                options.JsonSerializerOptions.Converters.Add(new ObjectIdConverter());
+            });
+
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "Goose.API", Version = "v1" });
@@ -62,8 +71,13 @@ namespace Goose.API
 
             services.AddSingleton<IDbContext, DbContext>();
 
+
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IUserService, UserService>();
+
+            services.AddScoped<IRoleRepository, RoleRepository>();
+            services.AddScoped<IRoleService, RoleService>();
+
 
             services.AddAutoMapper(typeof(AutoMapping));
         }
