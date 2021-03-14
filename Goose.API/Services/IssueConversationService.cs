@@ -1,6 +1,7 @@
 ﻿using Goose.API.Repositories;
 using Goose.API.Utils;
 using Goose.API.Utils.Exceptions;
+using Goose.Domain.DTOs;
 using Goose.Domain.DTOs.tickets;
 using Goose.Domain.Models.tickets;
 using Microsoft.AspNetCore.Http;
@@ -23,10 +24,12 @@ namespace Goose.API.Services
     public class IssueConversationService : IIssueConversationService
     {
         private readonly IIssueRepository _issueRepository;
+        private readonly IUserService _userService;
 
-        public IssueConversationService(IIssueRepository issueRepository)
+        public IssueConversationService(IIssueRepository issueRepository, IUserService userService)
         {
             _issueRepository = issueRepository;
+            _userService = userService;
         }
 
         /// <summary>
@@ -36,7 +39,8 @@ namespace Goose.API.Services
         /// <returns>A list of conversation items from the provided issue.</returns>
         public async Task<IList<IssueConversationDTO>> GetConversationsFromIssueAsync(string issueId)
         {
-            var conversationItems = (await _issueRepository.GetIssueByIdAsync(issueId)).ConversationItems;
+            var issue = await _issueRepository.GetIssueByIdAsync(issueId);
+            var conversationItems = issue.ConversationItems;
 
             // if property is null, set default value => empty array of conversations which do not be saved to the database.
             if (conversationItems is null)
@@ -49,30 +53,21 @@ namespace Goose.API.Services
             if (issueConversations is null)
                 return new List<IssueConversationDTO>();
 
-            
             // map poco to dto.
-            var issueConversationsDTOs = issueConversations.Select(ic => 
-            {
-                // TODO: parameters missing.
-                //return MapIssueConversationDTO(ic);
-
-                return new IssueConversationDTO(ic, null, null);
-            }).ToList();
+            var issueConversationsDTOs = await Task.WhenAll(issueConversations.Select(async ic => await MapIssueConversationDTOAsync(issue.Id, ic)).ToList());
 
             // return the mapped conversation items.
             return issueConversationsDTOs;
         }
 
-        //private IssueConversationDTO MapIssueConversationDTO(IssueConversation ic)
-        //{
-        //    var creator = await _userRepository.GetUserByIdAsync(ic.CreatorUserId);
-        //    var creatorDto = new UserDTO(creator);
+        private async Task<IssueConversationDTO> MapIssueConversationDTOAsync(ObjectId issueId, IssueConversation ic)
+        {
+            var creator = await _userService.GetUser(ic.CreatorUserId);
 
-        //    var requirements = ic.RequirementIds.Select(reqOid => await _issueRepository.GetRequirementByIdAsync(reqOid));
-        //    var requirementsDto = requirements.Select(req => new RequirementDTO(req));
+            var requirements = await Task.WhenAll(ic.RequirementIds.Select(async reqOid => await _issueRepository.GetRequirementByIdAsync(issueId, reqOid)).ToList());
 
-        //    return new IssueConversationDTO(ic, creatorDto, requirementsDto);
-        //}
+            return new IssueConversationDTO(ic, creator, requirements);
+        }
 
         /// <summary>
         /// Returns the requested conversation for the provided issueId.
@@ -86,7 +81,8 @@ namespace Goose.API.Services
             if (ObjectId.TryParse(conversationId, out ObjectId conversationOid) is false)
                 throw new HttpStatusException(StatusCodes.Status400BadRequest, "Cannot parse conversation string id to a valid object id.");
 
-            var conversationItems = (await _issueRepository.GetIssueByIdAsync(issueId)).ConversationItems;
+            var issue = await _issueRepository.GetIssueByIdAsync(issueId);
+            var conversationItems = issue.ConversationItems;
 
             if (conversationItems is null)
                 throw new HttpStatusException(StatusCodes.Status400BadRequest, "No conversation items found.");
@@ -96,9 +92,7 @@ namespace Goose.API.Services
             if (conversationItem is null)
                 throw new HttpStatusException(StatusCodes.Status400BadRequest, $"No conversation item with Id={ conversationId } found.");
 
-            // TODO: parameters missing.
-            //return MapIssueConversationDTO(ic);
-            return new IssueConversationDTO(conversationItem, null, null);
+            return await MapIssueConversationDTOAsync(issue.Id, conversationItem);
         }
 
         /// <summary>
@@ -121,7 +115,7 @@ namespace Goose.API.Services
             IssueConversation newConversation = new IssueConversation()
             {
                 Id = ObjectId.GenerateNewId(),
-                CreatorUserId = ObjectId.TryParse(conversationItem.Creator.Id, out ObjectId creatorUserId) ? creatorUserId : throw new HttpStatusException(StatusCodes.Status400BadRequest, "The conversation item is missing a valid userId."),
+                CreatorUserId = conversationItem.Creator.Id,
                 Data = conversationItem.Data,
                 RequirementIds = SelectRequirementsObjectIdsFromDto(conversationItem),
                 Type = conversationItem.Type
@@ -133,9 +127,7 @@ namespace Goose.API.Services
             // update the issue and the conversationItems withit.
             await _issueRepository.UpdateAsync(issue);
 
-            // TODO: parameters missing.
-            //return MapIssueConversationDTO(ic);
-            return new IssueConversationDTO(newConversation, null, null);
+            return await MapIssueConversationDTOAsync(issue.Id, newConversation);
         }
 
         /// <summary>
@@ -148,12 +140,7 @@ namespace Goose.API.Services
             if (conversationItem.Requirements is null)
                 return new List<ObjectId>();
 
-            return conversationItem.Requirements.Select(req => {
-                if (ObjectId.TryParse(req.Id, out ObjectId requirmentId) is false)
-                    throw new HttpStatusException(StatusCodes.Status400BadRequest, "The requirement does not have a valid object id.");
-
-                return requirmentId;
-            }).ToList();
+            return conversationItem.Requirements.Select(req => req.Id).ToList();
         }
 
         /// <summary>
@@ -164,18 +151,15 @@ namespace Goose.API.Services
         /// <param name="conversationItem">The conversation that will be created or replaced if already existing.</param>
         public async Task CreateOrReplaceConversationItemAsync(string issueId, string conversationItemId, IssueConversationDTO conversationItem)
         {
-            if (conversationItemId.Equals(conversationItem.Id) is false)
+            if (ObjectId.TryParse(conversationItemId, out ObjectId conversationItemOid) is false) throw new HttpStatusException(StatusCodes.Status400BadRequest, "Provided conversation id is no valid ObjectId.");
+
+            if (conversationItemOid.Equals(conversationItem.Id) is false)
                 throw new HttpStatusException(StatusCodes.Status400BadRequest, "Id missmatch.");
-
-            var issue = await _issueRepository.GetIssueByIdAsync(issueId);
-            var conversationItems = issue.ConversationItems;
-
-            if (ObjectId.TryParse(conversationItem.Id, out ObjectId issueConversationOid) is false) throw new HttpStatusException(StatusCodes.Status400BadRequest, "The conversation item is missing a valid userId.");
 
             var issueConversationModel = new IssueConversation()
             {
-                Id = issueConversationOid,
-                CreatorUserId = ObjectId.TryParse(conversationItem.Creator?.Id, out ObjectId creatorUserId) ? creatorUserId : throw new HttpStatusException(StatusCodes.Status400BadRequest, "The conversation item is missing a valid userId."),
+                Id = conversationItem.Id,
+                CreatorUserId = ObjectId.TryParse(conversationItem.Creator?.Id.ToString(), out ObjectId creatorUserId) ? creatorUserId : throw new HttpStatusException(StatusCodes.Status400BadRequest, "The conversation item is missing a valid userId."),
                 Data = conversationItem.Data,
                 RequirementIds = SelectRequirementsObjectIdsFromDto(conversationItem),
                 Type = conversationItem.Type

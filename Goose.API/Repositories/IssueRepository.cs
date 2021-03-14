@@ -16,6 +16,7 @@ namespace Goose.API.Repositories
     {
         public Task<Issue> GetIssueByIdAsync(string issueId);
         public Task CreateOrUpdateConversationItemAsync(string issueId, IssueConversation issueConversation);
+        public Task<IssueRequirement> GetRequirementByIdAsync(ObjectId issueId, ObjectId requirementId);
     }
 
     public class IssueRepository : Repository<Issue>, IIssueRepository
@@ -69,6 +70,23 @@ namespace Goose.API.Repositories
                 var update = Builders<Issue>.Update.Set(iss => iss.ConversationItems[-1], issueConversation);
                 await _dbCollection.UpdateOneAsync(issueFilter & distinguishFilter, update);
             }
+        }
+
+        public async Task<IssueRequirement> GetRequirementByIdAsync(ObjectId issueId, ObjectId requirementId)
+        {
+            // fetch the issue that contains the conversation.
+            Issue issue = await GetAsync(issueId);
+
+            // show error if issue is not found.
+            if (issue is null)
+                throw new HttpStatusException(StatusCodes.Status404NotFound, $"No Issue found with Id={issueId}.");
+
+            var req = issue.IssueDetail.Requirements.Single(req => req.Id.Equals(requirementId));
+
+            if (req is null)
+                throw new HttpStatusException(StatusCodes.Status404NotFound, $"No Requirement found with Id={requirementId}.");
+
+            return req;
         }
     }
 }
