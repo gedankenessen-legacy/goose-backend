@@ -62,6 +62,11 @@ namespace Goose.Data.Repository
             return _dbCollection.ReplaceOneAsync(filter, obj);
         }
 
+        public virtual Task<UpdateResult> UpdateByIdAsync(ObjectId id, UpdateDefinition<TEntity> update)
+        {
+            return _dbCollection.UpdateOneAsync(x => x.Id == id, update);
+        }
+
         #endregion
 
         #region Delete

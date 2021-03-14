@@ -22,6 +22,8 @@ namespace Goose.Data.Repository
 
         Task<ReplaceOneResult> UpdateAsync(TEntity obj);
 
+        Task<UpdateResult> UpdateByIdAsync(ObjectId id, UpdateDefinition<TEntity> update);
+
         Task<DeleteResult> DeleteAsync(ObjectId id);
     }
 }
