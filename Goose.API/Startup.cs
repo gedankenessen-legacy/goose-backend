@@ -1,4 +1,9 @@
+
+using Goose.API.Repositories;
+using Goose.API.Services;
+
 using Goose.Data;
+
 using Goose.Data.Context;
 using Goose.Data.Settings;
 using Goose.Domain.Mapping;
@@ -64,6 +69,9 @@ namespace Goose.API
             services.Configure<DbSettings>(_configuration.GetSection(nameof(DbSettings)));
 
             services.AddSingleton<IDbContext, DbContext>();
+
+            services.AddScoped<IRoleRepository, RoleRepository>();
+            services.AddScoped<IRoleService, RoleService>();
 
             services.AddAutoMapper(typeof(AutoMapping));
         }
