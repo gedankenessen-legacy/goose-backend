@@ -1,4 +1,5 @@
 ﻿using Goose.API.Services;
+using Goose.Data;
 using Goose.Domain.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
@@ -23,15 +24,16 @@ namespace Goose.API.Controllers
         [HttpPost]
         public async Task<ActionResult<ProjectDTO>> CreateProject([FromBody] ProjectDTO projectDTO, [FromRoute] string companyId)
         {
-            var newCompany = await _projectService.CreateNewProjectAsync(new ObjectId(companyId), projectDTO);
+
+            var newCompany = await _projectService.CreateProjectAsync(ObjectIdConverter.Validate(companyId), projectDTO);
             return Ok(newCompany); 
         }
 
         // PUT: api/company/{companyId}/project/{projectId}
         [HttpPut("{projectId}")]
-        public async Task<ActionResult> UpdateProject(string projectId, [FromBody] ProjectDTO projectDTO)
+        public async Task<ActionResult> UpdateProject([FromBody] ProjectDTO projectDTO, string projectId)
         {
-            await _projectService.UpdateProject(new ObjectId(projectId), projectDTO);
+            await _projectService.UpdateProject(ObjectIdConverter.Validate(projectId), projectDTO);
             return NoContent();
         }
 
@@ -47,7 +49,7 @@ namespace Goose.API.Controllers
         [HttpGet("{projectId}")]
         public async Task<ActionResult<ProjectDTO>> GetProject(string projectId)
         {
-            var projects = await _projectService.GetProject(new ObjectId(projectId));
+            var projects = await _projectService.GetProject(ObjectIdConverter.Validate(projectId));
             return Ok(projects);
         }
     }
