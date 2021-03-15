@@ -30,7 +30,7 @@ namespace Goose.API.Services
         {
             var state = new State()
             {
-                _id = ObjectId.GenerateNewId(),
+                Id = ObjectId.GenerateNewId(),
                 Phase = requestedState.Phase,
                 Name = requestedState.Name,
             };
@@ -44,8 +44,20 @@ namespace Goose.API.Services
         {
             var project = await _projectRepository.GetAsync(projectId);
 
+            if (project is null)
+            {
+                // TODO throw a HttpStatusException
+                throw new Exception("Project not found");
+            }
+
+            if (project.States is null)
+            {
+                // TODO throw a HttpStatusException
+                throw new Exception("State not found");
+            }
+
             var matchedState = from state in project.States
-                        where state._id == stateId
+                        where state.Id == stateId
                         select new StateDTO(state);
 
             return matchedState.Single();
@@ -54,6 +66,18 @@ namespace Goose.API.Services
         public async Task<IList<StateDTO>> GetStates(ObjectId projectId)
         {
             var project = await _projectRepository.GetAsync(projectId);
+
+            if (project is null)
+            {
+                // TODO throw a HttpStatusException
+                throw new Exception("Project not found");
+            }
+
+            if (project.States is null)
+            {
+                return new List<StateDTO>();
+            }
+
             var states = from state in project.States
                          select new StateDTO(state);
 

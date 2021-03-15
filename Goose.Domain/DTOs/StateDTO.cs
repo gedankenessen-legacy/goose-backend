@@ -10,9 +10,14 @@ namespace Goose.Domain.DTOs
 {
     public class StateDTO
     {
+        public StateDTO()
+        {
+
+        }
+
         public StateDTO(State state)
         {
-            Id = state._id;
+            Id = state.Id;
             Name = state.Name;
             Phase = state.Phase;
         }
