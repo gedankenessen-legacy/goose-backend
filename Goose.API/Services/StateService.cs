@@ -13,6 +13,8 @@ namespace Goose.API.Services
     {
         Task<StateDTO> CreateStateAsync(ObjectId projectId, StateDTO requestedState);
         Task UpdateState(ObjectId projectId, ObjectId stateId, StateDTO stateDTO);
+        Task<IList<StateDTO>> GetStates(ObjectId projectId);
+        Task<StateDTO> GetState(ObjectId projectId, ObjectId stateId);
     }
 
     public class StateService : IStateService
@@ -36,6 +38,26 @@ namespace Goose.API.Services
             await _projectRepository.AddState(projectId, state);
 
             return new StateDTO(state);
+        }
+
+        public async Task<StateDTO> GetState(ObjectId projectId, ObjectId stateId)
+        {
+            var project = await _projectRepository.GetAsync(projectId);
+
+            var matchedState = from state in project.States
+                        where state._id == stateId
+                        select new StateDTO(state);
+
+            return matchedState.Single();
+        }
+
+        public async Task<IList<StateDTO>> GetStates(ObjectId projectId)
+        {
+            var project = await _projectRepository.GetAsync(projectId);
+            var states = from state in project.States
+                         select new StateDTO(state);
+
+            return states.ToList();
         }
 
         public async Task UpdateState(ObjectId projectId, ObjectId stateId, StateDTO stateDTO)

@@ -1,6 +1,7 @@
 ﻿using Goose.API.Services;
 using Goose.Data;
 using Goose.Domain.DTOs;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 using System;
@@ -22,6 +23,8 @@ namespace Goose.API.Controllers
 
         // POST: api/company/{companyId}/project
         [HttpPost]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<ProjectDTO>> CreateProject([FromBody] ProjectDTO projectDTO, [FromRoute] string companyId)
         {
 
@@ -31,6 +34,8 @@ namespace Goose.API.Controllers
 
         // PUT: api/company/{companyId}/project/{projectId}
         [HttpPut("{projectId}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult> UpdateProject([FromBody] ProjectDTO projectDTO, string projectId)
         {
             await _projectService.UpdateProject(ObjectIdConverter.Validate(projectId), projectDTO);
@@ -39,6 +44,8 @@ namespace Goose.API.Controllers
 
         // GET: api/company/{companyId}/project
         [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<IList<ProjectDTO>>> GetProjects()
         {
             var projectIter = await _projectService.GetProjects();
@@ -47,6 +54,8 @@ namespace Goose.API.Controllers
 
         // GET: api/company/{companyId}/project/{projectId}
         [HttpGet("{projectId}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<ProjectDTO>> GetProject(string projectId)
         {
             var projects = await _projectService.GetProject(ObjectIdConverter.Validate(projectId));

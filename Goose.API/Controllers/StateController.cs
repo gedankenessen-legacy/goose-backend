@@ -1,6 +1,7 @@
 ﻿using Goose.API.Services;
 using Goose.Data;
 using Goose.Domain.DTOs;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
@@ -21,6 +22,8 @@ namespace Goose.API.Controllers
 
         // POST: api/company/{companyId}/project/{projectId}/state/
         [HttpPost]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<StateDTO>> CreateState([FromBody] StateDTO stateDTO, [FromRoute] string projectId)
         {
             var state = await _stateService.CreateStateAsync(ObjectIdConverter.Validate(projectId), stateDTO);
@@ -29,6 +32,8 @@ namespace Goose.API.Controllers
 
         // PUT: api/company/{companyId}/project/{projectId}/state/{stateId}
         [HttpPut("{stateId}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult> UpdateState([FromBody] StateDTO stateDTO, [FromRoute] string projectId, string stateId)
         {
             await _stateService.UpdateState(ObjectIdConverter.Validate(projectId), ObjectIdConverter.Validate(stateId), stateDTO);
@@ -37,17 +42,22 @@ namespace Goose.API.Controllers
 
         // GET: api/company/{companyId}/project/{projectId}/state
         [HttpGet]
-        public async Task<ActionResult<IList<StateDTO>>> GetStates()
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<IList<StateDTO>>> GetStates([FromRoute] string projectId)
         {
-            throw new NotImplementedException();
+            var states = await _stateService.GetStates(ObjectIdConverter.Validate(projectId));
+            return Ok(states);
         }
 
         // GET: api/company/{companyId}/project/{projectId}/state/{stateId}
         [HttpGet("{stateId}")]
-        public async Task<ActionResult<StateDTO>> GetState(string stateId)
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<StateDTO>> GetState([FromRoute] string projectId, string stateId)
         {
-            ObjectIdConverter.Validate(stateId);
-            throw new NotImplementedException();
+            var state = await _stateService.GetState(ObjectIdConverter.Validate(projectId), ObjectIdConverter.Validate(stateId));
+            return Ok(state);
         }
     }
 }

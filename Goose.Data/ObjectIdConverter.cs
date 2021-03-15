@@ -41,7 +41,8 @@ namespace Goose.Data
             }
             else
             {
-                throw new Exception("Invalid ObjectId");
+                // TODO Hier kommt nach dem Merge ne HttpStatusException hin, ich bin nur zu faul für ein rebase
+                throw new Exception("Cannot parse issue string id to a valid object id.");
             }
         }
     }

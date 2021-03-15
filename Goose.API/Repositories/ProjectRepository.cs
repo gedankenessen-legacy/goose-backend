@@ -42,8 +42,7 @@ namespace Goose.API.Repositories
         {
             var update = Builders<Project>.Update
                 .Set("states.$[matches].name", name)
-                .Set("states.$[matches].phase", phase)
-                .Set("states.$[matches].updatedAt", DateTime.Now);
+                .Set("states.$[matches].phase", phase);
 
             ArrayFilterDefinition<BsonDocument> filter = new BsonDocument("matches._id", stateId);
 
