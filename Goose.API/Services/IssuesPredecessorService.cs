@@ -14,7 +14,7 @@ namespace Goose.API.Services
     public class IssuesPredecessorService : IIssuePredecessorService
     {
         //TODO ggf müssen vorgänger rekursiv entfernt werden?
-        //TODO checken ob es eine dealock gäbe
+
         //TODO wie bekommt man am besten alle issues in einem vorgänger baum? phil fragen?
         private readonly IIssueRepository _issueRepo;
 
@@ -27,6 +27,8 @@ namespace Goose.API.Services
         {
             var successor = await _issueRepo.GetOfProjectAsync(projectId, successorId);
             var predecessor = await _issueRepo.GetOfProjectAsync(projectId, predecessorId);
+
+            //TODO checken ob es eine dealock gäbe
             successor.PredecessorIssueIds.Add(predecessorId);
             predecessor.SuccessorIssueIds.Add(successorId);
 
@@ -37,10 +39,9 @@ namespace Goose.API.Services
         {
             var successor = await _issueRepo.GetOfProjectAsync(projectId, successorId);
             var predecessor = await _issueRepo.GetOfProjectAsync(projectId, predecessorId);
-            successor.PredecessorIssueIds.Remove(predecessorId);
-            predecessor.SuccessorIssueIds.Remove(successorId);
-
-            await Task.WhenAll(_issueRepo.UpdateAsync(successor), _issueRepo.UpdateAsync(predecessor));
+            if (successor.PredecessorIssueIds.Remove(predecessorId) ||
+                predecessor.SuccessorIssueIds.Remove(successorId))
+                await Task.WhenAll(_issueRepo.UpdateAsync(successor), _issueRepo.UpdateAsync(predecessor));
         }
     }
 }
