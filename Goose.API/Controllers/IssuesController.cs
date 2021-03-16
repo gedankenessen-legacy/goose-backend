@@ -14,6 +14,7 @@ namespace Goose.API.Controllers
     {
         //TODO user auth
         //TODO verify issue is in project
+        //TODO untertickets
         private readonly IIssueService _issueService;
 
         public IssuesController(IIssueService issueService)
@@ -86,7 +87,7 @@ namespace Goose.API.Controllers
         /// <param name="id">issue id</param>
         /// <returns>returns http code 204 on success or 400 on error</returns>
         [HttpDelete("{id}")]
-        public async Task<ActionResult<IssueDTO>> Delete([FromRoute] string projectId, [FromRoute] string id)
+        public async Task<ActionResult> Delete([FromRoute] string projectId, [FromRoute] string id)
         {
             if (await _issueService.Delete(id.TryParse()))
                 return NoContent();
@@ -97,11 +98,11 @@ namespace Goose.API.Controllers
 
 namespace System
 {
-    static class Extentions
+    public static class Extentions
     {
         public static ObjectId TryParse(this string id)
         {
-            if (ObjectId.TryParse(id, out ObjectId newId) is false)
+            if (ObjectId.TryParse(id, out var newId) is false)
                 throw new Exception("Cannot parse issue string id to a valid object id.");
             //  new HttpStatusException(StatusCodes.Status400BadRequest, "Cannot parse issue string id to a valid object id.");
             return newId;
