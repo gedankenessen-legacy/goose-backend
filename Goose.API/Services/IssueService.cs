@@ -18,6 +18,8 @@ namespace Goose.API.Services
         public Task<IssueDTO> GetOfProject(ObjectId projectId, ObjectId id);
         public Task<IssueDTO> Create(IssueDTO issue);
         public Task<IssueDTO> Update(IssueDTO issue);
+
+        public Task<IssueDTO> CreateOrUpdate(IssueDTO issue);
         public Task<DeleteResult> Delete(ObjectId id);
     }
 
@@ -63,6 +65,13 @@ namespace Goose.API.Services
         {
             await _issueRepo.UpdateAsync(_mapper.Map<Issue>(issue));
             return issue;
+        }
+
+        public async Task<IssueDTO> CreateOrUpdate(IssueDTO issue)
+        {
+            var exists = await Get(issue.Id) != null;
+            if (exists) return await Update(issue);
+            return await Create(issue);
         }
 
         public async Task<DeleteResult> Delete(ObjectId id)

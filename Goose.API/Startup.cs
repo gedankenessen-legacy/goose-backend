@@ -15,6 +15,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Goose.API.Repositories;
+using Goose.API.Services;
 using Goose.Data;
 
 namespace Goose.API
@@ -66,6 +68,15 @@ namespace Goose.API
             services.AddSingleton<IDbContext, DbContext>();
 
             services.AddAutoMapper(typeof(AutoMapping));
+            services.AddScoped<IIssueRepository, IssueRepository>();
+            services.AddScoped<IIssueService, IssueService>();
+            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IUserService, UserService>();
+            services.AddScoped<IIssueService, IssueService>();
+            services.AddScoped<IRoleRepository, RoleRepository>();
+            services.AddScoped<IRoleService, RoleService>();
+            services.AddScoped<IProjectRepository, ProjectRepository>();
+            services.AddScoped<IProjectService, ProjectService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
