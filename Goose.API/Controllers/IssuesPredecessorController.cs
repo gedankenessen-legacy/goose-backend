@@ -20,8 +20,8 @@ namespace Goose.API.Controllers
         public async Task<ActionResult> SetPredecessor([FromRoute] string projectId,
             [FromRoute] string issueId, [FromBody] string predecessorId)
         {
-            await _issueService.SetPredecessor(projectId.TryParse(), issueId.TryParse(),
-                predecessorId.TryParse());
+            await _issueService.SetPredecessor(projectId.ToObjectId(), issueId.ToObjectId(),
+                predecessorId.ToObjectId());
             return NoContent();
         }
 
@@ -29,8 +29,8 @@ namespace Goose.API.Controllers
         public async Task<ActionResult> RemovePredecessor([FromRoute] string projectId,
             [FromRoute] string issueId, [FromBody] string predecessorId)
         {
-            await _issueService.RemovePredecessor(projectId.TryParse(), issueId.TryParse(),
-                predecessorId.TryParse());
+            await _issueService.RemovePredecessor(projectId.ToObjectId(), issueId.ToObjectId(),
+                predecessorId.ToObjectId());
             return NoContent();
         }
     }

@@ -15,6 +15,8 @@ namespace Goose.API.Controllers
         //TODO user auth
         //TODO verify issue is in project
         //TODO untertickets
+        //TODO timesheets controller
+        //TODO assigned controller
         private readonly IIssueService _issueService;
 
         public IssuesController(IIssueService issueService)
@@ -28,7 +30,7 @@ namespace Goose.API.Controllers
         /// <param name="id of project"></param>
         /// <returns>List of issues from a project or error 400</returns>
         [HttpGet]
-        public async Task<ActionResult<IList<IssueDTO>>> GetAll([FromRoute] string projectId)
+        public async Task<ActionResult<IList<IssueResponseDTO>>> GetAll([FromRoute] string projectId)
         {
             //var res = await _issueService.GetAllOfProject(new ObjectId(projectId));
             var res = await _issueService.GetAll();
@@ -42,40 +44,39 @@ namespace Goose.API.Controllers
         /// <param name="id">id of issue</param>
         /// <returns>Returns issue or erro 400</returns>
         [HttpGet("{id}")]
-        public async Task<ActionResult<IssueDTO>> Get([FromRoute] string projectId, [FromRoute] string id)
+        public async Task<ActionResult<IssueResponseDTO>> Get([FromRoute] string projectId, [FromRoute] string id)
         {
-            var projectObjId = projectId.TryParse();
-            var objId = id.TryParse();
-
-            var res = await _issueService.GetOfProject(projectObjId, objId);
+            var res = await _issueService.GetOfProject(projectId.ToObjectId(), id.ToObjectId());
             return res == null ? NotFound() : Ok(res);
         }
 
         /// <summary>
         /// Creates an issue in db and returns created issue
         /// </summary>
-        /// <param name="issue">Issue from body</param>
+        /// <param name="issueRequest">Issue from body</param>
         /// <param name="projectId">project id</param>
         /// <returns>new issue or error 400</returns>
         [HttpPost]
-        public async Task<ActionResult<IssueDTO>> Post([FromBody] IssueDTO issue, [FromRoute] string projectId)
+        public async Task<ActionResult<IssueResponseDTO>> Post([FromBody] IssueRequestDTO issueRequest,
+            [FromRoute] string projectId)
         {
-            var res = await _issueService.Create(issue);
+            var res = await _issueService.Create(issueRequest);
             return Created($"api/projects/{projectId}/issues/{res.Id}", res);
         }
 
         /// <summary>
         /// Creates or updates an issue
         /// </summary>
-        /// <param name="issue">Issue</param>
+        /// <param name="issueRequest">Issue</param>
         /// <param name="projectId">project id</param>
         /// <param name="id">id of issue. If an issue is created, it will not have the id specified here.</param>
         /// <returns></returns>
         [HttpPut("{id}")]
-        public async Task<ActionResult<IssueDTO>> Put([FromBody] IssueDTO issue, [FromRoute] string projectId,
+        public async Task<ActionResult> Put([FromBody] IssueRequestDTO issueRequest,
+            [FromRoute] string projectId,
             [FromRoute] string id)
         {
-            await _issueService.CreateOrUpdate(issue);
+            await _issueService.CreateOrUpdate(issueRequest, id.ToObjectId());
             return NoContent();
         }
 
@@ -89,23 +90,9 @@ namespace Goose.API.Controllers
         [HttpDelete("{id}")]
         public async Task<ActionResult> Delete([FromRoute] string projectId, [FromRoute] string id)
         {
-            if (await _issueService.Delete(id.TryParse()))
+            if (await _issueService.Delete(id.ToObjectId()))
                 return NoContent();
             return BadRequest();
-        }
-    }
-}
-
-namespace System
-{
-    public static class Extentions
-    {
-        public static ObjectId TryParse(this string id)
-        {
-            if (ObjectId.TryParse(id, out var newId) is false)
-                throw new Exception("Cannot parse issue string id to a valid object id.");
-            //  new HttpStatusException(StatusCodes.Status400BadRequest, "Cannot parse issue string id to a valid object id.");
-            return newId;
         }
     }
 }

@@ -12,14 +12,14 @@ namespace Goose.API.Services
 {
     public interface IIssueService
     {
-        Task<IList<IssueDTO>> GetAll();
-        Task<IList<IssueDTO>> GetAllOfProject(ObjectId projectId);
-        public Task<IssueDTO> Get(ObjectId id);
-        public Task<IssueDTO> GetOfProject(ObjectId projectId, ObjectId id);
-        public Task<IssueDTO> Create(IssueDTO issue);
-        public Task<IssueDTO> Update(IssueDTO issue);
+        Task<IList<IssueResponseDTO>> GetAll();
+        Task<IList<IssueResponseDTO>> GetAllOfProject(ObjectId projectId);
+        public Task<IssueResponseDTO> Get(ObjectId id);
+        public Task<IssueResponseDTO> GetOfProject(ObjectId projectId, ObjectId id);
+        public Task<IssueResponseDTO> Create(IssueRequestDTO issueRequestDto);
+        public Task<IssueResponseDTO> Update(IssueRequestDTO issueRequest, ObjectId id);
 
-        public Task<IssueDTO> CreateOrUpdate(IssueDTO issue);
+        public Task<IssueResponseDTO> CreateOrUpdate(IssueRequestDTO issueRequest, ObjectId id);
         public Task<bool> Delete(ObjectId id);
     }
 
@@ -34,44 +34,47 @@ namespace Goose.API.Services
             _mapper = mapper;
         }
 
-        public async Task<IList<IssueDTO>> GetAll()
+        public async Task<IList<IssueResponseDTO>> GetAll()
         {
-            return _mapper.Map<List<IssueDTO>>(await _issueRepo.GetAsync());
+            return _mapper.Map<List<IssueResponseDTO>>(await _issueRepo.GetAsync());
         }
 
 
-        public async Task<IList<IssueDTO>> GetAllOfProject(ObjectId projectId)
+        public async Task<IList<IssueResponseDTO>> GetAllOfProject(ObjectId projectId)
         {
-            return _mapper.Map<List<IssueDTO>>(await _issueRepo.GetAllOfProjectAsync(projectId));
+            return _mapper.Map<List<IssueResponseDTO>>(await _issueRepo.GetAllOfProjectAsync(projectId));
         }
 
-        public async Task<IssueDTO> Get(ObjectId id)
+        public async Task<IssueResponseDTO> Get(ObjectId id)
         {
-            return _mapper.Map<IssueDTO>(await _issueRepo.GetAsync(id));
+            return _mapper.Map<IssueResponseDTO>(await _issueRepo.GetAsync(id));
         }
 
-        public async Task<IssueDTO> GetOfProject(ObjectId projectId, ObjectId id)
+        public async Task<IssueResponseDTO> GetOfProject(ObjectId projectId, ObjectId id)
         {
-            return _mapper.Map<IssueDTO>(await _issueRepo.GetOfProjectAsync(projectId, id));
+            return _mapper.Map<IssueResponseDTO>(await _issueRepo.GetOfProjectAsync(projectId, id));
         }
 
-        public async Task<IssueDTO> Create(IssueDTO issue)
+        public async Task<IssueResponseDTO> Create(IssueRequestDTO issueRequestDto)
         {
-            await _issueRepo.CreateAsync(_mapper.Map<Issue>(issue));
-            return issue;
+            var issue = _mapper.Map<Issue>(issueRequestDto);
+            await _issueRepo.CreateAsync(issue);
+            //TODO wie bekomme ich das issue mit neuer id zurück
+            return null;
         }
 
-        public async Task<IssueDTO> Update(IssueDTO issue)
+        public async Task<IssueResponseDTO> Update(IssueRequestDTO issueRequest, ObjectId id)
         {
-            await _issueRepo.UpdateAsync(_mapper.Map<Issue>(issue));
-            return issue;
+            await _issueRepo.UpdateAsync(_mapper.Map<Issue>(issueRequest));
+            //TODO manche felder dürfen nicht geupdated werden
+            return await Get(id);
         }
 
-        public async Task<IssueDTO> CreateOrUpdate(IssueDTO issue)
+        public async Task<IssueResponseDTO> CreateOrUpdate(IssueRequestDTO issueRequest, ObjectId id)
         {
-            var exists = await Get(issue.Id) != null;
-            if (exists) return await Update(issue);
-            return await Create(issue);
+            var exists = await Get(id) != null;
+            if (exists) return await Update(issueRequest, id);
+            return await Create(issueRequest);
         }
 
         public async Task<bool> Delete(ObjectId id)

@@ -8,8 +8,10 @@ namespace Goose.Domain.Mapping
     {
         public AutoMapping()
         {
-            CreateMap<Issue, IssueDTO>();
-            CreateMap<IssueDTO, Issue>();
+            CreateMap<Issue, IssueRequestDTO>();
+            CreateMap<IssueRequestDTO, Issue>();
+            CreateMap<IssueResponseDTO, Issue>();
+            CreateMap<Issue, IssueResponseDTO>();
         }
     }
 }
