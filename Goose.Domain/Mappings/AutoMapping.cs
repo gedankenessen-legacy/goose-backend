@@ -1,7 +1,4 @@
 ﻿using AutoMapper;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using Goose.Domain.DTOs.issues;
 using Goose.Domain.Models.tickets;
 
