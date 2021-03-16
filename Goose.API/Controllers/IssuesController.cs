@@ -88,8 +88,7 @@ namespace Goose.API.Controllers
         [HttpDelete("{id}")]
         public async Task<ActionResult<IssueDTO>> Delete([FromRoute] string projectId, [FromRoute] string id)
         {
-            var res = await _issueService.Delete(id.TryParse());
-            if (res.DeletedCount > 0)
+            if (await _issueService.Delete(id.TryParse()))
                 return NoContent();
             return BadRequest();
         }

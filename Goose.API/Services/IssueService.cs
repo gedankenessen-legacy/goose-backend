@@ -20,7 +20,7 @@ namespace Goose.API.Services
         public Task<IssueDTO> Update(IssueDTO issue);
 
         public Task<IssueDTO> CreateOrUpdate(IssueDTO issue);
-        public Task<DeleteResult> Delete(ObjectId id);
+        public Task<bool> Delete(ObjectId id);
     }
 
     public class IssueService : IIssueService
@@ -74,9 +74,9 @@ namespace Goose.API.Services
             return await Create(issue);
         }
 
-        public async Task<DeleteResult> Delete(ObjectId id)
+        public async Task<bool> Delete(ObjectId id)
         {
-            return await _issueRepo.DeleteAsync(id);
+            return (await _issueRepo.DeleteAsync(id)).DeletedCount > 0;
         }
     }
 }
