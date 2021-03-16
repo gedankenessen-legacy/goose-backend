@@ -1,12 +1,11 @@
 ﻿using Goose.API.Utils.Exceptions;
+using Goose.API.Utils.Validators;
 using Goose.Data.Context;
 using Goose.Data.Repository;
 using Goose.Domain.Models.tickets;
 using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
 using MongoDB.Driver;
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -31,8 +30,8 @@ namespace Goose.API.Repositories
         public async Task<Issue> GetIssueByIdAsync(string issueId)
         {
             // check if the parsed objectId is not the 000...000 default objectId.
-            if (ObjectId.TryParse(issueId, out ObjectId issueOid) is false)
-                throw new HttpStatusException(StatusCodes.Status400BadRequest, "Cannot parse issue string id to a valid object id.");
+            ObjectId issueOid = Validators.ValidateObjectId(issueId, "Cannot parse issue string id to a valid object id.");
+
 
             // fetch the issue that contains the conversation.
             Issue issue = await GetAsync(issueOid);
@@ -52,8 +51,7 @@ namespace Goose.API.Repositories
         public async Task CreateOrUpdateConversationItemAsync(string issueId, IssueConversation issueConversation)
         {
             // check if the parsed objectId is not the 000...000 default objectId.
-            if (ObjectId.TryParse(issueId, out ObjectId issueOid) is false)
-                throw new HttpStatusException(StatusCodes.Status400BadRequest, "Cannot parse issue string id to a valid object id.");
+            ObjectId issueOid = Validators.ValidateObjectId(issueId, "Cannot parse issue string id to a valid object id.");
 
             var filterDef = Builders<Issue>.Filter;
 
@@ -81,7 +79,7 @@ namespace Goose.API.Repositories
             if (issue is null)
                 throw new HttpStatusException(StatusCodes.Status404NotFound, $"No Issue found with Id={issueId}.");
 
-            var req = issue.IssueDetail.Requirements.Single(req => req.Id.Equals(requirementId));
+            var req = issue.IssueDetail.Requirements.SingleOrDefault(req => req.Id.Equals(requirementId));
 
             if (req is null)
                 throw new HttpStatusException(StatusCodes.Status404NotFound, $"No Requirement found with Id={requirementId}.");

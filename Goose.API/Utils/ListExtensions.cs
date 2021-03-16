@@ -1,7 +1,7 @@
-﻿using System;
+﻿using Goose.API.Utils.Exceptions;
+using Microsoft.AspNetCore.Http;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Goose.API.Utils
 {
@@ -17,6 +17,10 @@ namespace Goose.API.Utils
         public static void Replace<T>(this List<T> list, Predicate<T> oldSelector, T newItem)
         {
             int indexOfOldItem = list.FindIndex(oldSelector);
+
+            if (indexOfOldItem <= -1)
+                throw new HttpStatusException(StatusCodes.Status500InternalServerError, "Error in replacing item in list, maybe item not found.");
+
             list[indexOfOldItem] = newItem;
         }
     }

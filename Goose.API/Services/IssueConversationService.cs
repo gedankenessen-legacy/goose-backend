@@ -1,12 +1,10 @@
 ﻿using Goose.API.Repositories;
-using Goose.API.Utils;
 using Goose.API.Utils.Exceptions;
-using Goose.Domain.DTOs;
+using Goose.API.Utils.Validators;
 using Goose.Domain.DTOs.tickets;
 using Goose.Domain.Models.tickets;
 using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -44,14 +42,10 @@ namespace Goose.API.Services
 
             // if property is null, set default value => empty array of conversations which do not be saved to the database.
             if (conversationItems is null)
-                conversationItems = new List<IssueConversation>();
+                return new List<IssueConversationDTO>();
 
             // get all conversations from the issue, sorted after the creation date.
             IList<IssueConversation> issueConversations = conversationItems.OrderBy(ci => ci.CreatedAt).ToList();
-
-            // return empty list if null
-            if (issueConversations is null)
-                return new List<IssueConversationDTO>();
 
             // map poco to dto.
             var issueConversationsDTOs = await Task.WhenAll(issueConversations.Select(async ic => await MapIssueConversationDTOAsync(issue.Id, ic)).ToList());
@@ -78,8 +72,8 @@ namespace Goose.API.Services
         public async Task<IssueConversationDTO> GetConversationFromIssueAsync(string issueId, string conversationId)
         {
             // check if the parsed objectId is not the 000...000 default objectId.
-            if (ObjectId.TryParse(conversationId, out ObjectId conversationOid) is false)
-                throw new HttpStatusException(StatusCodes.Status400BadRequest, "Cannot parse conversation string id to a valid object id.");
+            ObjectId conversationOid = Validators.ValidateObjectId(conversationId, "Cannot parse conversation string id to a valid object id.");
+
 
             var issue = await _issueRepository.GetIssueByIdAsync(issueId);
             var conversationItems = issue.ConversationItems;
@@ -151,7 +145,7 @@ namespace Goose.API.Services
         /// <param name="conversationItem">The conversation that will be created or replaced if already existing.</param>
         public async Task CreateOrReplaceConversationItemAsync(string issueId, string conversationItemId, IssueConversationDTO conversationItem)
         {
-            if (ObjectId.TryParse(conversationItemId, out ObjectId conversationItemOid) is false) throw new HttpStatusException(StatusCodes.Status400BadRequest, "Provided conversation id is no valid ObjectId.");
+            ObjectId conversationItemOid = Validators.ValidateObjectId(conversationItemId, "Provided conversation id is no valid ObjectId.");
 
             if (conversationItemOid.Equals(conversationItem.Id) is false)
                 throw new HttpStatusException(StatusCodes.Status400BadRequest, "Id missmatch.");
@@ -159,7 +153,7 @@ namespace Goose.API.Services
             var issueConversationModel = new IssueConversation()
             {
                 Id = conversationItem.Id,
-                CreatorUserId = ObjectId.TryParse(conversationItem.Creator?.Id.ToString(), out ObjectId creatorUserId) ? creatorUserId : throw new HttpStatusException(StatusCodes.Status400BadRequest, "The conversation item is missing a valid userId."),
+                CreatorUserId = Validators.ValidateObjectId(conversationItem.Creator?.Id.ToString(), "The conversation item is missing a valid userId."),
                 Data = conversationItem.Data,
                 RequirementIds = SelectRequirementsObjectIdsFromDto(conversationItem),
                 Type = conversationItem.Type

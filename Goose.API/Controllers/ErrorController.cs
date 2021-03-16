@@ -17,7 +17,9 @@ namespace Goose.API.Controllers
             var exception = context.Error;
             var code = StatusCodes.Status500InternalServerError;
 
-            if (exception is HttpStatusException) code = (exception as HttpStatusException).Status;
+            if (exception is HttpStatusException statusException)         
+                code = statusException.Status; 
+            
 
             Response.StatusCode = code;
 
