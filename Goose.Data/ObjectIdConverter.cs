@@ -18,6 +18,14 @@ namespace Goose.Data
                 throw new Exception($"Unexpected token parsing ObjectId. Expected String, got: {reader.TokenType}.");
 
             var id = reader.GetString();
+
+            // Wir sollten hier liberaler als Validate sein, und auch den leeren String akzeptieren,
+            // damit bei Post nicht unnötig eine id mitgeschickt werden muss.
+            if (id == string.Empty)
+            {
+                return new ObjectId();
+            }
+       
             return Validate(id);
         }
 
