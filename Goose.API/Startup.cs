@@ -15,15 +15,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Goose.API.Repositories;
-using Goose.API.Services;
+using Goose.Data;
 
 namespace Goose.API
 {
     public class Startup
     {
         private readonly IConfiguration _configuration;
-
+        
         public Startup(IConfiguration configuration)
         {
             _configuration = configuration;
@@ -35,8 +34,15 @@ namespace Goose.API
             ConfigureMongoDB();
             RegisterService(services);
 
-            services.AddControllers();
-            services.AddSwaggerGen(c => { c.SwaggerDoc("v1", new OpenApiInfo {Title = "Goose.API", Version = "v1"}); });
+            services.AddControllers().AddJsonOptions(options =>
+            {
+                options.JsonSerializerOptions.Converters.Add(new ObjectIdConverter());
+            });
+
+            services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "Goose.API", Version = "v1" });
+            });
         }
 
         /// <summary>
@@ -45,7 +51,7 @@ namespace Goose.API
         private void ConfigureMongoDB()
         {
             // In order prevent the [BsonElement("...")] Attribute on each property we configure the drive to assume this as default. Thanks @LuksTrackmaniaCorner
-            var conventionPack = new ConventionPack {new CamelCaseElementNameConvention()};
+            var conventionPack = new ConventionPack { new CamelCaseElementNameConvention() };
             ConventionRegistry.Register("camelCase", conventionPack, t => true);
         }
 
@@ -60,8 +66,6 @@ namespace Goose.API
             services.AddSingleton<IDbContext, DbContext>();
 
             services.AddAutoMapper(typeof(AutoMapping));
-            services.AddScoped<IIssueRepository, IssueRepository>();
-            services.AddScoped<IIssueService, IssueService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -80,7 +84,10 @@ namespace Goose.API
 
             app.UseAuthorization();
 
-            app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+            });
         }
     }
 }
