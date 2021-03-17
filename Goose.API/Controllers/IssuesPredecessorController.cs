@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Goose.API.Controllers
 {
-    [Route("api/projects/{projectId}/issues/{issueId}/predecessors/")]
+    [Route("api/issues/{issueId}/predecessors/")]
     [ApiController]
     public class IssuesPredecessorController : Controller
     {
@@ -18,7 +18,7 @@ namespace Goose.API.Controllers
 
         [HttpPut("{predecessorId}")]
         public async Task<ActionResult> SetPredecessor([FromRoute] string projectId,
-            [FromRoute] string issueId, [FromBody] string predecessorId)
+            [FromRoute] string issueId, [FromRoute] string predecessorId)
         {
             await _issueService.SetPredecessor(projectId.ToObjectId(), issueId.ToObjectId(),
                 predecessorId.ToObjectId());
@@ -27,7 +27,7 @@ namespace Goose.API.Controllers
 
         [HttpDelete("{predecessorId}")]
         public async Task<ActionResult> RemovePredecessor([FromRoute] string projectId,
-            [FromRoute] string issueId, [FromBody] string predecessorId)
+            [FromRoute] string issueId, [FromRoute] string predecessorId)
         {
             await _issueService.RemovePredecessor(projectId.ToObjectId(), issueId.ToObjectId(),
                 predecessorId.ToObjectId());
