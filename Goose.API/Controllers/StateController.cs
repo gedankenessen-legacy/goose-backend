@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Goose.API.Controllers
 {
-    [Route("api/company/{companyId}/project/{projectId}/state")]
+    [Route("api/project/{projectId}/state")]
     public class StateController : ControllerBase
     {
         private readonly IStateService _stateService;
@@ -20,7 +20,7 @@ namespace Goose.API.Controllers
             _stateService = stateService;
         }
 
-        // POST: api/company/{companyId}/project/{projectId}/state/
+        // POST: api/project/{projectId}/state/
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -30,7 +30,7 @@ namespace Goose.API.Controllers
             return Ok(state);
         }
 
-        // PUT: api/company/{companyId}/project/{projectId}/state/{stateId}
+        // PUT: api/project/{projectId}/state/{stateId}
         [HttpPut("{stateId}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -40,7 +40,7 @@ namespace Goose.API.Controllers
             return NoContent();
         }
 
-        // GET: api/company/{companyId}/project/{projectId}/state
+        // GET: api/project/{projectId}/state
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -50,7 +50,7 @@ namespace Goose.API.Controllers
             return Ok(states);
         }
 
-        // GET: api/company/{companyId}/project/{projectId}/state/{stateId}
+        // GET: api/project/{projectId}/state/{stateId}
         [HttpGet("{stateId}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
