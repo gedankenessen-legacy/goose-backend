@@ -1,4 +1,5 @@
 ﻿using Goose.Data.Models;
+using Goose.Domain.Models.identity;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,5 +12,18 @@ namespace Goose.Domain.DTOs
     {
         public string Firstname { get; set; }
         public string Lastname { get; set; }
+
+        public static implicit operator UserDTO(User user)
+        {
+            if (user is null)
+                return null;
+
+            return new UserDTO()
+            {
+                Id = user.Id,
+                Firstname = user.Firstname,
+                Lastname = user.Lastname
+            };
+        }
     }
 }
