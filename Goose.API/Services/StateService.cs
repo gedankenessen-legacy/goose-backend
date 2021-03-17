@@ -60,7 +60,7 @@ namespace Goose.API.Services
                         where state.Id == stateId
                         select new StateDTO(state);
 
-            return matchedState.Single();
+            return matchedState.SingleOrDefault();
         }
 
         public async Task<IList<StateDTO>> GetStates(ObjectId projectId)
