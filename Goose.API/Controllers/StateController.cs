@@ -1,6 +1,7 @@
 ﻿using Goose.API.Services;
 using Goose.Domain.DTOs;
 using Microsoft.AspNetCore.Mvc;
+using MongoDB.Bson;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,7 +28,7 @@ namespace Goose.API.Controllers
 
         // PUT: api/company/{companyId}/project/{projectId}/state/{stateId}
         [HttpPut("{stateId}")]
-        public async Task<ActionResult> UpdateState(string stateId, [FromBody] StateDTO stateDTO)
+        public async Task<ActionResult> UpdateState(ObjectId stateId, [FromBody] StateDTO stateDTO)
         {
             throw new NotImplementedException();
         }

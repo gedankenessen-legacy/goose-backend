@@ -36,7 +36,10 @@ namespace Goose.API
             ConfigureMongoDB();
             RegisterService(services);
 
-            services.AddControllers().AddJsonOptions(options =>
+            services.AddControllers(options =>
+            {
+                options.ModelBinderProviders.Insert(0, new ObjectIdBinderProvider());
+            }).AddJsonOptions(options =>
             {
                 options.JsonSerializerOptions.Converters.Add(new ObjectIdConverter());
             });

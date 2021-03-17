@@ -21,23 +21,23 @@ namespace Goose.API.Controllers
 
         // POST: api/company/{companyId}/project
         [HttpPost]
-        public async Task<ActionResult<ProjectDTO>> CreateProject([FromBody] ProjectDTO projectDTO, [FromRoute] string companyId)
+        public async Task<ActionResult<ProjectDTO>> CreateProject([FromBody] ProjectDTO projectDTO, [FromRoute] ObjectId companyId)
         {
-            var newCompany = await _projectService.CreateNewProjectAsync(new ObjectId(companyId), projectDTO);
+            var newCompany = await _projectService.CreateNewProjectAsync(companyId, projectDTO);
             return Ok(newCompany); 
         }
 
         // PUT: api/company/{companyId}/project/{projectId}
         [HttpPut("{projectId}")]
-        public async Task<ActionResult> UpdateProject(string projectId, [FromBody] ProjectDTO projectDTO)
+        public async Task<ActionResult> UpdateProject(ObjectId projectId, [FromBody] ProjectDTO projectDTO)
         {
-            await _projectService.UpdateProject(new ObjectId(projectId), projectDTO);
+            await _projectService.UpdateProject(projectId, projectDTO);
             return NoContent();
         }
 
         // GET: api/company/{companyId}/project
         [HttpGet]
-        public async Task<ActionResult<IList<ProjectDTO>>> GetProjects()
+        public async Task<ActionResult<IList<ProjectDTO>>> GetProjects([FromRoute] ObjectId companyId)
         {
             var projectIter = await _projectService.GetProjects();
             return Ok(projectIter);
@@ -45,9 +45,9 @@ namespace Goose.API.Controllers
 
         // GET: api/company/{companyId}/project/{projectId}
         [HttpGet("{projectId}")]
-        public async Task<ActionResult<ProjectDTO>> GetProject(string projectId)
+        public async Task<ActionResult<ProjectDTO>> GetProject(ObjectId projectId)
         {
-            var projects = await _projectService.GetProject(new ObjectId(projectId));
+            var projects = await _projectService.GetProject(projectId);
             return Ok(projects);
         }
     }
