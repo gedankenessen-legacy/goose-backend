@@ -3,6 +3,8 @@ using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -11,7 +13,7 @@ using JsonTokenType = System.Text.Json.JsonTokenType;
 
 namespace Goose.Data
 {
-    public class ObjectIdConverter : JsonConverter<ObjectId>
+    public class ObjectIdJsonConverter : JsonConverter<ObjectId>
     {
         public override ObjectId Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
@@ -33,6 +35,19 @@ namespace Goose.Data
         public override void Write(Utf8JsonWriter writer, ObjectId value, JsonSerializerOptions options)
         {
             writer.WriteStringValue(value.ToString());
+        }
+    }
+
+    public class ObjectIdTypeConverter : TypeConverter
+    {
+        public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
+        {
+            return sourceType == typeof(string);
+        }
+
+        public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+        {
+            return new ObjectId(value.ToString());
         }
     }
 }
