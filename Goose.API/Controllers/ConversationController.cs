@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Goose.API.Controllers
 {
-    [Route("api/issue/{issueId}/conversation")]
+    [Route("api/issues/{issueId}/conversations")]
     [ApiController]
     public class ConversationController : ControllerBase
     {
@@ -18,7 +18,7 @@ namespace Goose.API.Controllers
             _issueConversationService = issueConversationService;
         }
 
-        // GET: api/issue/{issueId}/conversation
+        // GET: api/issues/{issueId}/conversations
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -28,7 +28,7 @@ namespace Goose.API.Controllers
             return Ok(issueConversations);
         }
 
-        // GET api/issue/{issueId}/conversation/{id}
+        // GET api/issues/{issueId}/conversations/{id}
         [HttpGet("{id}", Name = nameof(GetById))]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -38,7 +38,7 @@ namespace Goose.API.Controllers
             return Ok(issueConversation);
         }
 
-        // POST api/issue/{issueId}/conversation
+        // POST api/issues/{issueId}/conversations
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -48,7 +48,7 @@ namespace Goose.API.Controllers
             return CreatedAtAction(nameof(GetById), new { issueId, id = newIssueConversation.Id }, newIssueConversation);
         }
 
-        // PUT api/issue/{issueId}/conversation/{id}
+        // PUT api/issues/{issueId}/conversations/{id}
         [HttpPut("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]

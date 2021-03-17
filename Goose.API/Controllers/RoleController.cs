@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Goose.API.Controllers
 {
-    [Route("api/role")]
+    [Route("api/roles")]
     [ApiController]
     public class RoleController : Controller
     {

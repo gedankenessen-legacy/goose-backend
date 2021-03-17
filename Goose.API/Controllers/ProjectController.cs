@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Goose.API.Controllers
 {
-    [Route("api/company/{companyId}/project")]
+    [Route("api/companies/{companyId}/projects")]
     public class ProjectController : ControllerBase
     {
         private readonly IProjectService _projectService;
@@ -19,7 +19,7 @@ namespace Goose.API.Controllers
             _projectService = projectService;
         }
 
-        // POST: api/company/{companyId}/project
+        // POST: api/companies/{companyId}/projects
         [HttpPost]
         public async Task<ActionResult<ProjectDTO>> CreateProject([FromBody] ProjectDTO projectDTO, [FromRoute] string companyId)
         {
@@ -27,7 +27,7 @@ namespace Goose.API.Controllers
             return Ok(newCompany); 
         }
 
-        // PUT: api/company/{companyId}/project/{projectId}
+        // PUT: api/companies/{companyId}/projects/{projectId}
         [HttpPut("{projectId}")]
         public async Task<ActionResult> UpdateProject(string projectId, [FromBody] ProjectDTO projectDTO)
         {
@@ -35,7 +35,7 @@ namespace Goose.API.Controllers
             return NoContent();
         }
 
-        // GET: api/company/{companyId}/project
+        // GET: api/companies/{companyId}/projects
         [HttpGet]
         public async Task<ActionResult<IList<ProjectDTO>>> GetProjects()
         {
@@ -43,7 +43,7 @@ namespace Goose.API.Controllers
             return Ok(projectIter);
         }
 
-        // GET: api/company/{companyId}/project/{projectId}
+        // GET: api/companies/{companyId}/projects/{projectId}
         [HttpGet("{projectId}")]
         public async Task<ActionResult<ProjectDTO>> GetProject(string projectId)
         {

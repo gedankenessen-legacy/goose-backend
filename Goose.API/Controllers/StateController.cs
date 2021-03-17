@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Goose.API.Controllers
 {
-    [Route("api/company/{companyId}/project/{projectId}/state")]
+    [Route("api/companies/{companyId}/projects/{projectId}/states")]
     public class StateController : ControllerBase
     {
         private readonly IStateService _stateService;
@@ -18,28 +18,28 @@ namespace Goose.API.Controllers
             _stateService = stateService;
         }
 
-        // POST: api/company/{companyId}/project/{projectId}/state/
+        // POST: api/companies/{companyId}/projects/{projectId}/states/
         [HttpPost]
         public async Task<ActionResult<StateDTO>> CreateState([FromBody] StateDTO stateDTO)
         {
             throw new NotImplementedException();
         }
 
-        // PUT: api/company/{companyId}/project/{projectId}/state/{stateId}
+        // PUT: api/companies/{companyId}/projects/{projectId}/states/{stateId}
         [HttpPut("{stateId}")]
         public async Task<ActionResult> UpdateState(string stateId, [FromBody] StateDTO stateDTO)
         {
             throw new NotImplementedException();
         }
 
-        // GET: api/company/{companyId}/project/{projectId}/state
+        // GET: api/companies/{companyId}/projects/{projectId}/states
         [HttpGet]
         public async Task<ActionResult<IList<StateDTO>>> GetStates()
         {
             throw new NotImplementedException();
         }
 
-        // GET: api/company/{companyId}/project/{projectId}/state/{stateId}
+        // GET: api/companies/{companyId}/projects/{projectId}/states/{stateId}
         [HttpGet("{stateId}")]
         public async Task<ActionResult<StateDTO>> GetState(string stateId)
         {
