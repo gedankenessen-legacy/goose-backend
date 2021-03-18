@@ -53,7 +53,7 @@ namespace Goose.API.Controllers
         public async Task<ActionResult<IssueResponseDTO>> Post([FromBody] IssueRequestDTO issueRequest)
         {
             var res = await _issueService.Create(issueRequest);
-            return Created($"api/issues/{res.Id}", res);
+            return CreatedAtAction(nameof(Get), new {id = res.Id}, res);
         }
 
         //api/issues/{id}
