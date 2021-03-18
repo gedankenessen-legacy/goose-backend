@@ -16,7 +16,7 @@ namespace Goose.API.Repositories
 
     public class IssueRepository : Repository<Issue>, IIssueRepository
     {
-        public IssueRepository(IDbContext context, string alternativCollectionName = null) : base(context,
+        public IssueRepository(IDbContext context, string alternativCollectionName = "issues") : base(context,
             alternativCollectionName)
         {
         }
