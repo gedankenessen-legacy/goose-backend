@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Goose.API.Services;
 using Goose.Domain.Models.identity;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Goose.API.Controllers
@@ -19,11 +20,16 @@ namespace Goose.API.Controllers
         }
 
         [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<IList<User>>> GetAll([FromRoute] string issueId)
         {
             return Ok(await _issueService.GetAllOfIssueAsync(issueId.ToObjectId()));
         }
+
         [HttpGet("{userId}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<IList<User>>> GetAll([FromRoute] string issueId, [FromRoute] string userId)
         {
             var user = _issueService.GetAssignedUserOfIssueAsync(issueId.ToObjectId(), userId: userId.ToObjectId());
@@ -32,6 +38,8 @@ namespace Goose.API.Controllers
         }
 
         [HttpPut("{id}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult> Put([FromRoute] string issueId, [FromRoute] string id)
         {
             await _issueService.AssignUserAsync(issueId.ToObjectId(), id.ToObjectId());
@@ -39,6 +47,8 @@ namespace Goose.API.Controllers
         }
 
         [HttpDelete("{id}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult> Delete([FromRoute] string issueId, [FromRoute] string id)
         {
             await _issueService.UnassignUserAsync(issueId.ToObjectId(), id.ToObjectId());

@@ -13,13 +13,11 @@ namespace Goose.API.Services
     public interface IIssueService
     {
         Task<IList<IssueResponseDTO>> GetAll();
-        Task<IList<IssueResponseDTO>> GetAllOfProject(ObjectId projectId);
+        //  Task<IList<IssueResponseDTO>> GetAllOfProject(ObjectId projectId);
         public Task<IssueResponseDTO> Get(ObjectId id);
-        public Task<IssueResponseDTO> GetOfProject(ObjectId projectId, ObjectId id);
+        //  public Task<IssueResponseDTO> GetOfProject(ObjectId projectId, ObjectId id);
         public Task<IssueResponseDTO> Create(IssueRequestDTO issueRequestDto);
         public Task<IssueResponseDTO> Update(IssueRequestDTO issueRequest, ObjectId id);
-
-        public Task<IssueResponseDTO> CreateOrUpdate(IssueRequestDTO issueRequest, ObjectId id);
         public Task<bool> Delete(ObjectId id);
     }
 
@@ -68,13 +66,6 @@ namespace Goose.API.Services
             await _issueRepo.UpdateAsync(_mapper.Map<Issue>(issueRequest));
             //TODO manche felder dürfen nicht geupdated werden
             return await Get(id);
-        }
-
-        public async Task<IssueResponseDTO> CreateOrUpdate(IssueRequestDTO issueRequest, ObjectId id)
-        {
-            var exists = await Get(id) != null;
-            if (exists) return await Update(issueRequest, id);
-            return await Create(issueRequest);
         }
 
         public async Task<bool> Delete(ObjectId id)

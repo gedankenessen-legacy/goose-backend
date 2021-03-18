@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Goose.API.Services;
 using Goose.Domain.DTOs.issues;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 
 namespace Goose.API.Controllers
 {
-    [Route("api/projects/{projectId}/issues/")]
+    [Route("api/issues/")]
     [ApiController]
     public class IssuesController : Controller
     {
@@ -24,71 +25,52 @@ namespace Goose.API.Controllers
             _issueService = issueService;
         }
 
-        /// <summary>
-        /// Returns every issue of a project
-        /// </summary>
-        /// <param name="id of project"></param>
-        /// <returns>List of issues from a project or error 400</returns>
+        //api/issues/
         [HttpGet]
-        public async Task<ActionResult<IList<IssueResponseDTO>>> GetAll([FromRoute] string projectId)
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<IList<IssueResponseDTO>>> GetAll()
         {
             //var res = await _issueService.GetAllOfProject(new ObjectId(projectId));
             var res = await _issueService.GetAll();
             return Ok(res);
         }
 
-        /// <summary>
-        /// Returns specific issue
-        /// </summary>
-        /// <param name="projectId">id of project</param>
-        /// <param name="id">id of issue</param>
-        /// <returns>Returns issue or erro 400</returns>
+        //api/issues/{id}
         [HttpGet("{id}")]
-        public async Task<ActionResult<IssueResponseDTO>> Get([FromRoute] string projectId, [FromRoute] string id)
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<IssueResponseDTO>> Get([FromRoute] string id)
         {
-            var res = await _issueService.GetOfProject(projectId.ToObjectId(), id.ToObjectId());
+            var res = await _issueService.Get(id.ToObjectId());
             return res == null ? NotFound() : Ok(res);
         }
 
-        /// <summary>
-        /// Creates an issue in db and returns created issue
-        /// </summary>
-        /// <param name="issueRequest">Issue from body</param>
-        /// <param name="projectId">project id</param>
-        /// <returns>new issue or error 400</returns>
+        //api/issues
         [HttpPost]
-        public async Task<ActionResult<IssueResponseDTO>> Post([FromBody] IssueRequestDTO issueRequest,
-            [FromRoute] string projectId)
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<IssueResponseDTO>> Post([FromBody] IssueRequestDTO issueRequest)
         {
             var res = await _issueService.Create(issueRequest);
-            return Created($"api/projects/{projectId}/issues/{res.Id}", res);
+            return Created($"api/issues/{res.Id}", res);
         }
 
-        /// <summary>
-        /// Creates or updates an issue
-        /// </summary>
-        /// <param name="issueRequest">Issue</param>
-        /// <param name="projectId">project id</param>
-        /// <param name="id">id of issue. If an issue is created, it will not have the id specified here.</param>
-        /// <returns></returns>
+        //api/issues/{id}
         [HttpPut("{id}")]
-        public async Task<ActionResult> Put([FromBody] IssueRequestDTO issueRequest,
-            [FromRoute] string projectId,
-            [FromRoute] string id)
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult> Put([FromBody] IssueRequestDTO issueRequest, [FromRoute] string id)
         {
-            await _issueService.CreateOrUpdate(issueRequest, id.ToObjectId());
+            await _issueService.Update(issueRequest, id.ToObjectId());
             return NoContent();
         }
 
-
-        /// <summary>
-        /// Deletes an issue of a project
-        /// </summary>
-        /// <param name="projectId">project id</param>
-        /// <param name="id">issue id</param>
-        /// <returns>returns http code 204 on success or 400 on error</returns>
+        //api/issues/{id}  
         [HttpDelete("{id}")]
-        public async Task<ActionResult> Delete([FromRoute] string projectId, [FromRoute] string id)
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult> Delete([FromRoute] string id)
         {
             if (await _issueService.Delete(id.ToObjectId()))
                 return NoContent();

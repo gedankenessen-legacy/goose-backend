@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Goose.API.Services;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Goose.API.Controllers
@@ -17,6 +18,8 @@ namespace Goose.API.Controllers
         }
 
         [HttpPut("{predecessorId}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult> SetPredecessor([FromRoute] string projectId,
             [FromRoute] string issueId, [FromRoute] string predecessorId)
         {
@@ -26,6 +29,8 @@ namespace Goose.API.Controllers
         }
 
         [HttpDelete("{predecessorId}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult> RemovePredecessor([FromRoute] string projectId,
             [FromRoute] string issueId, [FromRoute] string predecessorId)
         {
