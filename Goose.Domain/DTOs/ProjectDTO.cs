@@ -23,7 +23,7 @@ namespace Goose.Domain.DTOs
         public ProjectDTO(Project project)
         {
             Id = project.Id;
-            Name = project.ProjectDetail.Name;
+            Name = project.ProjectDetail?.Name;
         }
     }
 }
