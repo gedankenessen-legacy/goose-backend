@@ -10,7 +10,7 @@ namespace Goose.Domain.DTOs
 {
     public class PropertyUserDTO
     {
-        public ObjectId Id { get; set; }
+
 
         public UserDTO User { get; set; }
 

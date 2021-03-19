@@ -45,7 +45,25 @@ namespace Goose.API.Controllers
         public async Task<ActionResult<CompanyDTO>> UpdateCompanyAsync(string id, [FromBody] CompanyDTO company)
         {
             var companyToUpdate = await _companyService.UpdateCompanyAsync(id, company);
-            return Ok(company);
+            return Ok(companyToUpdate);
         }
+
+        [HttpGet]
+        [Route("api/companies/{companyId}/user")]
+        public async Task<ActionResult<IList<PropertyUserDTO>>> GetCompanyUsersAsync([FromRoute] string companyId)
+        {
+            var userList = await _companyService.GetCompanyUsersAsync(companyId);
+            return Ok(userList);
+        }
+
+        //[HttpGet("{id}")]
+        //[Route("api/companies/{companyId}/user")]
+        //public async Task<ActionResult<IList<PropertyUserDTO>>> GetCompanyUserAsync([FromRoute] string companyId, string id)
+        //{
+        //    var userList = await _companyService.GetCompanyUserAsync(companyId, id);
+        //    return Ok(userList);
+        //}
+
+
     }
 }

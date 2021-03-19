@@ -17,6 +17,10 @@ namespace Goose.API.Services
         public Task<IList<CompanyDTO>> GetCompaniesAsync();
         public Task<CompanyDTO> CreateCompanyAsync(CompanyLogin companyLogin);
         public Task<CompanyDTO> UpdateCompanyAsync(string id, CompanyDTO company);
+
+        public Task<IList<PropertyUserDTO>> GetCompanyUsersAsync(string companyId);
+        public Task<PropertyUserDTO> GetCompanyUserAsync(string companyId, string userId);
+
     }
 
     public class CompanyService : ICompanyService
@@ -59,7 +63,6 @@ namespace Goose.API.Services
 
             PropertyUser propertyUser = new PropertyUser()
             {
-                _id = new ObjectId(),
                 UserId = newUser.Id,
                 RoleIds = roleIds
             };
@@ -80,7 +83,6 @@ namespace Goose.API.Services
 
             var firmenUser = new PropertyUserDTO()
             {
-                Id = new ObjectId(),
                 User = newUser,
                 Roles = roles
             };
@@ -134,6 +136,71 @@ namespace Goose.API.Services
             await _companyRepository.UpdateAsync(companyToUpdate);
 
             return (CompanyDTO)companyToUpdate;
+        }
+
+        public async Task<IList<PropertyUserDTO>> GetCompanyUsersAsync(string companyId)
+        {
+            var company = await _companyRepository.GetCompanyByIdAsync(companyId);
+
+            if (company is null)
+                throw new Exception("No Company with this Id exists");
+
+            var userList = await _userService.GetUsersAsync();
+
+            var roleList = await _roleService.GetRolesAsync();
+
+            IList<PropertyUserDTO> propertyUserList = new List<PropertyUserDTO>();
+
+            foreach(var propertyUser in company.Users)
+            {
+                var user = userList.FirstOrDefault(x => x.Id.Equals(propertyUser.UserId));
+
+                IList<Role> roles = new List<Role>();
+
+                foreach(var roleId in propertyUser.RoleIds)
+                {
+                    var role = roleList.FirstOrDefault(x => x.Id.Equals(roleId));
+
+                    if(role is not null)
+                        roles.Add(role);
+                }
+
+                propertyUserList.Add(new PropertyUserDTO() { User = user, Roles = roles });
+            }
+
+            return propertyUserList;
+        }
+
+        public async Task<PropertyUserDTO> GetCompanyUserAsync(string companyId, string userId)
+        {
+            var company = await _companyRepository.GetCompanyByIdAsync(companyId);
+
+            if (company is null)
+                throw new Exception("No Company with this Id exists");
+
+            var propertyUser = company.Users.FirstOrDefault(x => x.UserId.Equals(userId));
+
+            if (propertyUser is null)
+                throw new Exception("There is no User with this ID");
+
+            var user = await _userService.GetUser(propertyUser.UserId);
+
+            if(user is null)
+                throw new Exception("There is no User with this ID");
+
+            IList<Role> roles = new List<Role>();
+
+            var roleList = await _roleService.GetRolesAsync();
+
+            foreach (var roleId in propertyUser.RoleIds)
+            {
+                var role = roleList.FirstOrDefault(x => x.Equals(roleId));
+
+                if (role is not null)
+                    roles.Add(role);
+            }
+
+            return new PropertyUserDTO() { User = user, Roles = roles };
         }
     }
 }
