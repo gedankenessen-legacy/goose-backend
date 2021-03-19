@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Goose.API.Services;
+using Goose.API.Services.issues;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 

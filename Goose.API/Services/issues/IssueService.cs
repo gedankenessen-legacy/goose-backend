@@ -8,7 +8,7 @@ using Goose.Domain.Models.tickets;
 using MongoDB.Bson;
 using MongoDB.Driver;
 
-namespace Goose.API.Services
+namespace Goose.API.Services.issues
 {
     public interface IIssueService
     {

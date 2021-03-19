@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Goose.API.Repositories;
 using MongoDB.Bson;
 
-namespace Goose.API.Services
+namespace Goose.API.Services.issues
 {
     public interface IIssuePredecessorService
     {

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Goose.API.Services;
+using Goose.API.Services.issues;
 using Goose.Domain.Models.identity;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;

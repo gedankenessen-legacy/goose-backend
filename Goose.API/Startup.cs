@@ -1,23 +1,17 @@
+using Goose.API.Repositories;
+using Goose.API.Services;
+using Goose.API.Services.issues;
+using Goose.Data;
 using Goose.Data.Context;
 using Goose.Data.Settings;
 using Goose.Domain.Mapping;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using MongoDB.Bson.Serialization.Conventions;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Goose.API.Repositories;
-using Goose.API.Services;
-using Goose.Data;
 
 namespace Goose.API
 {
@@ -72,7 +66,6 @@ namespace Goose.API
             services.AddScoped<IIssueService, IssueService>();
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IUserService, UserService>();
-            services.AddScoped<IIssueService, IssueService>();
             services.AddScoped<IRoleRepository, RoleRepository>();
             services.AddScoped<IRoleService, RoleService>();
             services.AddScoped<IProjectRepository, ProjectRepository>();
