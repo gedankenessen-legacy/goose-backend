@@ -14,8 +14,9 @@ namespace Goose.Data.Repository
         IQueryable<TEntity> AsQueryable();
         IMongoCollection<TEntity> Collection();
 
-        Task<TEntity> GetAsync(ObjectId id);
         Task<IList<TEntity>> GetAsync();
+        Task<TEntity> GetAsync(ObjectId id);
+        Task<IList<TEntity>> GetAsync(IEnumerable<ObjectId> ids);
         Task<IList<TEntity>> FilterByAsync(Expression<Func<TEntity, bool>> filterExpression);
 
         Task CreateAsync(TEntity obj);
