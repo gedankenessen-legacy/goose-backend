@@ -84,7 +84,7 @@ namespace Goose.API.Services
 
                 return result.ToList();
             }
-            
+                
             var userDTOs = from projectUser in project.ProjectUsers
                            join user in users on projectUser.UserId equals user.Id
                            select new PropertyUserDTO()
