@@ -73,8 +73,8 @@ namespace Goose.API.Services
             // wir holen einfach immer alle rollen aus der Datenbank
             var roles = await _roleRepository.GetAsync();
 
-            // Hier wird eine innere Funktion verwendet, damit ich im einfgfach die Rollen nachschlagen kann.
-            // Dazu wird ein Dictionary aufgebaut, indem die roleDTOs bereit gehalten werden
+            // Hier wird eine innere Funktion verwendet, damit die Rollen einfach nachschlagen werden können.
+            // Dazu wird ein Dictionary aufgebaut, indem die roleDTOs zu einer bestimmten Id bereit gehalten werden
             var rolesDict = roles.ToDictionary(x => x.Id, x => new RoleDTO(x));
             IList<RoleDTO> GetRoleDTOs(PropertyUser projectUser)
             {
