@@ -65,8 +65,10 @@ namespace Goose.API
         {
             services.Configure<DbSettings>(_configuration.GetSection(nameof(DbSettings)));
 
-            services.AddSingleton<IDbContext, DbContext>();
+            services.AddTransient<IIssueRepository, IssueRepository>();
+            services.AddTransient<IIssueConversationService, IssueConversationService>();
 
+            services.AddSingleton<IDbContext, DbContext>();
 
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IUserService, UserService>();
@@ -85,14 +87,16 @@ namespace Goose.API
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            if (env.IsDevelopment())
-            {
+            if (env.IsDevelopment())  
                 app.UseDeveloperExceptionPage();
-                app.UseSwagger();
-                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Goose.API v1"));
-            }
+            else
+                app.UseExceptionHandler("/error");     
 
-            app.UseHttpsRedirection();
+            app.UseSwagger();
+            app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Goose.API v1"));
+
+            //! https will not be used for this project, one the one side it adds complexity and the server is only accessable via ip and an certificate cannot be applied without domain name.
+            //app.UseHttpsRedirection();
 
             app.UseRouting();
 

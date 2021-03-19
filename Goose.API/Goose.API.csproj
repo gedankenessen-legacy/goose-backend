@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
     <UserSecretsId>8ce07c6e-c370-4e18-9370-78f45b8456d2</UserSecretsId>
+    <Product>Goose</Product>
   </PropertyGroup>
 
   <ItemGroup>

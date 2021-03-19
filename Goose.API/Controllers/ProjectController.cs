@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace Goose.API.Controllers
 {
-    [Route("api/company/{companyId}/project")]
+    [Route("api/companies/{companyId}/projects")]
     public class ProjectController : ControllerBase
     {
         private readonly IProjectService _projectService;
@@ -21,7 +21,7 @@ namespace Goose.API.Controllers
             _projectService = projectService;
         }
 
-        // POST: api/company/{companyId}/project
+        // POST: api/companies/{companyId}/projects
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -32,7 +32,7 @@ namespace Goose.API.Controllers
             return Ok(newCompany); 
         }
 
-        // PUT: api/company/{companyId}/project/{projectId}
+        // PUT: api/companies/{companyId}/projects/{projectId}
         [HttpPut("{projectId}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -42,7 +42,7 @@ namespace Goose.API.Controllers
             return NoContent();
         }
 
-        // GET: api/company/{companyId}/project
+        // GET: api/companies/{companyId}/projects
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -52,7 +52,7 @@ namespace Goose.API.Controllers
             return Ok(projectIter);
         }
 
-        // GET: api/company/{companyId}/project/{projectId}
+        // GET: api/companies/{companyId}/projects/{projectId}
         [HttpGet("{projectId}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]

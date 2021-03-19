@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Goose.API.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/users")]
     [ApiController]
     public class UserController : Controller
     {
