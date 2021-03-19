@@ -7,9 +7,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 
-namespace Goose.API.Controllers
+namespace Goose.API.Controllers.issuesControllers
 {
-    [Route("api/issues/")]
+    [Route("api/projects/{projectId}/issues/")]
     [ApiController]
     public class IssuesController : Controller
     {
@@ -29,10 +29,9 @@ namespace Goose.API.Controllers
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<IList<IssueResponseDTO>>> GetAll()
+        public async Task<ActionResult<IList<IssueResponseDTO>>> GetAll([FromRoute] string projectId)
         {
-            //var res = await _issueService.GetAllOfProject(new ObjectId(projectId));
-            var res = await _issueService.GetAll();
+            var res = await _issueService.GetAllOfProject(new ObjectId(projectId));
             return Ok(res);
         }
 
@@ -40,9 +39,9 @@ namespace Goose.API.Controllers
         [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<IssueResponseDTO>> Get([FromRoute] string id)
+        public async Task<ActionResult<IssueResponseDTO>> Get([FromRoute] string projectId, [FromRoute] string id)
         {
-            var res = await _issueService.Get(id.ToObjectId());
+            var res = await _issueService.GetOfProject(projectId.ToObjectId(), id.ToObjectId());
             return res == null ? NotFound() : Ok(res);
         }
 

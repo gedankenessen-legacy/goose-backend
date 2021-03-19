@@ -4,7 +4,7 @@ using Goose.API.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Goose.API.Controllers
+namespace Goose.API.Controllers.issuesControllers
 {
     [Route("api/issues/{issueId}/predecessors/")]
     [ApiController]

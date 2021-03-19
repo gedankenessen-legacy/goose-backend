@@ -13,9 +13,9 @@ namespace Goose.API.Services
     public interface IIssueService
     {
         Task<IList<IssueResponseDTO>> GetAll();
-        //  Task<IList<IssueResponseDTO>> GetAllOfProject(ObjectId projectId);
+        Task<IList<IssueResponseDTO>> GetAllOfProject(ObjectId projectId);
         public Task<IssueResponseDTO> Get(ObjectId id);
-        //  public Task<IssueResponseDTO> GetOfProject(ObjectId projectId, ObjectId id);
+        public Task<IssueResponseDTO> GetOfProject(ObjectId projectId, ObjectId id);
         public Task<IssueResponseDTO> Create(IssueRequestDTO issueRequestDto);
         public Task<IssueResponseDTO> Update(IssueRequestDTO issueRequest, ObjectId id);
         public Task<bool> Delete(ObjectId id);
