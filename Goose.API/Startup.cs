@@ -79,6 +79,8 @@ namespace Goose.API
             services.AddScoped<IProjectRepository, ProjectRepository>();
             services.AddScoped<IProjectService, ProjectService>();
 
+            services.AddScoped<IStateService, StateService>();
+
             services.AddAutoMapper(typeof(AutoMapping));
         }
 

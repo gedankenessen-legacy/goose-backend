@@ -9,6 +9,12 @@ namespace Goose.Domain.Models.projects
 {
     public class Project: Document
     {
+        public Project()
+        {
+            ProjectUsers = new List<PropertyUser>();
+            States = new List<State>();
+        }
+
         public ObjectId CompanyId { get; set; }
         public IList<PropertyUser> ProjectUsers { get; set; }
         public ProjectDetail ProjectDetail { get; set; }

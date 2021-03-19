@@ -1,5 +1,7 @@
 ﻿using Goose.API.Services;
+using Goose.Data;
 using Goose.Domain.DTOs;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
@@ -8,7 +10,8 @@ using System.Threading.Tasks;
 
 namespace Goose.API.Controllers
 {
-    [Route("api/companies/{companyId}/projects/{projectId}/states")]
+    [Route("api/project/{projectId}/state")]
+
     public class StateController : ControllerBase
     {
         private readonly IStateService _stateService;
@@ -18,32 +21,52 @@ namespace Goose.API.Controllers
             _stateService = stateService;
         }
 
-        // POST: api/companies/{companyId}/projects/{projectId}/states/
+        // POST: api/project/{projectId}/state/
         [HttpPost]
-        public async Task<ActionResult<StateDTO>> CreateState([FromBody] StateDTO stateDTO)
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<StateDTO>> CreateState([FromBody] StateDTO stateDTO, [FromRoute] string projectId)
         {
-            throw new NotImplementedException();
+            var state = await _stateService.CreateStateAsync(ObjectIdConverter.Validate(projectId), stateDTO);
+            return Ok(state);
         }
 
-        // PUT: api/companies/{companyId}/projects/{projectId}/states/{stateId}
+        // PUT: api/project/{projectId}/state/{stateId}
         [HttpPut("{stateId}")]
-        public async Task<ActionResult> UpdateState(string stateId, [FromBody] StateDTO stateDTO)
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult> UpdateState([FromBody] StateDTO stateDTO, [FromRoute] string projectId, string stateId)
         {
-            throw new NotImplementedException();
+            await _stateService.UpdateState(ObjectIdConverter.Validate(projectId), ObjectIdConverter.Validate(stateId), stateDTO);
+            return NoContent();
         }
 
-        // GET: api/companies/{companyId}/projects/{projectId}/states
+        // GET: api/project/{projectId}/state
         [HttpGet]
-        public async Task<ActionResult<IList<StateDTO>>> GetStates()
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<IList<StateDTO>>> GetStates([FromRoute] string projectId)
         {
-            throw new NotImplementedException();
+            var states = await _stateService.GetStates(ObjectIdConverter.Validate(projectId));
+            return Ok(states);
         }
 
-        // GET: api/companies/{companyId}/projects/{projectId}/states/{stateId}
+        // GET: api/project/{projectId}/state/{stateId}
         [HttpGet("{stateId}")]
-        public async Task<ActionResult<StateDTO>> GetState(string stateId)
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<StateDTO>> GetState([FromRoute] string projectId, string stateId)
         {
-            throw new NotImplementedException();
+            var state = await _stateService.GetState(ObjectIdConverter.Validate(projectId), ObjectIdConverter.Validate(stateId));
+            if (state != null)
+            {
+                return Ok(state);
+            }
+            else
+            {
+                return NotFound();
+            }
         }
     }
 }

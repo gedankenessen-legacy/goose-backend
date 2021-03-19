@@ -1,5 +1,7 @@
 ﻿using Goose.API.Services;
+using Goose.Data;
 using Goose.Domain.DTOs;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 using System;
@@ -21,22 +23,29 @@ namespace Goose.API.Controllers
 
         // POST: api/companies/{companyId}/projects
         [HttpPost]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<ProjectDTO>> CreateProject([FromBody] ProjectDTO projectDTO, [FromRoute] string companyId)
         {
-            var newCompany = await _projectService.CreateNewProjectAsync(new ObjectId(companyId), projectDTO);
+
+            var newCompany = await _projectService.CreateProjectAsync(ObjectIdConverter.Validate(companyId), projectDTO);
             return Ok(newCompany); 
         }
 
         // PUT: api/companies/{companyId}/projects/{projectId}
         [HttpPut("{projectId}")]
-        public async Task<ActionResult> UpdateProject(string projectId, [FromBody] ProjectDTO projectDTO)
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult> UpdateProject([FromBody] ProjectDTO projectDTO, string projectId)
         {
-            await _projectService.UpdateProject(new ObjectId(projectId), projectDTO);
+            await _projectService.UpdateProject(ObjectIdConverter.Validate(projectId), projectDTO);
             return NoContent();
         }
 
         // GET: api/companies/{companyId}/projects
         [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<IList<ProjectDTO>>> GetProjects()
         {
             var projectIter = await _projectService.GetProjects();
@@ -45,9 +54,11 @@ namespace Goose.API.Controllers
 
         // GET: api/companies/{companyId}/projects/{projectId}
         [HttpGet("{projectId}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<ProjectDTO>> GetProject(string projectId)
         {
-            var projects = await _projectService.GetProject(new ObjectId(projectId));
+            var projects = await _projectService.GetProject(ObjectIdConverter.Validate(projectId));
             return Ok(projects);
         }
     }
