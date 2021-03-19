@@ -8,7 +8,7 @@ namespace Goose.Domain.Models.tickets
 {
     public class IssueConversation
     {
-        public ObjectId _id { get; set; }
+        public ObjectId id { get; set; }
         public ObjectId CreatorUserId { get; set; }
         public string Type { get; set; }
         public object Data { get; set; }
