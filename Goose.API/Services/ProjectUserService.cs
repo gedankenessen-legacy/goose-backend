@@ -66,12 +66,11 @@ namespace Goose.API.Services
                 return new List<PropertyUserDTO>();
             }
 
-            // wir holen einfach immer alle rollen aus der Datenbank
-
             var userIds = from projectUser in project.ProjectUsers
                           select projectUser.UserId;
-
             var users = await _userRepository.GetAsync(userIds);
+
+            // wir holen einfach immer alle rollen aus der Datenbank
             var roles = await _roleRepository.GetAsync();
 
             // Hier wird eine innere Funktion verwendet, damit ich im einfgfach die Rollen nachschlagen kann.
