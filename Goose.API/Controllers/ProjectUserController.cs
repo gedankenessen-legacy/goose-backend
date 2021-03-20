@@ -25,11 +25,14 @@ namespace Goose.API.Controllers
         [HttpPut("{userId}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult> UpdateProjectUser([FromBody] ProjectDTO projectDTO, string userId)
+        public async Task<ActionResult> UpdateProjectUser([FromBody] PropertyUserDTO projectUserDTO, [FromRoute] string projectId, string userId)
         {
-            throw new NotImplementedException();
-            //await _projectUserService.UpdateProjectUser(ObjectIdConverter.Validate(userId), projectDTO);
-            //return NoContent();
+            await _projectUserService.UpdateProjectUser(
+                ObjectIdConverter.Validate(projectId),
+                ObjectIdConverter.Validate(userId),
+                projectUserDTO);
+
+            return NoContent();
         }
 
         // GET: api/project/{projectId}/user/

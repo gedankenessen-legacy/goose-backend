@@ -13,6 +13,7 @@ namespace Goose.API.Services
     {
         Task<IList<PropertyUserDTO>> GetProjectUsers(ObjectId projectId);
         Task<PropertyUserDTO> GetProjectUser(ObjectId projectId, ObjectId userId);
+        Task UpdateProjectUser(ObjectId projectId, ObjectId userId, PropertyUserDTO projectUserDTO);
     }
 
     public class ProjectUserService : IProjectUserService
@@ -83,8 +84,7 @@ namespace Goose.API.Services
 
                 return result.ToList();
             }
-                
-            // TODO cleanup
+            
             var userDTOs = from projectUser in project.ProjectUsers
                            join user in users on projectUser.UserId equals user.Id
                            select new PropertyUserDTO()
@@ -94,6 +94,32 @@ namespace Goose.API.Services
                            };
 
             return userDTOs.ToList();
+        }
+
+        public async Task UpdateProjectUser(ObjectId projectId, ObjectId userId, PropertyUserDTO projectUserDTO)
+        {
+            if (userId != projectUserDTO.User.Id)
+            {
+                throw new Exception("User id does not match");
+            }
+
+            var roleIds = from role in projectUserDTO.Roles
+                          select role.Id;
+
+            var propertyUser = new PropertyUser()
+            {
+                UserId = userId,
+                RoleIds = roleIds.ToList(),
+            };
+
+            var existingProject = await _projectRepository.GetAsync(projectId);
+
+            if (existingProject == null)
+            {
+                throw new Exception("Invalid projectId");
+            }
+
+            // TODO insert / update
         }
     }
 }
