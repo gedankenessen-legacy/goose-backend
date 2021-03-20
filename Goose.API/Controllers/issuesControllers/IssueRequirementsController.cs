@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Goose.API.Services.issues;
 using Goose.Domain.DTOs.issues;
+using Goose.Domain.Models.tickets;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Goose.API.Controllers.issuesControllers
@@ -19,37 +20,38 @@ namespace Goose.API.Controllers.issuesControllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IList<IssueRequirementDTO>>> GetAll([FromRoute] string issueId)
+        public async Task<ActionResult<IList<IssueRequirement>>> GetAll([FromRoute] string issueId)
         {
             return Ok(await _issueService.GetAllOfIssueAsync(issueId.ToObjectId()));
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<IssueRequirementDTO>> Get([FromRoute] string issueId, [FromRoute] string id)
+        public async Task<ActionResult<IssueRequirement>> Get([FromRoute] string issueId, [FromRoute] string id)
         {
             return Ok(await _issueService.GetAsync(issueId.ToObjectId(), id.ToObjectId()));
         }
 
         [HttpPost]
-        public async Task<ActionResult<IList<IssueRequirementDTO>>> Post([FromRoute] string issueId,
-            [FromBody] IssueRequirementDTO requirement)
+        public async Task<ActionResult<IList<IssueRequirement>>> Post([FromRoute] string issueId,
+            [FromBody] IssueRequirement requirement)
         {
             var res = await _issueService.CreateAsync(issueId.ToObjectId(), requirement);
             return CreatedAtAction(nameof(Get), new {id = res.Id}, res);
         }
 
         [HttpPut("{id}")]
-        public async Task<ActionResult<IList<IssueRequirementDTO>>> Put([FromRoute] string id,
-            [FromBody] IssueRequirementDTO requirement)
+        public async Task<ActionResult<IList<IssueRequirement>>> Put([FromRoute] string id,
+            [FromBody] IssueRequirement requirement)
         {
             await _issueService.UpdateAsync(id.ToObjectId(), requirement);
             return NoContent();
         }
 
         [HttpDelete("{id}")]
-        public async Task<ActionResult<IList<IssueRequirementDTO>>> Delete([FromRoute] string id)
+        public async Task<ActionResult<IList<IssueRequirement>>> Delete([FromRoute] string issueId,
+            [FromRoute] string id)
         {
-            await _issueService.DeleteAsync(id.ToObjectId());
+            await _issueService.DeleteAsync(issueId.ToObjectId(), id.ToObjectId());
             return NoContent();
         }
     }
