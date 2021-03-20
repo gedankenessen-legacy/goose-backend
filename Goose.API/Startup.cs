@@ -64,6 +64,11 @@ namespace Goose.API
             services.AddAutoMapper(typeof(AutoMapping));
             services.AddScoped<IIssueRepository, IssueRepository>();
             services.AddScoped<IIssueService, IssueService>();
+            services.AddScoped<IIssueService, IssueService>();
+            services.AddScoped<IIssueAssignedUserService, IssueAssignedUserService>();
+            services.AddScoped<IIssueRequirementService, IssueRequirementService>();
+            services.AddScoped<IIssuePredecessorService, IssuePredecessorService>();
+            services.AddScoped<IIssueTimeSheetService, IssueTimeSheetService>();
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IRoleRepository, RoleRepository>();

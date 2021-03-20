@@ -11,14 +11,14 @@ namespace Goose.API.Services.issues
         public Task RemovePredecessor(ObjectId projectId, ObjectId successorId, ObjectId predecessorId);
     }
 
-    public class IssuesPredecessorService : IIssuePredecessorService
+    public class IssuePredecessorService : IIssuePredecessorService
     {
         //TODO ggf müssen vorgänger rekursiv entfernt werden?
 
         //TODO wie bekommt man am besten alle issues in einem vorgänger baum? phil fragen?
         private readonly IIssueRepository _issueRepo;
 
-        public IssuesPredecessorService(IIssueRepository issueRepo)
+        public IssuePredecessorService(IIssueRepository issueRepo)
         {
             _issueRepo = issueRepo;
         }
