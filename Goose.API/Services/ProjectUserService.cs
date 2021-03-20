@@ -15,6 +15,7 @@ namespace Goose.API.Services
         Task<IList<PropertyUserDTO>> GetProjectUsers(ObjectId projectId);
         Task<PropertyUserDTO> GetProjectUser(ObjectId projectId, ObjectId userId);
         Task UpdateProjectUser(ObjectId projectId, ObjectId userId, PropertyUserDTO projectUserDTO);
+        Task RemoveUserFromProject(ObjectId projectId, ObjectId userId);
     }
 
     public class ProjectUserService : IProjectUserService
@@ -124,5 +125,25 @@ namespace Goose.API.Services
 
             await _projectRepository.UpdateAsync(existingProject);
         }
+
+        public async Task RemoveUserFromProject(ObjectId projectId, ObjectId userId)
+        {
+            var existingProject = await _projectRepository.GetAsync(projectId);
+
+            if (existingProject == null)
+            {
+                throw new Exception("Invalid projectId");
+            }
+
+            var success = existingProject.ProjectUsers.Remove(x => x.UserId == userId);
+
+            if (!success)
+            {
+                throw new Exception("UserId not found");
+            }
+
+            await _projectRepository.UpdateAsync(existingProject);
+        }
+
     }
 }

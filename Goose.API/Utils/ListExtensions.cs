@@ -48,6 +48,26 @@ namespace Goose.API.Utils
             }
         }
 
+        /// <summary>
+        /// List extension which allows to delete the first item that matches the selector.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="list"></param>
+        /// <param name="selector">The selector to distinguish the item that will be deleted.</param>
+        /// <returns>true, if an object was deleted</returns>
+        public static bool Remove<T>(this IList<T> list, Predicate<T> selector)
+        {
+            var index = list.FindIndex(selector);
+            if (index <= 0)
+            {
+                // No element found
+                return false;
+            }
+
+            list.RemoveAt(index);
+            return true;
+        }
+
         // FindIndex gibt es nur für List<T>, was manchmal lästig ist. Dies hier funktioniert auch für IList<T>.
         private static int FindIndex<T>(this IList<T> list, Predicate<T> match)
         {

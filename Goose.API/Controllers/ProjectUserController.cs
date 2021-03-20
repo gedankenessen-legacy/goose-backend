@@ -65,5 +65,21 @@ namespace Goose.API.Controllers
                 return NoContent();
             }
         }
+
+        // DELETE: api/project/{projectId}/user/{userId}
+        // Dies entfernt nur den User vom Projekt, der eigentliche User bleibt bestehen.
+        [HttpDelete("{userId}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult> DeleteUserFromProject([FromRoute] string projectId, string userId)
+        {
+            await _projectUserService.RemoveUserFromProject(
+                ObjectIdConverter.Validate(projectId),
+                ObjectIdConverter.Validate(userId));
+
+            return Ok();
+        }
+
     }
 }
