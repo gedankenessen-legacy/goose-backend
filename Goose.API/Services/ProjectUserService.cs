@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Goose.API.Utils;
 
 namespace Goose.API.Services
 {
@@ -106,7 +107,7 @@ namespace Goose.API.Services
             var roleIds = from role in projectUserDTO.Roles
                           select role.Id;
 
-            var propertyUser = new PropertyUser()
+            var projectUser = new PropertyUser()
             {
                 UserId = userId,
                 RoleIds = roleIds.ToList(),
@@ -119,7 +120,9 @@ namespace Goose.API.Services
                 throw new Exception("Invalid projectId");
             }
 
-            // TODO insert / update
+            existingProject.ProjectUsers.ReplaceOrInsert(x => x.UserId == userId, projectUser);
+
+            await _projectRepository.UpdateAsync(existingProject);
         }
     }
 }
