@@ -1,4 +1,5 @@
 ﻿using Goose.API.Repositories;
+using Goose.API.Utils.Exceptions;
 using Goose.Domain.DTOs;
 using Goose.Domain.Models.projects;
 using MongoDB.Bson;
@@ -46,14 +47,12 @@ namespace Goose.API.Services
 
             if (project is null)
             {
-                // TODO throw a HttpStatusException
-                throw new Exception("Project not found");
+                throw new HttpStatusException(404, "Project not found");
             }
 
             if (project.States is null)
             {
-                // TODO throw a HttpStatusException
-                throw new Exception("State not found");
+                throw new HttpStatusException(404, "State not found");
             }
 
             var matchedState = from state in project.States
@@ -69,8 +68,7 @@ namespace Goose.API.Services
 
             if (project is null)
             {
-                // TODO throw a HttpStatusException
-                throw new Exception("Project not found");
+                throw new HttpStatusException(404, "Project not found");
             }
 
             if (project.States is null)
@@ -88,7 +86,7 @@ namespace Goose.API.Services
         {
             if (stateDTO.Id != stateId)
             {
-                throw new Exception("Cannot Update: State ID does not match");
+                throw new HttpStatusException(400, "Cannot Update: State ID does not match");
             }
 
             await _projectRepository.UpdateState(projectId, stateId, stateDTO.Name, stateDTO.Phase);

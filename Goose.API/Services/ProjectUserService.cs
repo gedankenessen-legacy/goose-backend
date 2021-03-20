@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Goose.API.Utils;
+using Goose.API.Utils.Exceptions;
 
 namespace Goose.API.Services
 {
@@ -102,7 +103,7 @@ namespace Goose.API.Services
         {
             if (userId != projectUserDTO.User.Id)
             {
-                throw new Exception("User id does not match");
+                throw new HttpStatusException(400, "User id does not match");
             }
 
             var roleIds = from role in projectUserDTO.Roles
@@ -118,7 +119,7 @@ namespace Goose.API.Services
 
             if (existingProject == null)
             {
-                throw new Exception("Invalid projectId");
+                throw new HttpStatusException(404, "Invalid projectId");
             }
 
             existingProject.ProjectUsers.ReplaceOrInsert(x => x.UserId == userId, projectUser);
@@ -132,14 +133,14 @@ namespace Goose.API.Services
 
             if (existingProject == null)
             {
-                throw new Exception("Invalid projectId");
+                throw new HttpStatusException(404, "Invalid projectId");
             }
 
             var success = existingProject.ProjectUsers.Remove(x => x.UserId == userId);
 
             if (!success)
             {
-                throw new Exception("UserId not found");
+                throw new HttpStatusException(400, "User not part of this project");
             }
 
             await _projectRepository.UpdateAsync(existingProject);
