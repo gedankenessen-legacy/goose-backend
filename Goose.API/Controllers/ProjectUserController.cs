@@ -1,4 +1,5 @@
 ﻿using Goose.API.Services;
+using Goose.API.Utils.Validators;
 using Goose.Data;
 using Goose.Domain.DTOs;
 using Microsoft.AspNetCore.Http;
@@ -28,8 +29,8 @@ namespace Goose.API.Controllers
         public async Task<ActionResult> UpdateProjectUser([FromBody] PropertyUserDTO projectUserDTO, [FromRoute] string projectId, string userId)
         {
             await _projectUserService.UpdateProjectUser(
-                ObjectIdConverter.Validate(projectId),
-                ObjectIdConverter.Validate(userId),
+                Validators.ValidateObjectId(projectId),
+                Validators.ValidateObjectId(userId),
                 projectUserDTO);
 
             return NoContent();
@@ -41,7 +42,7 @@ namespace Goose.API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<IList<ProjectDTO>>> GetProjectUsers([FromRoute] string projectId)
         {
-            var projectIter = await _projectUserService.GetProjectUsers(ObjectIdConverter.Validate(projectId));
+            var projectIter = await _projectUserService.GetProjectUsers(Validators.ValidateObjectId(projectId));
             return Ok(projectIter);
         }
 
@@ -53,8 +54,8 @@ namespace Goose.API.Controllers
         public async Task<ActionResult<ProjectDTO>> GetProjectUser([FromRoute] string projectId, string userId)
         {
             var projectUser = await _projectUserService.GetProjectUser(
-                ObjectIdConverter.Validate(projectId),
-                ObjectIdConverter.Validate(userId));
+                Validators.ValidateObjectId(projectId),
+                Validators.ValidateObjectId(userId));
 
             if (projectUser == null)
             {
@@ -75,8 +76,8 @@ namespace Goose.API.Controllers
         public async Task<ActionResult> DeleteUserFromProject([FromRoute] string projectId, string userId)
         {
             await _projectUserService.RemoveUserFromProject(
-                ObjectIdConverter.Validate(projectId),
-                ObjectIdConverter.Validate(userId));
+                Validators.ValidateObjectId(projectId),
+                Validators.ValidateObjectId(userId));
 
             return Ok();
         }
