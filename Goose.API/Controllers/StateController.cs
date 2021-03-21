@@ -68,5 +68,16 @@ namespace Goose.API.Controllers
                 return NotFound();
             }
         }
+
+        // Delete: pi/project/{projectId}/state/{stateId}
+        [HttpDelete("{stateId}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult> DeleteState([FromRoute] string projectId, string stateId)
+        {
+            await _stateService.DeleteState(ObjectIdConverter.Validate(projectId), ObjectIdConverter.Validate(stateId));
+            return NoContent();
+        }
     }
 }

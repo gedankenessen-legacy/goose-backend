@@ -1,4 +1,5 @@
 ﻿using Goose.API.Repositories;
+using Goose.API.Utils.Exceptions;
 using Goose.Domain.DTOs;
 using Goose.Domain.Models.projects;
 using MongoDB.Bson;
@@ -6,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Goose.API.Utils;
 
 namespace Goose.API.Services
 {
@@ -15,15 +17,18 @@ namespace Goose.API.Services
         Task UpdateState(ObjectId projectId, ObjectId stateId, StateDTO stateDTO);
         Task<IList<StateDTO>> GetStates(ObjectId projectId);
         Task<StateDTO> GetState(ObjectId projectId, ObjectId stateId);
+        Task DeleteState(ObjectId projectId, ObjectId stateId);
     }
 
     public class StateService : IStateService
     {
         private readonly IProjectRepository _projectRepository;
+        private readonly IIssueRepository _issueRepository;
 
-        public StateService(IProjectRepository projectRepository)
+        public StateService(IProjectRepository projectRepository, IIssueRepository issueRepository)
         {
             _projectRepository = projectRepository;
+            _issueRepository = issueRepository;
         }
 
         public async Task<StateDTO> CreateStateAsync(ObjectId projectId, StateDTO requestedState)
@@ -92,6 +97,31 @@ namespace Goose.API.Services
             }
 
             await _projectRepository.UpdateState(projectId, stateId, stateDTO.Name, stateDTO.Phase);
+        }
+
+        public async Task DeleteState(ObjectId projectId, ObjectId stateId)
+        {
+            var issuesInState = await _issueRepository.FilterByAsync(x => x.ProjectId == projectId && x.StateId == stateId);
+
+            if (issuesInState.Any())
+            {
+                // Es gibt Tickets in diesem Status, der Status darf nicht gelöscht werden
+                throw new HttpStatusException(403, "Cannot delete because there are issues in this state");
+            }
+
+            var project = await _projectRepository.GetAsync(projectId);
+
+            if (project == null)
+            {
+                throw new HttpStatusException(404, "Invalid projectId");
+            }
+
+            var stateDeleted = project.States.Remove(x => x.Id == stateId);
+
+            if (stateDeleted)
+            {
+                await _projectRepository.UpdateAsync(project);
+            }
         }
     }
 }
