@@ -10,7 +10,15 @@ namespace Goose.API.Utils.Validators
 {
     public static class Validators
     {
-        public static ObjectId ValidateObjectId(string id, string errorMsg = "InvalidObjectId")
+        /// <summary>
+        /// The general purpose method to convert a string to an ObjectId.
+        /// It will check if the string is a valid ObjectId and then return the ObjectId.
+        /// If the string is invalid, it will throw an Exception.
+        /// </summary>
+        /// <param name="id">The string representaion of an ObjectId. 24 hex chars.</param>
+        /// <param name="errorMsg">The error message that will be used if the id is invalid</param>
+        /// <returns>The ObjectId object represented by the string</returns>
+        public static ObjectId ValidateObjectId(string id, string errorMsg = "Invalid ObjectId")
         {
             if (ObjectId.TryParse(id, out ObjectId result))
                  return result;

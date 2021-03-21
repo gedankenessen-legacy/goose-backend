@@ -35,6 +35,13 @@ namespace Goose.Data.Repository
             return await _dbCollection.Find(filter).FirstOrDefaultAsync();
         }
 
+        public async Task<IList<TEntity>> GetAsync(IEnumerable<ObjectId> ids)
+        {
+            FilterDefinition<TEntity> filter = Builders<TEntity>.Filter.In(x => x.Id, ids);
+
+            return await _dbCollection.Find(filter).ToListAsync();
+        }
+
         public virtual async Task<IList<TEntity>> FilterByAsync(Expression<Func<TEntity, bool>> filterExpression)
         {
             return await _dbCollection.Find(filterExpression).ToListAsync();

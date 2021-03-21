@@ -1,4 +1,5 @@
 ﻿using Goose.API.Repositories;
+using Goose.API.Utils.Exceptions;
 using Goose.Domain.DTOs;
 using Goose.Domain.Models;
 using Goose.Domain.Models.projects;
@@ -64,7 +65,7 @@ namespace Goose.API.Services
         {
             if (projectDTO.Id != projectId)
             {
-                throw new Exception("Cannot Update: Project ID does not match");
+                throw new HttpStatusException(400, "Project ID does not match");
             }
 
             await _projectRepository.UpdateProject(projectId, projectDTO.Name);
