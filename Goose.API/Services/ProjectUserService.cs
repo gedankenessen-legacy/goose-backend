@@ -67,7 +67,7 @@ namespace Goose.API.Services
             if (project == null)
             {
                 // ungültige projectId
-                return new List<PropertyUserDTO>();
+                throw new HttpStatusException(404, "Ungültige ProjectId");
             }
 
             var userIds = from projectUser in project.ProjectUsers

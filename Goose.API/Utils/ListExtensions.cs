@@ -36,14 +36,14 @@ namespace Goose.API.Utils
         {
             int indexOfOldItem = list.FindIndex(oldSelector);
 
-            if (indexOfOldItem >= 1)
+            if (indexOfOldItem >= 0)
             {
                 // ELement existiert bereits
                 list[indexOfOldItem] = newItem;
             }
             else
             {
-                // ELement existiert noch nicht.
+                // ELement existiert noch nicht
                 list.Add(newItem);
             }
         }

@@ -57,13 +57,13 @@ namespace Goose.API.Controllers
                 Validators.ValidateObjectId(projectId),
                 Validators.ValidateObjectId(userId));
 
-            if (projectUser == null)
+            if (projectUser != null)
             {
                 return Ok(projectUser);
             }
             else
             {
-                return NoContent();
+                return NotFound();
             }
         }
 
