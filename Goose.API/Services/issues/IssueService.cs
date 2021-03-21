@@ -16,8 +16,8 @@ namespace Goose.API.Services.issues
         Task<IList<IssueResponseDTO>> GetAllOfProject(ObjectId projectId);
         public Task<IssueResponseDTO> Get(ObjectId id);
         public Task<IssueResponseDTO> GetOfProject(ObjectId projectId, ObjectId id);
-        public Task<IssueResponseDTO> Create(IssueRequestDTO issueRequestDto);
-        public Task<IssueResponseDTO> Update(IssueRequestDTO issueRequest, ObjectId id);
+        public Task<IssueResponseDTO> Create(IssueResponseDTO issueRequestDto);
+        public Task<IssueResponseDTO> Update(IssueResponseDTO issueRequest, ObjectId id);
         public Task<bool> Delete(ObjectId id);
     }
 
@@ -53,7 +53,7 @@ namespace Goose.API.Services.issues
             return _mapper.Map<IssueResponseDTO>(await _issueRepo.GetOfProjectAsync(projectId, id));
         }
 
-        public async Task<IssueResponseDTO> Create(IssueRequestDTO issueRequestDto)
+        public async Task<IssueResponseDTO> Create(IssueResponseDTO issueRequestDto)
         {
             var issue = _mapper.Map<Issue>(issueRequestDto);
             await _issueRepo.CreateAsync(issue);
@@ -61,8 +61,9 @@ namespace Goose.API.Services.issues
             return null;
         }
 
-        public async Task<IssueResponseDTO> Update(IssueRequestDTO issueRequest, ObjectId id)
+        public async Task<IssueResponseDTO> Update(IssueResponseDTO issueRequest, ObjectId id)
         {
+            var issue = _mapper.Map<Issue>(issueRequest);
             await _issueRepo.UpdateAsync(_mapper.Map<Issue>(issueRequest));
             //TODO manche felder dürfen nicht geupdated werden
             return await Get(id);

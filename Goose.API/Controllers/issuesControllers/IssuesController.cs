@@ -49,17 +49,18 @@ namespace Goose.API.Controllers.issuesControllers
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<IssueResponseDTO>> Post([FromBody] IssueRequestDTO issueRequest)
+        public async Task<ActionResult> Post([FromBody] IssueResponseDTO issueRequest)
         {
             var res = await _issueService.Create(issueRequest);
-            return CreatedAtAction(nameof(Get), new {id = res.Id}, res);
+            //return CreatedAtAction(nameof(Get), new {id = res.Id}, res);
+            return Ok();
         }
 
         //api/issues/{id}
         [HttpPut("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult> Put([FromBody] IssueRequestDTO issueRequest, [FromRoute] string id)
+        public async Task<ActionResult> Put([FromBody] IssueResponseDTO issueRequest, [FromRoute] string id)
         {
             await _issueService.Update(issueRequest, id.ToObjectId());
             return NoContent();

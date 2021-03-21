@@ -10,7 +10,6 @@ namespace Goose.Domain.Mapping
     {
         public AutoMapping()
         {
-            CreateMap<Issue, IssueRequestDTO>().ReverseMap();
             CreateMap<Issue, IssueResponseDTO>().ReverseMap();
             CreateMap<User, UserDTO>();
             CreateMap<TimeSheet, IssueTimeSheetDTO>()
