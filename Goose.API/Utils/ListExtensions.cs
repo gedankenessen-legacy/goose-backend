@@ -58,7 +58,7 @@ namespace Goose.API.Utils
         public static bool Remove<T>(this IList<T> list, Predicate<T> selector)
         {
             var index = list.FindIndex(selector);
-            if (index <= 0)
+            if (index < 0)
             {
                 // No element found
                 return false;
