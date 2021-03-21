@@ -13,11 +13,6 @@ namespace Goose.API.Controllers.issuesControllers
     [ApiController]
     public class IssuesController : Controller
     {
-        //TODO user auth
-        //TODO verify issue is in project
-        //TODO untertickets
-        //TODO timesheets controller
-        //TODO assigned controller
         private readonly IIssueService _issueService;
 
         public IssuesController(IIssueService issueService)
