@@ -11,8 +11,17 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using JsonTokenType = System.Text.Json.JsonTokenType;
 
+/// <summary>
+/// In dieser Datei werden einige Hilfklassen bereitgestellt, die es erlauben
+/// ObjectIds in den API-Schnittstellen zu verwenden.
+/// </summary>
 namespace Goose.Data
 {
+    /// <summary>
+    /// ObjectIdJsonConverter kümmert sich um die Json-Repräsentation von
+    /// ObjectIds in den DTOs. Er wird sowohl bei eingehenden und ausgehenden Nachrichten
+    /// verwendet.
+    /// </summary>
     public class ObjectIdJsonConverter : JsonConverter<ObjectId>
     {
         public override ObjectId Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
@@ -38,6 +47,52 @@ namespace Goose.Data
         }
     }
 
+    /// <summary>
+    /// ObjectIdBinder kann ObjectIds in den Pfaden auslesen. Ist die ObjectId ungültig,
+    /// wird ein Validation Error geworfen und der Handler des Controllers wird gar nicht ausgeführt.
+    /// </summary>
+    public class ObjectIdBinder : IModelBinder
+    {
+        public Task BindModelAsync(ModelBindingContext bindingContext)
+        {
+            var result = bindingContext.ValueProvider.GetValue(bindingContext.FieldName);
+            if (ObjectId.TryParse(result.FirstValue, out ObjectId objectId))
+            {
+                bindingContext.Result = ModelBindingResult.Success(objectId);
+            }
+            else
+            {
+                // Ungültige ObjectId
+                bindingContext.Result = ModelBindingResult.Failed();
+                bindingContext.ModelState.AddModelError(bindingContext.FieldName, "Not a valid objectId");
+            }
+
+            return Task.CompletedTask;
+        }
+    }
+
+    /// <summary>
+    /// ObjectIdBinderProvider registriert den ObjectIdBinder.
+    /// </summary>
+    public class ObjectIdBinderProvider : IModelBinderProvider
+    {
+        public IModelBinder GetBinder(ModelBinderProviderContext context)
+        {
+            if (context.Metadata.ModelType == typeof(ObjectId))
+            {
+                return new ObjectIdBinder();
+            }
+
+            // kein binder gefunder
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// ObjectIdTypeConverter existiert nur, damit Swagger erkennt das man ObjectIds nun wie Strings
+    /// behandeln kann - leider gibt es bei Routenparametern keine andere Möglichkeit.
+    /// Die Methoden der Klasse selbst werden nie aufgerufen.
+    /// </summary>
     public class ObjectIdTypeConverter : TypeConverter
     {
         public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)

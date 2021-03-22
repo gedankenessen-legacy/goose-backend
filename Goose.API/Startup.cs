@@ -26,7 +26,7 @@ namespace Goose.API
     public class Startup
     {
         private readonly IConfiguration _configuration;
-        
+
         public Startup(IConfiguration configuration)
         {
             _configuration = configuration;
@@ -41,7 +41,10 @@ namespace Goose.API
             // Allows strings in the route parameter to be automatically be converted from strings.
             TypeDescriptor.AddAttributes(typeof(ObjectId), new TypeConverterAttribute(typeof(ObjectIdTypeConverter)));
 
-            services.AddControllers().AddJsonOptions(options =>
+            services.AddControllers(options =>
+            {
+                options.ModelBinderProviders.Insert(0, new ObjectIdBinderProvider());
+            }).AddJsonOptions(options =>
             {
                 options.JsonSerializerOptions.Converters.Add(new ObjectIdJsonConverter());
             });
@@ -49,7 +52,8 @@ namespace Goose.API
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "Goose.API", Version = "v1" });
-                c.MapType<ObjectId>(() => new OpenApiSchema {
+                c.MapType<ObjectId>(() => new OpenApiSchema
+                {
                     Type = "string",
                     Format = "ObjectId",
                 });
