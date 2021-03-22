@@ -31,6 +31,7 @@ namespace Goose.API.Controllers.issuesControllers
         [HttpGet("{userId}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<IList<UserDTO>>> Get([FromRoute] string issueId, [FromRoute] string userId)
         {
             var user = _issueService.GetAssignedUserOfIssueAsync(issueId.ToObjectId(), userId.ToObjectId());
