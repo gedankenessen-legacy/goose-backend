@@ -44,11 +44,10 @@ namespace Goose.API.Controllers.issuesControllers
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult> Post([FromBody] IssueResponseDTO issueRequest)
+        public async Task<ActionResult> Post([FromRoute] string projectId, [FromBody] IssueResponseDTO issueRequest)
         {
             var res = await _issueService.Create(issueRequest);
-            //return CreatedAtAction(nameof(Get), new {id = res.Id}, res);
-            return Ok();
+            return CreatedAtAction(nameof(Get), new {projectId, id = res.Id}, res);
         }
 
         //api/issues/{id}

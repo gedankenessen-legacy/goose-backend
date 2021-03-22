@@ -55,15 +55,14 @@ namespace Goose.API.Services.issues
 
         public async Task<IssueResponseDTO> Create(IssueResponseDTO issueRequestDto)
         {
+            issueRequestDto.Id = ObjectId.GenerateNewId();
             var issue = _mapper.Map<Issue>(issueRequestDto);
             await _issueRepo.CreateAsync(issue);
-            //TODO wie bekomme ich das issue mit neuer id zurück
-            return null;
+            return issueRequestDto;
         }
 
         public async Task<IssueResponseDTO> Update(IssueResponseDTO issueRequest, ObjectId id)
         {
-            var issue = _mapper.Map<Issue>(issueRequest);
             await _issueRepo.UpdateAsync(_mapper.Map<Issue>(issueRequest));
             //TODO manche felder dürfen nicht geupdated werden
             return await Get(id);
