@@ -26,32 +26,19 @@ namespace Goose.Data
                 return new ObjectId();
             }
        
-            return Validate(id);
-        }
-
-        public override void Write(Utf8JsonWriter writer, ObjectId value, JsonSerializerOptions options)
-        {
-            writer.WriteStringValue(value.ToString());
-        }
-
-        /// <summary>
-        /// The general purpose method to convert a string to an ObjectId.
-        /// It will check if the string is a valid ObjectId and then return the ObjectId.
-        /// If the string is invalid, it will throw an Exception.
-        /// </summary>
-        /// <param name="id">The string representaion of an ObjectId. 24 hex chars.</param>
-        /// <returns>The ObjectId object represented by the string</returns>
-        public static ObjectId Validate(string id)
-        {
             if (ObjectId.TryParse(id, out ObjectId objectId))
             {
                 return objectId;
             }
             else
             {
-                // TODO Hier kommt nach dem Merge ne HttpStatusException hin, ich bin nur zu faul für ein rebase
-                throw new Exception("Cannot parse issue string id to a valid object id.");
+                throw new Exception("Cannot parse ObjectId");
             }
+        }
+
+        public override void Write(Utf8JsonWriter writer, ObjectId value, JsonSerializerOptions options)
+        {
+            writer.WriteStringValue(value.ToString());
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Goose.API.Services;
+using Goose.API.Utils.Validators;
 using Goose.Data;
 using Goose.Domain.DTOs;
 using Microsoft.AspNetCore.Http;
@@ -28,7 +29,7 @@ namespace Goose.API.Controllers
         public async Task<ActionResult<ProjectDTO>> CreateProject([FromBody] ProjectDTO projectDTO, [FromRoute] string companyId)
         {
 
-            var newCompany = await _projectService.CreateProjectAsync(ObjectIdConverter.Validate(companyId), projectDTO);
+            var newCompany = await _projectService.CreateProjectAsync(Validators.ValidateObjectId(companyId), projectDTO);
             return Ok(newCompany); 
         }
 
@@ -38,7 +39,7 @@ namespace Goose.API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult> UpdateProject([FromBody] ProjectDTO projectDTO, string projectId)
         {
-            await _projectService.UpdateProject(ObjectIdConverter.Validate(projectId), projectDTO);
+            await _projectService.UpdateProject(Validators.ValidateObjectId(projectId), projectDTO);
             return NoContent();
         }
 
@@ -58,7 +59,7 @@ namespace Goose.API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<ProjectDTO>> GetProject(string projectId)
         {
-            var projects = await _projectService.GetProject(ObjectIdConverter.Validate(projectId));
+            var projects = await _projectService.GetProject(Validators.ValidateObjectId(projectId));
             return Ok(projects);
         }
     }

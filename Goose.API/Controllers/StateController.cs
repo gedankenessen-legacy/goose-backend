@@ -1,4 +1,5 @@
 ﻿using Goose.API.Services;
+using Goose.API.Utils.Validators;
 using Goose.Data;
 using Goose.Domain.DTOs;
 using Microsoft.AspNetCore.Http;
@@ -27,7 +28,7 @@ namespace Goose.API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<StateDTO>> CreateState([FromBody] StateDTO stateDTO, [FromRoute] string projectId)
         {
-            var state = await _stateService.CreateStateAsync(ObjectIdConverter.Validate(projectId), stateDTO);
+            var state = await _stateService.CreateStateAsync(Validators.ValidateObjectId(projectId), stateDTO);
             return Ok(state);
         }
 
@@ -37,7 +38,7 @@ namespace Goose.API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult> UpdateState([FromBody] StateDTO stateDTO, [FromRoute] string projectId, string stateId)
         {
-            await _stateService.UpdateState(ObjectIdConverter.Validate(projectId), ObjectIdConverter.Validate(stateId), stateDTO);
+            await _stateService.UpdateState(Validators.ValidateObjectId(projectId), Validators.ValidateObjectId(stateId), stateDTO);
             return NoContent();
         }
 
@@ -47,7 +48,7 @@ namespace Goose.API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<IList<StateDTO>>> GetStates([FromRoute] string projectId)
         {
-            var states = await _stateService.GetStates(ObjectIdConverter.Validate(projectId));
+            var states = await _stateService.GetStates(Validators.ValidateObjectId(projectId));
             return Ok(states);
         }
 
@@ -58,7 +59,7 @@ namespace Goose.API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<StateDTO>> GetState([FromRoute] string projectId, string stateId)
         {
-            var state = await _stateService.GetState(ObjectIdConverter.Validate(projectId), ObjectIdConverter.Validate(stateId));
+            var state = await _stateService.GetState(Validators.ValidateObjectId(projectId), Validators.ValidateObjectId(stateId));
             if (state != null)
             {
                 return Ok(state);
@@ -76,7 +77,7 @@ namespace Goose.API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult> DeleteState([FromRoute] string projectId, string stateId)
         {
-            await _stateService.DeleteState(ObjectIdConverter.Validate(projectId), ObjectIdConverter.Validate(stateId));
+            await _stateService.DeleteState(Validators.ValidateObjectId(projectId), Validators.ValidateObjectId(stateId));
             return NoContent();
         }
     }
