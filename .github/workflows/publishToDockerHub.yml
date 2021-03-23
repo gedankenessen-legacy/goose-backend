@@ -1,0 +1,37 @@
+name: Build and publish Docker image 
+
+on:
+  push:
+    branches: [ master ]
+    tags: 
+      - v*
+      
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  buildAndPublish:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Login to DockerHub
+        uses: docker/login-action@v1 
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          
+      - name: Build and push
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: gooseproject2/goose:backend
+          file: Goose.API/Dockerfile
+          
+      - name: Image digest
+        run: echo ${{ steps.docker_build.outputs.digest }}
+        
+      - name: Send WebHook to server
+        uses: jasongitmail/fast-webhook@v1.1.4
+        with:
+          url: http://51.254.157.180:9191/hooks/redeploy-backend
