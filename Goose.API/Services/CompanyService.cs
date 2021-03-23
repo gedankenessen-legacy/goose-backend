@@ -47,7 +47,7 @@ namespace Goose.API.Services
             var role = await _roleService.GetRoleAsync(new ObjectId(_companyRoleId));
 
             if (role is null)
-                throw new Exception();
+                role = await _roleService.CreateRoleAsync(new Role() { Name = "Firma" });
 
             var roleIds = new List<ObjectId>();
             roleIds.Add(role.Id);
@@ -112,9 +112,6 @@ namespace Goose.API.Services
         {
             var company = await _companyRepository.GetCompanyByIdAsync(companyId);
 
-            if (company is null)
-                throw new Exception("No Company with this Id exists");
-
             return (CompanyDTO)company;
         }
 
@@ -141,9 +138,6 @@ namespace Goose.API.Services
         public async Task<IList<PropertyUserDTO>> GetCompanyUsersAsync(string companyId)
         {
             var company = await _companyRepository.GetCompanyByIdAsync(companyId);
-
-            if (company is null)
-                throw new Exception("No Company with this Id exists");
 
             var userList = await _userService.GetUsersAsync();
 
