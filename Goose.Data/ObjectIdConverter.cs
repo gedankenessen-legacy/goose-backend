@@ -29,15 +29,22 @@ namespace Goose.Data
             if (reader.TokenType != JsonTokenType.String)
                 throw new Exception($"Unexpected token parsing ObjectId. Expected String, got: {reader.TokenType}.");
 
-            var value = reader.GetString();
-            if (ObjectId.TryParse(value, out ObjectId objectId))
+            var id = reader.GetString();
+
+            // Wir sollten hier liberaler als Validate sein, und auch den leeren String akzeptieren,
+            // damit bei Post nicht unnötig eine id mitgeschickt werden muss.
+            if (id == string.Empty)
+            {
+                return new ObjectId();
+            }
+       
+            if (ObjectId.TryParse(id, out ObjectId objectId))
             {
                 return objectId;
             }
             else
             {
-                // Error werfen wäre auch möglich.
-                return new ObjectId();
+                throw new Exception("Cannot parse ObjectId");
             }
         }
 
