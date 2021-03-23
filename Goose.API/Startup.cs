@@ -13,9 +13,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Conventions;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -24,7 +26,7 @@ namespace Goose.API
     public class Startup
     {
         private readonly IConfiguration _configuration;
-        
+
         public Startup(IConfiguration configuration)
         {
             _configuration = configuration;
@@ -36,14 +38,25 @@ namespace Goose.API
             ConfigureMongoDB();
             RegisterService(services);
 
-            services.AddControllers().AddJsonOptions(options =>
+            // Allows strings in the route parameter to be automatically be converted from strings.
+            TypeDescriptor.AddAttributes(typeof(ObjectId), new TypeConverterAttribute(typeof(ObjectIdTypeConverter)));
+
+            services.AddControllers(options =>
             {
-                options.JsonSerializerOptions.Converters.Add(new ObjectIdConverter());
+                options.ModelBinderProviders.Insert(0, new ObjectIdBinderProvider());
+            }).AddJsonOptions(options =>
+            {
+                options.JsonSerializerOptions.Converters.Add(new ObjectIdJsonConverter());
             });
 
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "Goose.API", Version = "v1" });
+                c.MapType<ObjectId>(() => new OpenApiSchema
+                {
+                    Type = "string",
+                    Format = "ObjectId",
+                });
             });
         }
 
