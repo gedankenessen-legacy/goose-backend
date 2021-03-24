@@ -27,9 +27,9 @@ namespace Goose.API.Controllers
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<StateDTO>> CreateState([FromBody] StateDTO stateDTO, [FromRoute] string projectId)
+        public async Task<ActionResult<StateDTO>> CreateState([FromBody] StateDTO stateDTO, [FromRoute] ObjectId projectId)
         {
-            var state = await _stateService.CreateStateAsync(Validators.ValidateObjectId(projectId), stateDTO);
+            var state = await _stateService.CreateStateAsync(projectId, stateDTO);
             return Ok(state);
         }
 
@@ -37,9 +37,9 @@ namespace Goose.API.Controllers
         [HttpPut("{stateId}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult> UpdateState([FromBody] StateDTO stateDTO, [FromRoute] string projectId, string stateId)
+        public async Task<ActionResult> UpdateState([FromBody] StateDTO stateDTO, [FromRoute] ObjectId projectId, ObjectId stateId)
         {
-            await _stateService.UpdateState(Validators.ValidateObjectId(projectId), Validators.ValidateObjectId(stateId), stateDTO);
+            await _stateService.UpdateState(projectId, stateId, stateDTO);
             return NoContent();
         }
 
@@ -47,9 +47,9 @@ namespace Goose.API.Controllers
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<IList<StateDTO>>> GetStates([FromRoute] string projectId)
+        public async Task<ActionResult<IList<StateDTO>>> GetStates([FromRoute] ObjectId projectId)
         {
-            var states = await _stateService.GetStates(Validators.ValidateObjectId(projectId));
+            var states = await _stateService.GetStates(projectId);
             return Ok(states);
         }
 
@@ -58,9 +58,9 @@ namespace Goose.API.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<StateDTO>> GetState([FromRoute] string projectId, string stateId)
+        public async Task<ActionResult<StateDTO>> GetState([FromRoute] ObjectId projectId, ObjectId stateId)
         {
-            var state = await _stateService.GetState(Validators.ValidateObjectId(projectId), Validators.ValidateObjectId(stateId));
+            var state = await _stateService.GetState(projectId, stateId);
             if (state != null)
             {
                 return Ok(state);
@@ -76,9 +76,9 @@ namespace Goose.API.Controllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult> DeleteState([FromRoute] string projectId, string stateId)
+        public async Task<ActionResult> DeleteState([FromRoute] ObjectId projectId, ObjectId stateId)
         {
-            await _stateService.DeleteState(Validators.ValidateObjectId(projectId), Validators.ValidateObjectId(stateId));
+            await _stateService.DeleteState(projectId, stateId);
             return NoContent();
         }
     }
