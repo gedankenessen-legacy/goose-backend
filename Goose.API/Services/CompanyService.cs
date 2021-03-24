@@ -78,12 +78,12 @@ namespace Goose.API.Services
 
             await _companyRepository.CreateAsync(company);
 
-            var roles = new List<Role>();
-            roles.Add(role);
+            var roles = new List<RoleDTO>();
+            roles.Add(new RoleDTO(role));
 
             var firmenUser = new PropertyUserDTO()
             {
-                User = newUser,
+                User = new UserDTO(newUser),
                 Roles = roles
             };
 
@@ -149,14 +149,14 @@ namespace Goose.API.Services
             {
                 var user = userList.FirstOrDefault(x => x.Id.Equals(propertyUser.UserId));
 
-                IList<Role> roles = new List<Role>();
+                IList<RoleDTO> roles = new List<RoleDTO>();
 
                 foreach(var roleId in propertyUser.RoleIds)
                 {
                     var role = roleList.FirstOrDefault(x => x.Id.Equals(roleId));
 
                     if(role is not null)
-                        roles.Add(role);
+                        roles.Add(new RoleDTO(role));
                 }
 
                 propertyUserList.Add(new PropertyUserDTO() { User = user, Roles = roles });
@@ -182,7 +182,7 @@ namespace Goose.API.Services
             if(user is null)
                 throw new Exception("There is no User with this ID");
 
-            IList<Role> roles = new List<Role>();
+            IList<RoleDTO> roles = new List<RoleDTO>();
 
             var roleList = await _roleService.GetRolesAsync();
 
@@ -191,7 +191,7 @@ namespace Goose.API.Services
                 var role = roleList.FirstOrDefault(x => x.Equals(roleId));
 
                 if (role is not null)
-                    roles.Add(role);
+                    roles.Add(new RoleDTO(role));
             }
 
             return new PropertyUserDTO() { User = user, Roles = roles };
