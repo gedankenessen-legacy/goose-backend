@@ -12,6 +12,6 @@ namespace Goose.Domain.DTOs
     {
         public UserDTO User { get; set; }
 
-        public IList<Role> Roles { get; set; }
+        public IList<RoleDTO> Roles {get; set;}
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Goose.API.Repositories;
+using Goose.API.Utils.Exceptions;
 using Goose.Domain.DTOs;
 using Goose.Domain.Models;
 using Goose.Domain.Models.projects;
@@ -12,7 +13,7 @@ namespace Goose.API.Services
 {
     public interface IProjectService
     {
-        Task<ProjectDTO> CreateNewProjectAsync(ObjectId companyId, ProjectDTO requestedProject);
+        Task<ProjectDTO> CreateProjectAsync(ObjectId companyId, ProjectDTO requestedProject);
         Task UpdateProject(ObjectId projectId, ProjectDTO projectDTO);
         Task<IList<ProjectDTO>> GetProjects();
         Task<ProjectDTO> GetProject(ObjectId projectId);
@@ -27,7 +28,7 @@ namespace Goose.API.Services
             _projectRepository = projectRepository;
         }
 
-        public async Task<ProjectDTO> CreateNewProjectAsync(ObjectId companyId, ProjectDTO requestedProject)
+        public async Task<ProjectDTO> CreateProjectAsync(ObjectId companyId, ProjectDTO requestedProject)
         {
             var newProject = new Project()
             {
@@ -64,7 +65,7 @@ namespace Goose.API.Services
         {
             if (projectDTO.Id != projectId)
             {
-                throw new Exception("Cannot Update: Project ID does not match");
+                throw new HttpStatusException(400, "Project ID does not match");
             }
 
             await _projectRepository.UpdateProject(projectId, projectDTO.Name);

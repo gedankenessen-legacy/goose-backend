@@ -7,6 +7,7 @@ namespace Goose.Domain.Models.tickets
 {
     public class TimeSheet
     {
+        public ObjectId Id { get; set; }
         public ObjectId UserId { get; set; }
         public DateTime Start { get; set; }
         public DateTime End { get; set; }
