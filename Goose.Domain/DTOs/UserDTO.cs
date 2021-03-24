@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+
 namespace Goose.Domain.DTOs
 {
     public class UserDTO

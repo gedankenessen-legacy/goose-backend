@@ -1,21 +1,21 @@
 using Goose.API.Repositories;
 using Goose.API.Services;
+using Goose.API.Services.issues;
 using Goose.Data;
 using Goose.Data.Context;
 using Goose.Data.Settings;
 using Goose.Domain.Mapping;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Conventions;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -24,7 +24,7 @@ namespace Goose.API
     public class Startup
     {
         private readonly IConfiguration _configuration;
-        
+
         public Startup(IConfiguration configuration)
         {
             _configuration = configuration;
@@ -36,14 +36,25 @@ namespace Goose.API
             ConfigureMongoDB();
             RegisterService(services);
 
-            services.AddControllers().AddJsonOptions(options =>
+            // Allows strings in the route parameter to be automatically be converted from strings.
+            TypeDescriptor.AddAttributes(typeof(ObjectId), new TypeConverterAttribute(typeof(ObjectIdTypeConverter)));
+
+            services.AddControllers(options =>
             {
-                options.JsonSerializerOptions.Converters.Add(new ObjectIdConverter());
+                options.ModelBinderProviders.Insert(0, new ObjectIdBinderProvider());
+            }).AddJsonOptions(options =>
+            {
+                options.JsonSerializerOptions.Converters.Add(new ObjectIdJsonConverter());
             });
 
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "Goose.API", Version = "v1" });
+                c.MapType<ObjectId>(() => new OpenApiSchema
+                {
+                    Type = "string",
+                    Format = "ObjectId",
+                });
             });
         }
 
@@ -65,25 +76,31 @@ namespace Goose.API
         {
             services.Configure<DbSettings>(_configuration.GetSection(nameof(DbSettings)));
 
-            services.AddTransient<IIssueRepository, IssueRepository>();
             services.AddTransient<IIssueConversationService, IssueConversationService>();
 
+            services.AddAutoMapper(typeof(AutoMapping));
             services.AddSingleton<IDbContext, DbContext>();
 
+            services.AddScoped<IIssueRepository, IssueRepository>();
+            services.AddScoped<IIssueService, IssueService>();
+            services.AddScoped<IIssueService, IssueService>();
+            services.AddScoped<IIssueAssignedUserService, IssueAssignedUserService>();
+            services.AddScoped<IIssueRequirementService, IssueRequirementService>();
+            services.AddScoped<IIssuePredecessorService, IssuePredecessorService>();
+            services.AddScoped<IIssueTimeSheetService, IssueTimeSheetService>();
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IUserService, UserService>();
-
             services.AddScoped<IRoleRepository, RoleRepository>();
             services.AddScoped<IRoleService, RoleService>();
-
             services.AddScoped<IProjectRepository, ProjectRepository>();
             services.AddScoped<IProjectService, ProjectService>();
 
-            services.AddScoped<IStateService, StateService>();
-
-            services.AddScoped<IProjectUserService, ProjectUserService>();
+            services.AddScoped<ICompanyRepository, CompanyRepository>();
+            services.AddScoped<ICompanyService, CompanyService>();
 
             services.AddAutoMapper(typeof(AutoMapping));
+            services.AddScoped<IStateService, StateService>();
+            services.AddScoped<IProjectUserService, ProjectUserService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

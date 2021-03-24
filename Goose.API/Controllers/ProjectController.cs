@@ -26,10 +26,9 @@ namespace Goose.API.Controllers
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<ProjectDTO>> CreateProject([FromBody] ProjectDTO projectDTO, [FromRoute] string companyId)
+        public async Task<ActionResult<ProjectDTO>> CreateProject([FromBody] ProjectDTO projectDTO, [FromRoute] ObjectId companyId)
         {
-
-            var newCompany = await _projectService.CreateProjectAsync(Validators.ValidateObjectId(companyId), projectDTO);
+            var newCompany = await _projectService.CreateProjectAsync(companyId, projectDTO);
             return Ok(newCompany); 
         }
 
@@ -37,9 +36,9 @@ namespace Goose.API.Controllers
         [HttpPut("{projectId}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult> UpdateProject([FromBody] ProjectDTO projectDTO, string projectId)
+        public async Task<ActionResult> UpdateProject([FromBody] ProjectDTO projectDTO, ObjectId projectId)
         {
-            await _projectService.UpdateProject(Validators.ValidateObjectId(projectId), projectDTO);
+            await _projectService.UpdateProject(projectId, projectDTO);
             return NoContent();
         }
 
@@ -57,9 +56,9 @@ namespace Goose.API.Controllers
         [HttpGet("{projectId}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<ProjectDTO>> GetProject(string projectId)
+        public async Task<ActionResult<ProjectDTO>> GetProject(ObjectId projectId)
         {
-            var projects = await _projectService.GetProject(Validators.ValidateObjectId(projectId));
+            var projects = await _projectService.GetProject(projectId);
             return Ok(projects);
         }
     }
