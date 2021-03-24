@@ -8,11 +8,14 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace Goose.API.Repositories
 {
     public interface IIssueRepository : IRepository<Issue>
     {
+        Task<IList<Issue>> GetAllOfProjectAsync(ObjectId projectId);
+        Task<Issue> GetOfProjectAsync(ObjectId projectId, ObjectId issueId);
         public Task<Issue> GetIssueByIdAsync(string issueId);
         public Task CreateOrUpdateConversationItemAsync(string issueId, IssueConversation issueConversation);
         public Task<IssueRequirement> GetRequirementByIdAsync(ObjectId issueId, ObjectId requirementId);
@@ -20,8 +23,20 @@ namespace Goose.API.Repositories
 
     public class IssueRepository : Repository<Issue>, IIssueRepository
     {
+    
         public IssueRepository(IDbContext context) : base(context, "issues") { }
+    
+        public async Task<IList<Issue>> GetAllOfProjectAsync(ObjectId projectId)
+        {
+            return await FilterByAsync((it) => it.ProjectId.Equals(projectId));
+        }
 
+        public async Task<Issue> GetOfProjectAsync(ObjectId projectId, ObjectId issueId)
+        {
+            var res = await FilterByAsync((it) => it.ProjectId.Equals(projectId) && it.Id.Equals(issueId));
+            return res.FirstOrDefault();
+        }
+        
         /// <summary>
         /// Returns a issue based on the provided issueId.
         /// </summary>
