@@ -13,10 +13,6 @@ namespace Goose.Domain.DTOs
 {
     public class UserDTO
     {
-        public UserDTO()
-        {
-        }
-
         public ObjectId Id { get; set; }
         public string Firstname { get; set; }
         public string Lastname { get; set; }
