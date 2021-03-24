@@ -38,6 +38,7 @@ namespace Goose.API.Services
                 Id = ObjectId.GenerateNewId(),
                 Phase = requestedState.Phase,
                 Name = requestedState.Name,
+                UserGenerated = true,
             };
 
             await _projectRepository.AddState(projectId, state);
