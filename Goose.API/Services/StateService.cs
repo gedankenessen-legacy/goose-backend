@@ -114,7 +114,21 @@ namespace Goose.API.Services
                 throw new HttpStatusException(404, "Invalid projectId");
             }
 
-            var stateDeleted = project.States.Remove(x => x.Id == stateId);
+            var stateDeleted = project.States.Remove(state => {
+                if (state.Id != stateId)
+                {
+                    return false;
+                }
+
+                // Wir haben den richtigen Status gefunden, aber darf er gelösch werden
+                if (!state.UserGenerated)
+                {
+                    throw new HttpStatusException(403, "Cannot delete default State");
+                }
+
+                // Ja, er kann gelöscht werden
+                return true;
+            });
 
             if (stateDeleted)
             {

@@ -57,6 +57,7 @@ namespace Goose.API.Controllers
         [HttpGet("{stateId}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<StateDTO>> GetState([FromRoute] ObjectId projectId, ObjectId stateId)
         {
