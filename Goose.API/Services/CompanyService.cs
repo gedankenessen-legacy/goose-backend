@@ -25,13 +25,15 @@ namespace Goose.API.Services
         private readonly ICompanyRepository _companyRepository;
         private readonly IUserService _userService;
         private readonly IRoleService _roleService;
+        private readonly ICompanyUserService _companyUserService;
         private const string _companyRoleId = "604a3420db17824bca29698f";
 
-        public CompanyService(ICompanyRepository companyRepository, IUserService userService, IRoleService roleService)
+        public CompanyService(ICompanyRepository companyRepository, IUserService userService, IRoleService roleService, ICompanyUserService companyUserService)
         {
             _companyRepository = companyRepository;
             _userService = userService;
             _roleService = roleService;
+            _companyUserService = companyUserService;
         }
 
         public async Task<CompanyDTO> CreateCompanyAsync(CompanyLogin companyLogin)
@@ -99,6 +101,8 @@ namespace Goose.API.Services
             foreach(var company in companies)
             {
                 var companyDTO = (CompanyDTO)company;
+                companyDTO.User = (await _companyUserService.GetCompanyUsersAsync(company.Id.ToString()))
+                    .FirstOrDefault(x => x.Roles.FirstOrDefault(companyRole => companyRole.Name.Equals("Firma")) is not null);
                 companyDTOs.Add(companyDTO);
             }
 
@@ -109,7 +113,12 @@ namespace Goose.API.Services
         {
             var company = await _companyRepository.GetCompanyByIdAsync(companyId);
 
-            return (CompanyDTO)company;
+            var companyDTO = (CompanyDTO)company;
+
+            companyDTO.User = (await _companyUserService.GetCompanyUsersAsync(company.Id.ToString()))
+                    .FirstOrDefault(x => x.Roles.FirstOrDefault(companyRole => companyRole.Name.Equals("Firma")) is not null);
+
+            return companyDTO;
         }
 
         public async Task<CompanyDTO> UpdateCompanyAsync(string id, CompanyDTO company)

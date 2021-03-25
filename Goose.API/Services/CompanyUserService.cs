@@ -1,6 +1,7 @@
 ﻿using Goose.API.Repositories;
 using Goose.Domain.DTOs;
 using Goose.Domain.Models;
+using Goose.Domain.Models.identity;
 using MongoDB.Bson;
 using System;
 using System.Collections.Generic;
@@ -37,14 +38,20 @@ namespace Goose.API.Services
 
             var newUser = await _userService.CreateNewUserAsync(user.User);
 
-            var roles = new List<ObjectId>();
-
-            foreach (var role in user.Roles)
-                roles.Add(role.Id);
+            var roles = await GetRoleIds(user.Roles);
 
             company.Users.Add(new PropertyUser() { UserId = newUser.Id, RoleIds = roles });
 
-            return new PropertyUserDTO() { User = new UserDTO(newUser), Roles = user.Roles };
+            await _companyRepository.UpdateAsync(company);
+
+            var roleList = await _roleService.GetRolesAsync();
+
+            var roleDTOs = new List<RoleDTO>();
+
+            foreach (var roleId in roles)
+                roleDTOs.Add(new RoleDTO(roleList.FirstOrDefault(x => x.Id.Equals(roleId))));
+
+            return new PropertyUserDTO() { User = new UserDTO(newUser), Roles = roleDTOs };
         }
 
         public async Task<IList<PropertyUserDTO>> GetCompanyUsersAsync(string companyId)
@@ -116,10 +123,7 @@ namespace Goose.API.Services
 
             await _userService.UpdateUserAsync(new ObjectId(userId), user.User);
 
-            var roles = new List<ObjectId>();
-
-            foreach (var role in user.Roles)
-                roles.Add(role.Id);
+            var roles = await GetRoleIds(user.Roles);
 
             var company = await _companyRepository.GetCompanyByIdAsync(companyId);
             var companyUser = company.Users.FirstOrDefault(x => x.Id.Equals(userId));
@@ -131,7 +135,34 @@ namespace Goose.API.Services
 
             await _companyRepository.UpdateAsync(company);
 
+            var roleDTOs = new List<RoleDTO>();
+            var roleList = await _roleService.GetRolesAsync();
+
+            foreach (var roleId in roles)
+                roleDTOs.Add(new RoleDTO(roleList.FirstOrDefault(x => x.Id.Equals(roleId))));
+
             return new PropertyUserDTO() { User = new UserDTO(user.User), Roles = user.Roles };
+        }
+
+        private async Task<List<ObjectId>> GetRoleIds(IList<RoleDTO> roles)
+        {
+            var roleIds = new List<ObjectId>();
+
+            var roleList = await _roleService.GetRolesAsync();
+
+            foreach(var role in roles)
+            {
+                var roleFromDB = roleList.FirstOrDefault(x => x.Id.Equals(role.Id) || x.Name.Equals(role.Name));
+
+                if (roleFromDB == null)
+                {
+                    roleFromDB = await _roleService.CreateRoleAsync(new Role() { Name = role.Name });
+                }
+
+                roleIds.Add(roleFromDB.Id);
+            }
+
+           return roleIds;
         }
     }
 }
