@@ -28,13 +28,14 @@ namespace Goose.API.Services
         private readonly ICompanyRepository _companyRepository;
         private readonly IUserService _userService;
         private readonly IRoleService _roleService;
-        private const string _companyRoleId = "604a3420db17824bca29698f";
+        private readonly IRoleRepository _roleRepository;
 
-        public CompanyService(ICompanyRepository companyRepository, IUserService userService, IRoleService roleService)
+        public CompanyService(ICompanyRepository companyRepository, IUserService userService, IRoleService roleService, IRoleRepository roleRepository)
         {
             _companyRepository = companyRepository;
             _userService = userService;
             _roleService = roleService;
+            _roleRepository = roleRepository;
         }
 
         public async Task<CompanyDTO> CreateCompanyAsync(CompanyLogin companyLogin)
@@ -44,7 +45,7 @@ namespace Goose.API.Services
             if (company is not null)
                 throw new Exception("A Company with this name is already existing");
 
-            var role = await _roleService.GetRoleAsync(new ObjectId(_companyRoleId));
+            var role = (await _roleRepository.FilterByAsync(x => x.Name.Equals("Firma"))).FirstOrDefault();
 
             if (role is null)
                 role = await _roleService.CreateRoleAsync(new Role() { Name = "Firma" });
