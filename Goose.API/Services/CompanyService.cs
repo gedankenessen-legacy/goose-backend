@@ -18,9 +18,6 @@ namespace Goose.API.Services
         public Task<CompanyDTO> CreateCompanyAsync(CompanyLogin companyLogin);
         public Task<CompanyDTO> UpdateCompanyAsync(string id, CompanyDTO company);
 
-        public Task<IList<PropertyUserDTO>> GetCompanyUsersAsync(string companyId);
-        public Task<PropertyUserDTO> GetCompanyUserAsync(string companyId, string userId);
-
     }
 
     public class CompanyService : ICompanyService
@@ -133,68 +130,6 @@ namespace Goose.API.Services
             await _companyRepository.UpdateAsync(companyToUpdate);
 
             return (CompanyDTO)companyToUpdate;
-        }
-
-        public async Task<IList<PropertyUserDTO>> GetCompanyUsersAsync(string companyId)
-        {
-            var company = await _companyRepository.GetCompanyByIdAsync(companyId);
-
-            var userList = await _userService.GetUsersAsync();
-
-            var roleList = await _roleService.GetRolesAsync();
-
-            IList<PropertyUserDTO> propertyUserList = new List<PropertyUserDTO>();
-
-            foreach(var propertyUser in company.Users)
-            {
-                var user = userList.FirstOrDefault(x => x.Id.Equals(propertyUser.UserId));
-
-                IList<RoleDTO> roles = new List<RoleDTO>();
-
-                foreach(var roleId in propertyUser.RoleIds)
-                {
-                    var role = roleList.FirstOrDefault(x => x.Id.Equals(roleId));
-
-                    if(role is not null)
-                        roles.Add(new RoleDTO(role));
-                }
-
-                propertyUserList.Add(new PropertyUserDTO() { User = user, Roles = roles });
-            }
-
-            return propertyUserList;
-        }
-
-        public async Task<PropertyUserDTO> GetCompanyUserAsync(string companyId, string userId)
-        {
-            var company = await _companyRepository.GetCompanyByIdAsync(companyId);
-
-            if (company is null)
-                throw new Exception("No Company with this Id exists");
-
-            var propertyUser = company.Users.FirstOrDefault(x => x.UserId.Equals(userId));
-
-            if (propertyUser is null)
-                throw new Exception("There is no User with this ID");
-
-            var user = await _userService.GetUser(propertyUser.UserId);
-
-            if(user is null)
-                throw new Exception("There is no User with this ID");
-
-            IList<RoleDTO> roles = new List<RoleDTO>();
-
-            var roleList = await _roleService.GetRolesAsync();
-
-            foreach (var roleId in propertyUser.RoleIds)
-            {
-                var role = roleList.FirstOrDefault(x => x.Equals(roleId));
-
-                if (role is not null)
-                    roles.Add(new RoleDTO(role));
-            }
-
-            return new PropertyUserDTO() { User = user, Roles = roles };
         }
     }
 }
