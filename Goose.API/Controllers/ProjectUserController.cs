@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace Goose.API.Controllers
 {
-    [Route("api/project/{projectId}/users")]
+    [Route("api/projects/{projectId}/users")]
     public class ProjectUserController : ControllerBase
     {
         private readonly IProjectUserService _projectUserService;
@@ -22,7 +22,7 @@ namespace Goose.API.Controllers
             _projectUserService = projectUserService;
         }
 
-        // PUT: api/project/{projectId}/user/{userId}
+        // PUT: api/projects/{projectId}/users/{userId}
         [HttpPut("{userId}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -36,7 +36,7 @@ namespace Goose.API.Controllers
             return NoContent();
         }
 
-        // GET: api/project/{projectId}/user/
+        // GET: api/projects/{projectId}/users/
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -46,7 +46,7 @@ namespace Goose.API.Controllers
             return Ok(projectIter);
         }
 
-        // GET: api/project/{projectId}/user/{userId}
+        // GET: api/projects/{projectId}/users/{userId}
         [HttpGet("{userId}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -67,7 +67,7 @@ namespace Goose.API.Controllers
             }
         }
 
-        // DELETE: api/project/{projectId}/user/{userId}
+        // DELETE: api/projects/{projectId}/users/{userId}
         // Dies entfernt nur den User vom Projekt, der eigentliche User bleibt bestehen.
         [HttpDelete("{userId}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
