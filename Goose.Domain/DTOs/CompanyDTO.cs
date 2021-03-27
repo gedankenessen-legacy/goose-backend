@@ -26,8 +26,7 @@ namespace Goose.Domain.DTOs
             return new CompanyDTO() 
             {
                 Id = company.Id,
-                Name = company.Name, 
-                
+                Name = company.Name               
             };
         }
     }

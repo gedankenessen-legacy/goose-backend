@@ -14,6 +14,7 @@ namespace Goose.Domain.DTOs
     public class UserDTO
     {
         public ObjectId Id { get; set; }
+        public string Username { get; set; }
         public string Firstname { get; set; }
         public string Lastname { get; set; }
 
@@ -25,6 +26,7 @@ namespace Goose.Domain.DTOs
         public UserDTO(User user)
         {
             Id = user.Id;
+            Username = user.Username;
             Firstname = user.Firstname;
             Lastname = user.Lastname;
         }
