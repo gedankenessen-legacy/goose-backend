@@ -17,13 +17,13 @@ namespace Goose.API.Controllers
             _authService = authService;
         }
 
-        [HttpPost("signIn")]
+        [HttpPost("signUp")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> SignUp([FromBody] SignUpRequest signUpRequest)
         {
-            await _authService.SignUpAsync(signUpRequest);
-            return Ok();
+            var result = await _authService.SignUpAsync(signUpRequest);
+            return Ok(result);
         }
     }
 }

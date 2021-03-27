@@ -13,10 +13,7 @@ namespace Goose.Domain.DTOs
     public class CompanyDTO
     {
         public ObjectId Id { get; set; }
-
         public string Name { get; set; }
-
-        public PropertyUserDTO User { get; set; }
 
         public static explicit operator CompanyDTO(Company company)
         {

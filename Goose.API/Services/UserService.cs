@@ -14,8 +14,9 @@ namespace Goose.API.Services
     {
         Task<UserDTO> GetUser(ObjectId id);
         Task<IList<UserDTO>> GetUsersAsync();
-        Task<User> CreateNewUserAsync(User user);
+        Task CreateNewUserAsync(User user);
         Task<User> UpdateUserAsync(ObjectId id, User user);
+        Task<bool> UsernameAvailableAsync(string username);
     }
 
     public class UserService : IUserService
@@ -29,7 +30,7 @@ namespace Goose.API.Services
             _mapper = mapper;
         }
 
-        public async Task<User> CreateNewUserAsync(User user)
+        public async Task CreateNewUserAsync(User user)
         {
             if (user == null)
                 throw new Exception();
@@ -43,16 +44,7 @@ namespace Goose.API.Services
             if (string.IsNullOrWhiteSpace(user.HashedPassword))
                 throw new Exception();
 
-            var newUser = new User()
-            {
-                Firstname = user.Firstname,
-                Lastname = user.Lastname,
-                HashedPassword = user.HashedPassword
-            };
-
-            await _userRepository.CreateAsync(newUser);
-
-            return newUser;
+            await _userRepository.CreateAsync(user);
         }
 
         public async Task<UserDTO> GetUser(ObjectId id)
@@ -106,6 +98,14 @@ namespace Goose.API.Services
             await _userRepository.UpdateAsync(userToUpdate);
 
             return userToUpdate;
+        }
+
+        public async Task<bool> UsernameAvailableAsync(string username)
+        {
+            //TODO: casesensitive
+            var result = await _userRepository.FilterByAsync(c => c.Username.Equals(username));
+
+            return result is null || result.Count == 0;
         }
     }
 }

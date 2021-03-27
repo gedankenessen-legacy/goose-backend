@@ -1,4 +1,5 @@
 ﻿using Goose.API.Utils.Validators;
+using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 
 namespace Goose.Domain.Models.Auth
@@ -15,7 +16,8 @@ namespace Goose.Domain.Models.Auth
         [PasswordValidator]
         public string Password { get; set; }
 
-        [Required(ErrorMessage = "Please provide a company name.")]
+        //[Remote(action: "CompanyNameAvailable", controller: "Company", ErrorMessage = "The provided company name is already taken.")]
+        [Required(ErrorMessage = "Please provide a company name.")]  
         public string CompanyName { get; set; }
     }
 }

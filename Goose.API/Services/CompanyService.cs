@@ -1,8 +1,10 @@
 ﻿using Goose.API.Repositories;
+using Goose.API.Utils.Exceptions;
 using Goose.Domain.DTOs;
 using Goose.Domain.Models;
 using Goose.Domain.Models.companies;
 using Goose.Domain.Models.identity;
+using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
 using System;
 using System.Collections.Generic;
@@ -15,12 +17,12 @@ namespace Goose.API.Services
     {
         public Task<CompanyDTO> GetCompanyAsync(string companyId);
         public Task<IList<CompanyDTO>> GetCompaniesAsync();
-        public Task<CompanyDTO> CreateCompanyAsync(CompanyLogin companyLogin);
+        public Task<CompanyDTO> CreateCompanyAsync(string companyName, ObjectId creatorUserId);
         public Task<CompanyDTO> UpdateCompanyAsync(string id, CompanyDTO company);
+        public Task<bool> CompanyNameAvailableAsync(string companyName);
 
         public Task<IList<PropertyUserDTO>> GetCompanyUsersAsync(string companyId);
         public Task<PropertyUserDTO> GetCompanyUserAsync(string companyId, string userId);
-
     }
 
     public class CompanyService : ICompanyService
@@ -38,57 +40,40 @@ namespace Goose.API.Services
             _roleRepository = roleRepository;
         }
 
-        public async Task<CompanyDTO> CreateCompanyAsync(CompanyLogin companyLogin)
+        public async Task<CompanyDTO> CreateCompanyAsync(string companyName, ObjectId creatorUserId)
         {
-            var company = (await _companyRepository.FilterByAsync(x => x.Name.Equals(companyLogin.CompanyName))).FirstOrDefault();
+            if (ObjectId.TryParse(creatorUserId.ToString(), out _) is false)
+                throw new HttpStatusException(StatusCodes.Status400BadRequest, "The user id is not valid.");
 
-            if (company is not null)
-                throw new Exception("A Company with this name is already existing");
+            if (await CompanyNameAvailableAsync(companyName) is false)
+                throw new HttpStatusException(StatusCodes.Status409Conflict, "A company with this name is already existing.");
 
+            // TODO: After merged use const role names provided in Roles.cs
             var role = (await _roleRepository.FilterByAsync(x => x.Name.Equals("Firma"))).FirstOrDefault();
 
             if (role is null)
                 role = await _roleService.CreateRoleAsync(new Role() { Name = "Firma" });
 
-            var roleIds = new List<ObjectId>();
-            roleIds.Add(role.Id);
-
-            var companyUser = new User()
+            var newCompany = new Company()
             {
-                Firstname = companyLogin.CompanyName,
-                Lastname = "Firma",
-                HashedPassword = companyLogin.HashedPassword
+                Name = companyName,
+                ProjectIds = new List<ObjectId>(),
+                Users = new List<PropertyUser>() 
+                { 
+                    new PropertyUser() 
+                    { 
+                        RoleIds = new List<ObjectId>() 
+                        { 
+                            role.Id 
+                        },
+                        UserId = creatorUserId
+                    } 
+                }
             };
 
-            var newUser = await _userService.CreateNewUserAsync(companyUser);
+            await _companyRepository.CreateAsync(newCompany);
 
-            PropertyUser propertyUser = new PropertyUser()
-            {
-                UserId = newUser.Id,
-                RoleIds = roleIds
-            };
-
-            var propertyUsers = new List<PropertyUser>();
-            propertyUsers.Add(propertyUser);
-
-            company = new Company()
-            {
-                Name = companyLogin.CompanyName,
-                Users = propertyUsers
-            };
-
-            await _companyRepository.CreateAsync(company);
-
-            var roles = new List<RoleDTO>();
-            roles.Add(new RoleDTO(role));
-
-            var firmenUser = new PropertyUserDTO()
-            {
-                User = new UserDTO(newUser),
-                Roles = roles
-            };
-
-            return new CompanyDTO() {Id = company.Id, Name = company.Name, User = firmenUser};
+            return new CompanyDTO() { Id = newCompany.Id, Name = newCompany.Name };
         }
 
         public async Task<IList<CompanyDTO>> GetCompaniesAsync()
@@ -100,7 +85,7 @@ namespace Goose.API.Services
 
             var companyDTOs = new List<CompanyDTO>();
 
-            foreach(var company in companies)
+            foreach (var company in companies)
             {
                 var companyDTO = (CompanyDTO)company;
                 companyDTOs.Add(companyDTO);
@@ -146,17 +131,17 @@ namespace Goose.API.Services
 
             IList<PropertyUserDTO> propertyUserList = new List<PropertyUserDTO>();
 
-            foreach(var propertyUser in company.Users)
+            foreach (var propertyUser in company.Users)
             {
                 var user = userList.FirstOrDefault(x => x.Id.Equals(propertyUser.UserId));
 
                 IList<RoleDTO> roles = new List<RoleDTO>();
 
-                foreach(var roleId in propertyUser.RoleIds)
+                foreach (var roleId in propertyUser.RoleIds)
                 {
                     var role = roleList.FirstOrDefault(x => x.Id.Equals(roleId));
 
-                    if(role is not null)
+                    if (role is not null)
                         roles.Add(new RoleDTO(role));
                 }
 
@@ -180,7 +165,7 @@ namespace Goose.API.Services
 
             var user = await _userService.GetUser(propertyUser.UserId);
 
-            if(user is null)
+            if (user is null)
                 throw new Exception("There is no User with this ID");
 
             IList<RoleDTO> roles = new List<RoleDTO>();
@@ -196,6 +181,13 @@ namespace Goose.API.Services
             }
 
             return new PropertyUserDTO() { User = user, Roles = roles };
+        }
+
+        public async Task<bool> CompanyNameAvailableAsync(string companyName)
+        {
+            var result = await _companyRepository.FilterByAsync(c => c.Name.Equals(companyName));
+
+            return result is null || result.Count == 0;
         }
     }
 }

@@ -1,6 +1,7 @@
 using Goose.API.Repositories;
 using Goose.API.Services;
 using Goose.API.Services.issues;
+using Goose.API.Utils;
 using Goose.Data;
 using Goose.Data.Context;
 using Goose.Data.Settings;
@@ -70,7 +71,7 @@ namespace Goose.API
         private void ConfigureMongoDB()
         {
             // In order prevent the [BsonElement("...")] Attribute on each property we configure the drive to assume this as default. Thanks @LuksTrackmaniaCorner
-            var conventionPack = new ConventionPack { new CamelCaseElementNameConvention() };
+            var conventionPack = new ConventionPack { new CamelCaseElementNameConvention(), new IgnoreExtraElementsConvention(true) };
             ConventionRegistry.Register("camelCase", conventionPack, t => true);
         }
 
@@ -81,6 +82,7 @@ namespace Goose.API
         private void RegisterService(IServiceCollection services)
         {
             services.Configure<DbSettings>(_configuration.GetSection(nameof(DbSettings)));
+            services.Configure<TokenSettings>(_configuration.GetSection(nameof(TokenSettings)));
 
             services.AddAutoMapper(typeof(AutoMapping));
             
@@ -105,6 +107,8 @@ namespace Goose.API
             services.AddScoped<IStateService, StateService>();
             services.AddScoped<ICompanyService, CompanyService>();
             services.AddScoped<IAuthService, AuthService>();
+
+            services.AddHttpContextAccessor();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
