@@ -1,9 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AutoMapper;
 using Goose.API.Repositories;
-using Goose.Domain.DTOs;
+using Goose.API.Utils;
 using Goose.Domain.DTOs.issues;
 using Goose.Domain.Models.tickets;
 using MongoDB.Bson;
@@ -15,7 +14,7 @@ namespace Goose.API.Services.issues
         public Task<IList<IssueTimeSheetDTO>> GetAllOfIssueAsync(ObjectId issueId);
         public Task<IssueTimeSheetDTO> GetAsync(ObjectId issueId, ObjectId timeSheetId);
         public Task<IssueTimeSheetDTO> CreateAsync(ObjectId issueId, IssueTimeSheetDTO timeSheet);
-        public Task UpdateAsync(ObjectId issueId, IssueTimeSheetDTO timeSheetDTO);
+        public Task UpdateAsync(ObjectId issueId, IssueTimeSheetDTO timeSheetDto);
         public Task DeleteAsync(ObjectId issueId, ObjectId timeSheetId);
     }
 
@@ -24,20 +23,17 @@ namespace Goose.API.Services.issues
     {
         private readonly IIssueRepository _issueRepo;
         private readonly IUserRepository _userRepo;
-        private readonly IMapper _mapper;
 
-        public IssueTimeSheetService(IIssueRepository issueRepo, IMapper mapper, IUserRepository userRepo)
+        public IssueTimeSheetService(IIssueRepository issueRepo, IUserRepository userRepo)
         {
             _issueRepo = issueRepo;
-            _mapper = mapper;
             _userRepo = userRepo;
         }
 
         public async Task<IList<IssueTimeSheetDTO>> GetAllOfIssueAsync(ObjectId issueId)
         {
-            var timesheets = (await _issueRepo.GetAsync(issueId)).TimeSheets;
-            var dtos = await Task.WhenAll(timesheets.Select(MapToTimeSheetDTO));
-            return dtos;
+            var timeSheets = (await _issueRepo.GetAsync(issueId)).TimeSheets;
+            return await Task.WhenAll(timeSheets.Select(MapToTimeSheetDTO));
         }
 
         public async Task<IssueTimeSheetDTO> GetAsync(ObjectId issueId, ObjectId timeSheetId)
@@ -46,20 +42,20 @@ namespace Goose.API.Services.issues
             return await MapToTimeSheetDTO(timeSheet);
         }
 
-        public async Task<IssueTimeSheetDTO> CreateAsync(ObjectId issueId, IssueTimeSheetDTO timeSheet)
+        public async Task<IssueTimeSheetDTO> CreateAsync(ObjectId issueId, IssueTimeSheetDTO timeSheetDto)
         {
-            //TODO nicht atomar
             var issue = await _issueRepo.GetAsync(issueId);
-            issue.TimeSheets.Add(_mapper.Map<TimeSheet>(timeSheet));
+
+            timeSheetDto.Id = ObjectId.GenerateNewId();
+            issue.TimeSheets.Add(timeSheetDto.ToTimeSheet());
             await _issueRepo.UpdateAsync(issue);
-            return timeSheet;
+            return timeSheetDto;
         }
 
-        public async Task UpdateAsync(ObjectId issueId, IssueTimeSheetDTO timeSheetDTO)
+        public async Task UpdateAsync(ObjectId issueId, IssueTimeSheetDTO timeSheetDto)
         {
             var issue = await _issueRepo.GetAsync(issueId);
-            var timeSheet = issue.TimeSheets.First(it => it.Id.Equals(timeSheetDTO.Id));
-            SetTimeSheetFields(timeSheet, timeSheetDTO);
+            issue.TimeSheets.Replace(it => it.Id == timeSheetDto.Id, timeSheetDto.ToTimeSheet());
             await _issueRepo.UpdateAsync(issue);
         }
 
@@ -71,19 +67,10 @@ namespace Goose.API.Services.issues
             await _issueRepo.UpdateAsync(issue);
         }
 
-
-        private void SetTimeSheetFields(TimeSheet dest, IssueTimeSheetDTO source)
-        {
-            dest.Start = source.Start;
-            dest.End = source.End;
-        }
-
         private async Task<IssueTimeSheetDTO> MapToTimeSheetDTO(TimeSheet timeSheet)
         {
             var user = await _userRepo.GetAsync(timeSheet.UserId);
-            var dto = _mapper.Map<IssueTimeSheetDTO>(timeSheet);
-            dto.User = _mapper.Map<UserDTO>(user);
-            return dto;
+            return new IssueTimeSheetDTO(timeSheet, user);
         }
     }
 }
