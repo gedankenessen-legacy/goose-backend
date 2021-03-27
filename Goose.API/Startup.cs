@@ -82,31 +82,29 @@ namespace Goose.API
         {
             services.Configure<DbSettings>(_configuration.GetSection(nameof(DbSettings)));
 
-            services.AddTransient<IIssueConversationService, IssueConversationService>();
-
             services.AddAutoMapper(typeof(AutoMapping));
+            
             services.AddSingleton<IDbContext, DbContext>();
 
             services.AddScoped<IIssueRepository, IssueRepository>();
+            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IRoleRepository, RoleRepository>();
+            services.AddScoped<IProjectRepository, ProjectRepository>();
+            services.AddScoped<ICompanyRepository, CompanyRepository>();
+
             services.AddScoped<IIssueService, IssueService>();
-            services.AddScoped<IIssueService, IssueService>();
+            services.AddScoped<IIssueConversationService, IssueConversationService>();
             services.AddScoped<IIssueAssignedUserService, IssueAssignedUserService>();
             services.AddScoped<IIssueRequirementService, IssueRequirementService>();
             services.AddScoped<IIssuePredecessorService, IssuePredecessorService>();
-            services.AddScoped<IIssueTimeSheetService, IssueTimeSheetService>();
-            services.AddScoped<IUserRepository, UserRepository>();
-            services.AddScoped<IUserService, UserService>();
-            services.AddScoped<IRoleRepository, RoleRepository>();
-            services.AddScoped<IRoleService, RoleService>();
-            services.AddScoped<IProjectRepository, ProjectRepository>();
+            services.AddScoped<IIssueTimeSheetService, IssueTimeSheetService>();       
+            services.AddScoped<IUserService, UserService>();     
+            services.AddScoped<IRoleService, RoleService>();    
             services.AddScoped<IProjectService, ProjectService>();
-
-            services.AddScoped<ICompanyRepository, CompanyRepository>();
-            services.AddScoped<ICompanyService, CompanyService>();
-
-            services.AddAutoMapper(typeof(AutoMapping));
-            services.AddScoped<IStateService, StateService>();
             services.AddScoped<IProjectUserService, ProjectUserService>();
+            services.AddScoped<IStateService, StateService>();
+            services.AddScoped<ICompanyService, CompanyService>();
+            services.AddScoped<IAuthService, AuthService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
