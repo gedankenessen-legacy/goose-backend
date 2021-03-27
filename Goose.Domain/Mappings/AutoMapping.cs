@@ -14,7 +14,6 @@ namespace Goose.Domain.Mapping
     {
         public AutoMapping()
         {
-            CreateMap<Issue, IssueResponseDTO>().ReverseMap();
             CreateMap<User, UserDTO>();
             CreateMap<TimeSheet, IssueTimeSheetDTO>()
                 .ForMember(it => it.User, o => o.Ignore());

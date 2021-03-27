@@ -24,7 +24,7 @@ namespace Goose.API.Controllers.issuesControllers
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<IList<IssueResponseDTO>>> GetAll([FromRoute] string projectId)
+        public async Task<ActionResult<IList<IssueDTO>>> GetAll([FromRoute] string projectId)
         {
             var res = await _issueService.GetAllOfProject(new ObjectId(projectId));
             return Ok(res);
@@ -34,7 +34,7 @@ namespace Goose.API.Controllers.issuesControllers
         [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<IssueResponseDTO>> Get([FromRoute] string projectId, [FromRoute] string id)
+        public async Task<ActionResult<IssueDTO>> Get([FromRoute] string projectId, [FromRoute] string id)
         {
             var res = await _issueService.GetOfProject(projectId.ToObjectId(), id.ToObjectId());
             return res == null ? NotFound() : Ok(res);
@@ -44,12 +44,12 @@ namespace Goose.API.Controllers.issuesControllers
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult> Post([FromRoute] string projectId, [FromBody] IssueResponseDTO issueRequest)
+        public async Task<ActionResult> Post([FromRoute] string projectId, [FromBody] IssueDTO issueRequest)
         {
-            if (issueRequest.ProjectId != default && issueRequest.ProjectId != projectId.ToObjectId())
+            if (issueRequest.Project.Id != default && issueRequest.Project.Id != projectId.ToObjectId())
                 throw new Exception("Project id must be the same in url and body or not defined in body");
-            issueRequest.ProjectId = projectId.ToObjectId();
-            
+            issueRequest.Project.Id = projectId.ToObjectId();
+
             var res = await _issueService.Create(issueRequest);
             return CreatedAtAction(nameof(Get), new {projectId, id = res.Id}, res);
         }
@@ -58,7 +58,7 @@ namespace Goose.API.Controllers.issuesControllers
         [HttpPut("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult> Put([FromBody] IssueResponseDTO issueRequest, [FromRoute] string id)
+        public async Task<ActionResult> Put([FromBody] IssueDTO issueRequest, [FromRoute] string id)
         {
             await _issueService.Update(issueRequest, id.ToObjectId());
             return NoContent();

@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
 using Goose.API.Repositories;
+using Goose.Domain.DTOs;
 using Goose.Domain.DTOs.issues;
 using Goose.Domain.Models.tickets;
 using MongoDB.Bson;
@@ -12,65 +14,88 @@ namespace Goose.API.Services.issues
 {
     public interface IIssueService
     {
-        Task<IList<IssueResponseDTO>> GetAll();
-        Task<IList<IssueResponseDTO>> GetAllOfProject(ObjectId projectId);
-        public Task<IssueResponseDTO> Get(ObjectId id);
-        public Task<IssueResponseDTO> GetOfProject(ObjectId projectId, ObjectId id);
-        public Task<IssueResponseDTO> Create(IssueResponseDTO issueRequestDto);
-        public Task<IssueResponseDTO> Update(IssueResponseDTO issueRequest, ObjectId id);
+        Task<IList<IssueDTO>> GetAll();
+        public Task<IssueDTO> Get(ObjectId id);
+        Task<IList<IssueDTO>> GetAllOfProject(ObjectId projectId);
+        public Task<IssueDTO> GetOfProject(ObjectId projectId, ObjectId id);
+        public Task<IssueDTO> Create(IssueDTO issueDto);
+        public Task<IssueDTO> Update(IssueDTO issueDto, ObjectId id);
         public Task<bool> Delete(ObjectId id);
     }
 
     public class IssueService : IIssueService
     {
-        private readonly IIssueRepository _issueRepo;
-        private readonly IMapper _mapper;
+        private readonly IStateService _stateService;
+        private readonly IProjectRepository _projectRepository;
+        private readonly IUserRepository _userRepository;
 
-        public IssueService(IIssueRepository issueRepo, IMapper mapper)
+        private readonly IIssueRepository _issueRepo;
+
+        public IssueService(IIssueRepository issueRepo, IStateService stateService,
+            IProjectRepository projectRepository, IUserRepository userRepository)
         {
             _issueRepo = issueRepo;
-            _mapper = mapper;
+            _stateService = stateService;
+            _projectRepository = projectRepository;
+            _userRepository = userRepository;
         }
 
-        public async Task<IList<IssueResponseDTO>> GetAll()
+        public async Task<IList<IssueDTO>> GetAll()
         {
-            return _mapper.Map<List<IssueResponseDTO>>(await _issueRepo.GetAsync());
+            return await Task.WhenAll((await _issueRepo.GetAsync()).Select(CreateDtoFromIssue));
         }
 
-
-        public async Task<IList<IssueResponseDTO>> GetAllOfProject(ObjectId projectId)
+        public async Task<IssueDTO> Get(ObjectId id)
         {
-            return _mapper.Map<List<IssueResponseDTO>>(await _issueRepo.GetAllOfProjectAsync(projectId));
+            return await CreateDtoFromIssue(await _issueRepo.GetAsync(id));
         }
 
-        public async Task<IssueResponseDTO> Get(ObjectId id)
+        public async Task<IList<IssueDTO>> GetAllOfProject(ObjectId projectId)
         {
-            return _mapper.Map<IssueResponseDTO>(await _issueRepo.GetAsync(id));
+            return await Task.WhenAll((await _issueRepo.GetAllOfProjectAsync(projectId)).Select(CreateDtoFromIssue));
         }
 
-        public async Task<IssueResponseDTO> GetOfProject(ObjectId projectId, ObjectId id)
+        public async Task<IssueDTO> GetOfProject(ObjectId projectId, ObjectId id)
         {
-            return _mapper.Map<IssueResponseDTO>(await _issueRepo.GetOfProjectAsync(projectId, id));
+            return await CreateDtoFromIssue(await _issueRepo.GetOfProjectAsync(projectId, id));
         }
 
-        public async Task<IssueResponseDTO> Create(IssueResponseDTO issueRequestDto)
+        public async Task<IssueDTO> Create(IssueDTO issueDto)
         {
-            issueRequestDto.Id = ObjectId.GenerateNewId();
-            var issue = _mapper.Map<Issue>(issueRequestDto);
+            var issue = issueDto.ToIssue();
             await _issueRepo.CreateAsync(issue);
-            return issueRequestDto;
+            
+            issueDto.Id = issue.Id;
+            return issueDto;
         }
 
-        public async Task<IssueResponseDTO> Update(IssueResponseDTO issueRequest, ObjectId id)
+        public async Task<IssueDTO> Update(IssueDTO issueDto, ObjectId id)
         {
-            await _issueRepo.UpdateAsync(_mapper.Map<Issue>(issueRequest));
-            //TODO manche felder dürfen nicht geupdated werden
-            return await Get(id);
+            var issue = await _issueRepo.GetAsync(id);
+            issue.AuthorId = issueDto.Author.Id;
+            issue.ClientId = issueDto.Client.Id;
+            issue.StateId = issueDto.State.Id;
+            issue.IssueDetail = issueDto.IssueDetail;
+            issue.ProjectId = issueDto.Project.Id;
+
+            await _issueRepo.UpdateAsync(issue);
+            return issueDto;
         }
 
         public async Task<bool> Delete(ObjectId id)
         {
             return (await _issueRepo.DeleteAsync(id)).DeletedCount > 0;
+        }
+
+
+        private async Task<IssueDTO> CreateDtoFromIssue(Issue issue)
+        {
+            var state = _stateService.GetState(issue.ProjectId, issue.StateId);
+            var project = _projectRepository.GetAsync(issue.ProjectId);
+            var client = _userRepository.GetAsync(issue.ClientId);
+            var author = _userRepository.GetAsync(issue.AuthorId);
+            return new IssueDTO(issue, await state, new ProjectDTO(await project), new UserDTO(await client),
+                new UserDTO(await author));
         }
     }
 }
