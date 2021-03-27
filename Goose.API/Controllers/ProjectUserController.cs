@@ -26,6 +26,7 @@ namespace Goose.API.Controllers
         [HttpPut("{userId}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult> UpdateProjectUser([FromBody] PropertyUserDTO projectUserDTO, [FromRoute] ObjectId projectId, ObjectId userId)
         {
             await _projectUserService.UpdateProjectUser(projectId, userId, projectUserDTO);
