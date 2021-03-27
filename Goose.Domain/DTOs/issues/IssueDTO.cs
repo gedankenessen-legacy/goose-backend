@@ -43,6 +43,16 @@ namespace Goose.Domain.DTOs.issues
             };
         }
 
+        public Issue IntoIssue(Issue issue)
+        {
+            issue.AuthorId = Author.Id;
+            issue.ClientId = Client.Id;
+            issue.StateId = State.Id;
+            issue.IssueDetail = IssueDetail;
+            issue.ProjectId = Project.Id;
+            return issue;
+        }
+
 
         public ObjectId Id { get; set; }
         public DateTime CreatedAt => Id.CreationTime;

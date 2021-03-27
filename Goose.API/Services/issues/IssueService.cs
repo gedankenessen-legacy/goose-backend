@@ -71,13 +71,7 @@ namespace Goose.API.Services.issues
 
         public async Task<IssueDTO> Update(IssueDTO issueDto, ObjectId id)
         {
-            var issue = await _issueRepo.GetAsync(id);
-            issue.AuthorId = issueDto.Author.Id;
-            issue.ClientId = issueDto.Client.Id;
-            issue.StateId = issueDto.State.Id;
-            issue.IssueDetail = issueDto.IssueDetail;
-            issue.ProjectId = issueDto.Project.Id;
-
+            var issue = issueDto.IntoIssue(await _issueRepo.GetAsync(id));
             await _issueRepo.UpdateAsync(issue);
             return issueDto;
         }
