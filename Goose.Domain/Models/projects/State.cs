@@ -12,19 +12,21 @@ namespace Goose.Domain.Models.projects
         public bool UserGenerated { get; set; }
 
         // Dies sind die Namen für die Vordefinierten Status
-        public const string CheckingState = "Checking";
-        public const string NegotiationState = "Negotiation";
-        public const string BlockedState = "Blocked";
-        public const string WaitingState = "Waiting";
-        public const string ProcessingState = "Processing";
+        public const string CheckingState = "Überprüfung";
+        public const string NegotiationState = "Verhandlung";
+
+        public const string BlockedState = "Blockiert";
+        public const string WaitingState = "Wartend";
+        public const string ProcessingState = "Bearbeiten";
         public const string ReviewState = "Review";
-        public const string CompletedState = "Completed";
-        public const string CancelledState = "Cancelled";
-        public const string ArchivedState = "Archived";
+
+        public const string CompletedState = "Abgeschlossen";
+        public const string CancelledState = "Abgebrochen";
+        public const string ArchivedState = "Archiviert";
 
         // Dies sind die gültigen Werte für die Phasen
-        public const string NegotiationPhase = "Negotiation";
-        public const string ProcessingPhase = "Processing";
-        public const string ConclusionPhase = "Conclusion";
+        public const string NegotiationPhase = "Verhandlungsphase";
+        public const string ProcessingPhase = "Bearbeitungsphase";
+        public const string ConclusionPhase = "Abschlussphase";
     }
 }

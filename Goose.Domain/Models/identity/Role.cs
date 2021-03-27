@@ -7,10 +7,10 @@ namespace Goose.Domain.Models.identity
     {
         public string Name { get; set; }
 
-        public const string CompanyRole = "Company";
-        public const string CustomerRole = "Customer";
-        public const string ProjectLeaderRole = "ProjectLeader";
-        public const string EmployeeRole = "Employee";
-        public const string ReadonlyRole = "Readonly";
+        public const string CompanyRole = "Firma";
+        public const string CustomerRole = "Kunde";
+        public const string ProjectLeaderRole = "Projektleiter";
+        public const string EmployeeRole = "Mitarbeiter";
+        public const string ReadonlyEmployeeRole = "Mitarbeiter (Schreiben)";
     }
 }
