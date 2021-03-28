@@ -3,11 +3,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using Goose.API.Repositories;
 using Goose.Domain.DTOs;
-using Goose.Domain.Models.identity;
+using Goose.Domain.Models.Identity;
 using Microsoft.AspNetCore.Identity;
 using MongoDB.Bson;
 
-namespace Goose.API.Services.issues
+namespace Goose.API.Services.Issues
 {
     public interface IIssueAssignedUserService
     {

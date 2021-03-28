@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace Goose.Domain.Models.tickets
+namespace Goose.Domain.Models.Tickets
 {
     public class IssueDetail
     {

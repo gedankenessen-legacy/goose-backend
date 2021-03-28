@@ -2,7 +2,7 @@
 using Goose.Data.Repository;
 using Goose.Domain.DTOs;
 using Goose.Domain.Models;
-using Goose.Domain.Models.projects;
+using Goose.Domain.Models.Projects;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using System;

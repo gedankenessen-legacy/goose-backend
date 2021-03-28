@@ -2,8 +2,8 @@
 using Goose.API.Utils.Exceptions;
 using Goose.Domain.DTOs;
 using Goose.Domain.Models;
-using Goose.Domain.Models.companies;
-using Goose.Domain.Models.identity;
+using Goose.Domain.Models.Companies;
+using Goose.Domain.Models.Identity;
 using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
 using System;

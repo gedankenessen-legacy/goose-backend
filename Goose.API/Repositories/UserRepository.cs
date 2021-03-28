@@ -1,6 +1,6 @@
 ﻿using Goose.Data.Context;
 using Goose.Data.Repository;
-using Goose.Domain.Models.identity;
+using Goose.Domain.Models.Identity;
 using MongoDB.Driver;
 using System;
 using System.Collections.Generic;

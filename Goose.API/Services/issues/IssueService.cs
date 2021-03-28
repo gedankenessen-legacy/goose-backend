@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using AutoMapper;
 using Goose.API.Repositories;
-using Goose.Domain.DTOs.issues;
-using Goose.Domain.Models.tickets;
+using Goose.Domain.DTOs.Issues;
+using Goose.Domain.Models.Tickets;
 using MongoDB.Bson;
 using MongoDB.Driver;
 
-namespace Goose.API.Services.issues
+namespace Goose.API.Services.Issues
 {
     public interface IIssueService
     {

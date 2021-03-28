@@ -1,7 +1,7 @@
 ﻿using Goose.API.Utils.Exceptions;
 using Goose.Domain.DTOs;
 using Goose.Domain.Models.Auth;
-using Goose.Domain.Models.identity;
+using Goose.Domain.Models.Identity;
 using Microsoft.AspNetCore.Http;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;

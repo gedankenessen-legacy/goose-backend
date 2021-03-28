@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
-using Goose.Domain.Models.identity;
-using Goose.Domain.Models.projects;
-using Goose.Domain.Models.tickets;
+using Goose.Domain.Models.Identity;
+using Goose.Domain.Models.Projects;
+using Goose.Domain.Models.Tickets;
 
-namespace Goose.Domain.DTOs.issues
+namespace Goose.Domain.DTOs.Issues
 {
     public class IssueDTODetailed
     {

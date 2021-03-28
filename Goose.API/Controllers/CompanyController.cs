@@ -1,6 +1,6 @@
 ﻿using Goose.API.Services;
 using Goose.Domain.DTOs;
-using Goose.Domain.Models.companies;
+using Goose.Domain.Models.Companies;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;

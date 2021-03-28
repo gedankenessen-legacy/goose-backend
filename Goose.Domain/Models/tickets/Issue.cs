@@ -1,11 +1,11 @@
 ﻿using System.Collections.Generic;
 using Goose.Data.Models;
-using Goose.Domain.Models.identity;
-using Goose.Domain.Models.projects;
+using Goose.Domain.Models.Identity;
+using Goose.Domain.Models.Projects;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace Goose.Domain.Models.tickets
+namespace Goose.Domain.Models.Tickets
 {
     public class Issue : Document
     {

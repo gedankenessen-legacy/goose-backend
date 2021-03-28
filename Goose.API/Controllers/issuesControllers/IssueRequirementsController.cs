@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Goose.API.Services.issues;
-using Goose.Domain.DTOs.issues;
-using Goose.Domain.Models.tickets;
+using Goose.API.Services.Issues;
+using Goose.Domain.DTOs.Issues;
+using Goose.Domain.Models.Tickets;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Goose.API.Controllers.issuesControllers
+namespace Goose.API.Controllers.IssuesControllers
 {
     [Route("/api/issues/{issueId}/requirements/")]
     [ApiController]

@@ -1,8 +1,8 @@
 ﻿using Goose.API.Repositories;
 using Goose.API.Utils.Exceptions;
 using Goose.API.Utils.Validators;
-using Goose.Domain.DTOs.tickets;
-using Goose.Domain.Models.tickets;
+using Goose.Domain.DTOs.Tickets;
+using Goose.Domain.Models.Tickets;
 using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
 using System.Collections.Generic;

@@ -1,6 +1,6 @@
 using Goose.API.Repositories;
 using Goose.API.Services;
-using Goose.API.Services.issues;
+using Goose.API.Services.Issues;
 using Goose.API.Utils;
 using Goose.Data;
 using Goose.Data.Context;
