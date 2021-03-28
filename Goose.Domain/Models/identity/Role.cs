@@ -11,6 +11,6 @@ namespace Goose.Domain.Models.identity
         public const string CustomerRole = "Kunde";
         public const string ProjectLeaderRole = "Projektleiter";
         public const string EmployeeRole = "Mitarbeiter";
-        public const string ReadonlyEmployeeRole = "Mitarbeiter (Schreiben)";
+        public const string ReadonlyEmployeeRole = "Mitarbeiter (Lesend)";
     }
 }
