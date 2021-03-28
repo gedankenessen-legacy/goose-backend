@@ -11,24 +11,28 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
 using Goose.API.Utils;
+using Goose.API.Repositories;
 
 namespace Goose.API.Services
 {
     public interface IAuthService
     {
-        public Task<SignInResponse> SignUpAsync(SignUpRequest signUpRequest);
+        Task<SignInResponse> SignUpAsync(SignUpRequest signUpRequest);
+        Task<SignInResponse> SignInAsync(SignInRequest signInRequest);
     }
 
     public class AuthService : IAuthService
     {
         private readonly ICompanyService _companyService;
         private readonly IUserService _userService;
+        private readonly IUserRepository _userRepository;
         private readonly IOptions<TokenSettings> _tokenSettings;
 
-        public AuthService(ICompanyService companyService, IUserService userService, IOptions<TokenSettings> tokenSettings)
+        public AuthService(ICompanyService companyService, IUserService userService, IUserRepository userRepository, IOptions<TokenSettings> tokenSettings)
         {
             _companyService = companyService;
             _userService = userService;
+            _userRepository = userRepository;
             _tokenSettings = tokenSettings;
         }
 
@@ -64,6 +68,29 @@ namespace Goose.API.Services
             {
                 User = new UserDTO(newUser),
                 Companies = await _companyService.GetCompaniesAsync(),
+                Token = token
+            };
+        }
+
+        public async Task<SignInResponse> SignInAsync(SignInRequest signInRequest)
+        {
+            // find user with username
+            var user = await _userRepository.GetByUsernameAsync(signInRequest.Username);
+
+            if (user is null)
+                throw new HttpStatusException(StatusCodes.Status400BadRequest, "Cannot signIn."); // generic message in order to not let the clients know what is wrong.
+
+            // verify password
+            if (!BCrypt.Net.BCrypt.Verify(signInRequest.Password, user.HashedPassword))
+                throw new HttpStatusException(StatusCodes.Status400BadRequest, "Cannot signIn."); // generic message in order to not let the clients know what is wrong.
+
+            // Generate Token
+            var token = CreatToken(user);
+
+            return new SignInResponse()
+            {
+                User = new UserDTO(user),
+                Companies = await _companyService.GetCompaniesAsync(), // TODO: as soon the signin is enabled and the api is secured, the requests cann be restricted to the ressources that the client can view. Currently he receives all, even the ones he should not see.
                 Token = token
             };
         }

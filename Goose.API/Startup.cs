@@ -14,7 +14,10 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Conventions;
+using System;
 using System.ComponentModel;
+using System.IO;
+using System.Reflection;
 
 namespace Goose.API
 {
@@ -62,6 +65,11 @@ namespace Goose.API
                     Type = "string",
                     Format = "ObjectId",
                 });
+
+                // Set the comments path for the Swagger JSON and UI.
+                var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+                c.IncludeXmlComments(xmlPath);
             });
         }
 

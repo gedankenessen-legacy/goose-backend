@@ -102,10 +102,7 @@ namespace Goose.API.Services
 
         public async Task<bool> UsernameAvailableAsync(string username)
         {
-            //TODO: casesensitive
-            var result = await _userRepository.FilterByAsync(c => c.Username.Equals(username));
-
-            return result is null || result.Count == 0;
+            return await _userRepository.GetByUsernameAsync(username) is null;
         }
     }
 }
