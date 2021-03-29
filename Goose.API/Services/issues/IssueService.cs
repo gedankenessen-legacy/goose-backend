@@ -22,6 +22,9 @@ namespace Goose.API.Services.issues
         public Task<IssueDTO> Create(IssueCreateDTO issueDto);
         public Task<IssueDTO> Update(IssueDTO issueDto, ObjectId id);
         public Task<bool> Delete(ObjectId id);
+        public Task<IssueDTO?> GetParent(ObjectId issueId);
+        public Task SetParent(ObjectId issueId, ObjectId parentId);
+        public Task RemoveParent(ObjectId issueId);
     }
 
     public class IssueService : IIssueService
@@ -88,6 +91,27 @@ namespace Goose.API.Services.issues
         public async Task<bool> Delete(ObjectId id)
         {
             return (await _issueRepo.DeleteAsync(id)).DeletedCount > 0;
+        }
+
+        public async Task<IssueDTO?> GetParent(ObjectId issueId)
+        {
+            var parentId = (await _issueRepo.GetAsync(issueId)).ParentIssueId;
+            if (parentId == null) return null;
+            return await Get(issueId);
+        }
+
+        public async Task SetParent(ObjectId issueId, ObjectId parentId)
+        {
+            var issue = await _issueRepo.GetAsync(issueId);
+            issue.ParentIssueId = parentId;
+            await _issueRepo.UpdateAsync(issue);
+        }
+
+        public async Task RemoveParent(ObjectId issueId)
+        {
+            var issue = await _issueRepo.GetAsync(issueId);
+            issue.ParentIssueId = null;
+            await _issueRepo.UpdateAsync(issue);
         }
 
 
