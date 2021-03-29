@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Goose.API.Repositories;
+using Goose.API.Utils.Exceptions;
 using Goose.Domain.Models.identity;
 using MongoDB.Bson;
 using System;
@@ -33,7 +34,7 @@ namespace Goose.API.Services
             var role = await _roleRepository.GetAsync(id);
 
             if (role == null)
-                throw new Exception();
+                throw new HttpStatusException(400, "Es wurde keine Role mit dieser ID gefunden");
 
             return role;
         }
@@ -46,15 +47,15 @@ namespace Goose.API.Services
         public async Task<Role> CreateRoleAsync(Role role)
         {
             if (role == null)
-                throw new Exception();
+                throw new HttpStatusException(400, "Die mitgegebene Role ist null");
 
             if (string.IsNullOrWhiteSpace(role.Name))
-                throw new Exception();
+                throw new HttpStatusException(400, "Die Role muss einen Namen haben");
 
             var roleItems = await _roleRepository.FilterByAsync(x => x.Name.Equals(role.Name));
 
             if (roleItems.Count > 0)
-                throw new Exception();
+                throw new HttpStatusException(400, "Es existiert schon eine Role mit diesen Namen");
 
             var newRole = new Role()
             {
@@ -68,11 +69,11 @@ namespace Goose.API.Services
 
         public async Task<Role> UpdateRoleAsync(ObjectId id, Role role)
         {
-            if (role.Id == id)
-                throw new Exception();
-
             if (role == null)
-                throw new Exception();
+                throw new HttpStatusException(400, "Die mitgegebene Role ist null");
+
+            if (role.Id == id)
+                throw new HttpStatusException(400, "Die mitgegebene ID stimmt nicht mit der RoleID überein");
 
             if (string.IsNullOrWhiteSpace(role.Name))
                 throw new Exception();
@@ -80,12 +81,12 @@ namespace Goose.API.Services
             var roleItems = await _roleRepository.FilterByAsync(x => x.Name.Equals(role.Name));
 
             if (roleItems.Count > 0)
-                throw new Exception();
+                throw new HttpStatusException(400, "Es existiert schon eine Role mit diesen Namen");
 
             var roleToUpdate = (await _roleRepository.FilterByAsync(x => x.Id == role.Id)).FirstOrDefault();
 
             if (roleToUpdate == null)
-                throw new Exception();
+                throw new HttpStatusException(400, "Die mitgegebene Role existiert nicht");
 
             roleToUpdate.Name = role.Name;
 

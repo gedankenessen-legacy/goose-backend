@@ -1,4 +1,5 @@
 ﻿using Goose.API.Repositories;
+using Goose.API.Utils.Exceptions;
 using Goose.Domain.DTOs;
 using Goose.Domain.Models;
 using Goose.Domain.Models.identity;
@@ -88,18 +89,15 @@ namespace Goose.API.Services
         {
             var company = await _companyRepository.GetCompanyByIdAsync(companyId);
 
-            if (company is null)
-                throw new Exception("No Company with this Id exists");
-
             var propertyUser = company.Users.FirstOrDefault(x => x.UserId.Equals(userId));
 
             if (propertyUser is null)
-                throw new Exception("There is no User with this ID");
+                throw new HttpStatusException(400, "Es wurde kein User mit dieser ID gefunden");
 
             var user = await _userService.GetUser(propertyUser.UserId);
 
             if (user is null)
-                throw new Exception("There is no User with this ID");
+                throw new HttpStatusException(400, "Es wurde kein User mit dieser ID gefunden");
 
             IList<RoleDTO> roles = new List<RoleDTO>();
 
@@ -119,7 +117,7 @@ namespace Goose.API.Services
         public async Task<PropertyUserDTO> UpdateComapanyUserAsync(string companyId, string userId, PropertyUserLoginDTO user)
         {
             if (!userId.Equals(user.User.Id))
-                throw new Exception();
+                throw new HttpStatusException(400, "Die angegebene UserID stimmt nicht mit dem User Überein");
 
             await _userService.UpdateUserAsync(new ObjectId(userId), user.User);
 
@@ -129,7 +127,7 @@ namespace Goose.API.Services
             var companyUser = company.Users.FirstOrDefault(x => x.Id.Equals(userId));
 
             if (companyUser is null)
-                throw new Exception();
+                throw new HttpStatusException(400, "Es wurde kein User mit dieser ID gefunden");
 
             companyUser.RoleIds = roles;
 

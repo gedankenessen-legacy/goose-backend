@@ -1,4 +1,5 @@
 ﻿using Goose.API.Repositories;
+using Goose.API.Utils.Exceptions;
 using Goose.Domain.DTOs;
 using Goose.Domain.Models;
 using Goose.Domain.Models.companies;
@@ -41,7 +42,7 @@ namespace Goose.API.Services
             var company = (await _companyRepository.FilterByAsync(x => x.Name.Equals(companyLogin.CompanyName))).FirstOrDefault();
 
             if (company is not null)
-                throw new Exception("A Company with this name is already existing");
+                throw new HttpStatusException(400, "Eine Company mit diesen Namen existiert bereit");
 
             var role = await _roleService.GetRoleAsync(new ObjectId(_companyRoleId));
 
@@ -94,7 +95,7 @@ namespace Goose.API.Services
             var companies = await _companyRepository.GetAsync();
 
             if (companies is null)
-                throw new Exception("Something went wrong");
+                throw new HttpStatusException(400, "Etwas ist schief gelaufen");
 
             var companyDTOs = new List<CompanyDTO>();
 
@@ -124,15 +125,15 @@ namespace Goose.API.Services
         public async Task<CompanyDTO> UpdateCompanyAsync(string id, CompanyDTO company)
         {
             if (company is null)
-                throw new Exception("something went wronge");
+                throw new HttpStatusException(400, "Etwas ist schiefgelaufen");
 
             if (!id.Equals(company.Id))
-                throw new Exception();
+                throw new HttpStatusException(400, "Die mitgebene ID stimmt nicht mit der company überein");
 
             var companyToUpdate = await _companyRepository.GetCompanyByIdAsync(id);
 
             if (companyToUpdate is null)
-                throw new Exception();
+                throw new HttpStatusException(400, "Die mitgegebene Company existiert");
 
             companyToUpdate.Name = company.Name;
 
