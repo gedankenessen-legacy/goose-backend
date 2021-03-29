@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Goose.API.Controllers.issuesControllers
 {
-    [Route("api/issues/")]
+    [Route("api/issues/{issueId}/timesheets/")]
     [ApiController]
     public class IssueTimeSheetsController : Controller
     {
