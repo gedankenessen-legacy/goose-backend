@@ -1,5 +1,6 @@
 ﻿using Goose.API.Services;
 using Goose.Domain.Models.Auth;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
@@ -22,6 +23,7 @@ namespace Goose.API.Controllers
         /// </summary>
         /// <param name="signUpRequest">The request needs to have all properties and keeps all validation rules (e.g.: Password: 8 chars and needs at least one number)</param>
         [HttpPost("signUp")]
+        [AllowAnonymous]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> SignUp([FromBody] SignUpRequest signUpRequest)
@@ -34,6 +36,7 @@ namespace Goose.API.Controllers
         /// Use this Endpoint to sign in with a user. This endpoint returns a valid JWT-Token on successfully sign in.
         /// </summary>
         [HttpPost("signIn")]
+        [AllowAnonymous]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> SignIn([FromBody] SignInRequest signInRequest)

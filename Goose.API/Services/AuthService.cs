@@ -1,17 +1,17 @@
-﻿using Goose.API.Utils.Exceptions;
+﻿using Goose.API.Repositories;
+using Goose.API.Utils;
+using Goose.API.Utils.Exceptions;
 using Goose.Domain.DTOs;
 using Goose.Domain.Models.Auth;
 using Goose.Domain.Models.Identity;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using System.Security.Claims;
 using System;
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Options;
-using Goose.API.Utils;
-using Goose.API.Repositories;
 
 namespace Goose.API.Services
 {
