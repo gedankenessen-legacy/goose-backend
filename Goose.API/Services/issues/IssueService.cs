@@ -19,6 +19,7 @@ namespace Goose.API.Services.issues
         Task<IList<IssueDTO>> GetAllOfProject(ObjectId projectId);
         public Task<IssueDTO> GetOfProject(ObjectId projectId, ObjectId id);
         public Task<IssueDTO> Create(IssueDTO issueDto);
+        public Task<IssueDTO> Create(IssueCreateDTO issueDto);
         public Task<IssueDTO> Update(IssueDTO issueDto, ObjectId id);
         public Task<bool> Delete(ObjectId id);
     }
@@ -64,9 +65,17 @@ namespace Goose.API.Services.issues
         {
             var issue = issueDto.ToIssue();
             await _issueRepo.CreateAsync(issue);
-            
+
             issueDto.Id = issue.Id;
             return issueDto;
+        }
+
+        public async Task<IssueDTO> Create(IssueCreateDTO issueDto)
+        {
+            var issue = issueDto.ToIssue();
+            await _issueRepo.CreateAsync(issue);
+
+            return await Get(issue.Id);
         }
 
         public async Task<IssueDTO> Update(IssueDTO issueDto, ObjectId id)
