@@ -76,13 +76,12 @@ namespace Goose.API
         {
             services.Configure<DbSettings>(_configuration.GetSection(nameof(DbSettings)));
 
-            services.AddTransient<IIssueConversationService, IssueConversationService>();
+            services.AddScoped<IIssueConversationService, IssueConversationService>();
 
             services.AddAutoMapper(typeof(AutoMapping));
             services.AddSingleton<IDbContext, DbContext>();
 
             services.AddScoped<IIssueRepository, IssueRepository>();
-            services.AddScoped<IIssueService, IssueService>();
             services.AddScoped<IIssueService, IssueService>();
             services.AddScoped<IIssueAssignedUserService, IssueAssignedUserService>();
             services.AddScoped<IIssueRequirementService, IssueRequirementService>();
@@ -97,6 +96,7 @@ namespace Goose.API
 
             services.AddScoped<IStateService, StateService>();
             services.AddScoped<IProjectUserService, ProjectUserService>();
+            services.AddScoped<IIssueDetailedService, IssueDetailedService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

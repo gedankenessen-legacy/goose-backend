@@ -15,29 +15,41 @@ namespace Goose.API.Controllers.issuesControllers
     public class IssuesController : Controller
     {
         private readonly IIssueService _issueService;
+        private readonly IIssueDetailedService _issueDetailedService;
 
-        public IssuesController(IIssueService issueService)
+        public IssuesController(IIssueService issueService, IIssueDetailedService issueDetailedService)
         {
             _issueService = issueService;
+            _issueDetailedService = issueDetailedService;
         }
 
         //api/issues/
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<IList<IssueDTO>>> GetAll([FromRoute] string projectId)
+        public async Task<ActionResult<IList<IssueDTODetailed>>> GetAll([FromRoute] string projectId,
+            [FromQuery] bool getAssignedUsers = false, [FromQuery] bool getConversations = false,
+            [FromQuery] bool getTimeSheets = false, [FromQuery] bool getParent = false,
+            [FromQuery] bool getPredecessors = false, [FromQuery] bool getSuccessors = false,
+            [FromQuery] bool getAll = false)
         {
-            var res = await _issueService.GetAllOfProject(new ObjectId(projectId));
+            var res = _issueDetailedService.GetAllOfProject(projectId.ToObjectId(), getAssignedUsers, getConversations,
+                getTimeSheets, getParent, getPredecessors, getSuccessors, getAll);
             return Ok(res);
         }
 
         //api/issues/{id}
         [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<IssueDTO>> Get([FromRoute] string projectId, [FromRoute] string id)
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<IssueDTODetailed>> Get([FromRoute] string id,
+            [FromQuery] bool getAssignedUsers = false, [FromQuery] bool getConversations = false,
+            [FromQuery] bool getTimeSheets = false, [FromQuery] bool getParent = false,
+            [FromQuery] bool getPredecessors = false, [FromQuery] bool getSuccessors = false,
+            [FromQuery] bool getAll = false)
         {
-            var res = await _issueService.GetOfProject(projectId.ToObjectId(), id.ToObjectId());
+            var res = await _issueDetailedService.Get(id.ToObjectId(), getAssignedUsers, getConversations,
+                getTimeSheets, getParent, getPredecessors, getSuccessors, getAll);
             return res == null ? NotFound() : Ok(res);
         }
 
