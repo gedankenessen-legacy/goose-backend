@@ -12,8 +12,7 @@ using System.Threading.Tasks;
 
 namespace Goose.API.Controllers
 {
-    [Route("api/project/{projectId}/state")]
-
+    [Route("api/projects/{projectId}/states")]
     public class StateController : ControllerBase
     {
         private readonly IStateService _stateService;
@@ -23,7 +22,7 @@ namespace Goose.API.Controllers
             _stateService = stateService;
         }
 
-        // POST: api/project/{projectId}/state/
+        // POST: api/projects/{projectId}/states/
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -33,7 +32,7 @@ namespace Goose.API.Controllers
             return Ok(state);
         }
 
-        // PUT: api/project/{projectId}/state/{stateId}
+        // PUT: api/projects/{projectId}/states/{stateId}
         [HttpPut("{stateId}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -43,7 +42,7 @@ namespace Goose.API.Controllers
             return NoContent();
         }
 
-        // GET: api/project/{projectId}/state
+        // GET: api/projects/{projectId}/states
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -53,7 +52,7 @@ namespace Goose.API.Controllers
             return Ok(states);
         }
 
-        // GET: api/project/{projectId}/state/{stateId}
+        // GET: api/projects/{projectId}/states/{stateId}
         [HttpGet("{stateId}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -71,7 +70,7 @@ namespace Goose.API.Controllers
             }
         }
 
-        // Delete: pi/project/{projectId}/state/{stateId}
+        // Delete: api/projects/{projectId}/states/{stateId}
         [HttpDelete("{stateId}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]

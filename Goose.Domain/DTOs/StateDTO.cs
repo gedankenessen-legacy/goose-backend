@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Goose.Domain.Models.projects;
+
 
 namespace Goose.Domain.DTOs
 {

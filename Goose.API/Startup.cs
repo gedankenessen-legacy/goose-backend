@@ -13,11 +13,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Conventions;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Goose.API
 {
@@ -38,6 +34,16 @@ namespace Goose.API
 
             // Allows strings in the route parameter to be automatically be converted from strings.
             TypeDescriptor.AddAttributes(typeof(ObjectId), new TypeConverterAttribute(typeof(ObjectIdTypeConverter)));
+
+            // Configure Cors
+            services.AddCors(options =>
+            {
+                options.AddPolicy("cors",
+                builder =>
+                {
+                    builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader().WithOrigins(_configuration.GetSection("AllowedHosts").Get<string[]>());
+                });
+            });
 
             services.AddControllers(options =>
             {
@@ -94,6 +100,10 @@ namespace Goose.API
             services.AddScoped<IProjectRepository, ProjectRepository>();
             services.AddScoped<IProjectService, ProjectService>();
 
+            services.AddScoped<ICompanyRepository, CompanyRepository>();
+            services.AddScoped<ICompanyService, CompanyService>();
+
+            services.AddAutoMapper(typeof(AutoMapping));
             services.AddScoped<IStateService, StateService>();
             services.AddScoped<IProjectUserService, ProjectUserService>();
             services.AddScoped<IIssueDetailedService, IssueDetailedService>();
@@ -102,16 +112,18 @@ namespace Goose.API
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            if (env.IsDevelopment())  
+            if (env.IsDevelopment())
                 app.UseDeveloperExceptionPage();
             else
-                app.UseExceptionHandler("/error");     
+                app.UseExceptionHandler("/error");
 
             app.UseSwagger();
             app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Goose.API v1"));
 
             //! https will not be used for this project, one the one side it adds complexity and the server is only accessable via ip and an certificate cannot be applied without domain name.
             //app.UseHttpsRedirection();
+
+            app.UseCors("cors");
 
             app.UseRouting();
 

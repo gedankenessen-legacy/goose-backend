@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Goose.Domain.Models.identity;
+
 
 namespace Goose.Domain.DTOs
 {
