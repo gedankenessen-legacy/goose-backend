@@ -22,7 +22,7 @@ namespace Goose.API.Services.issues
             bool getTimeSheets, bool getParent, bool getPredecessors, bool getSuccessors, bool getAll);
     }
 
-    public class IssueDetailedService: IIssueDetailedService
+    public class IssueDetailedService : IIssueDetailedService
     {
         private readonly IIssueConversationService _conversationService;
         private readonly IIssueTimeSheetService _timeSheetService;
@@ -47,12 +47,9 @@ namespace Goose.API.Services.issues
             bool getTimeSheets, bool getParent, bool getPredecessors, bool getSuccessors, bool getAll)
         {
             var issues = await _issueRepository.GetAllOfProjectAsync(projectId);
-            var first = issues.ElementAtOrDefault(0);
-            var dto = CreateDtoFromIssue(first, getAssignedUsers, getConversations,
-                getTimeSheets, getParent, getPredecessors, getSuccessors, getAll);
             var tasks = issues.Select(it => CreateDtoFromIssue(it, getAssignedUsers, getConversations,
-                getTimeSheets, getParent, getPredecessors, getSuccessors, getAll));
-            return await Task.WhenAll(tasks);
+                getTimeSheets, getParent, getPredecessors, getSuccessors, getAll)).ToList();
+            return (await Task.WhenAll(tasks)).ToList();
         }
 
         public async Task<IssueDTODetailed> Get(ObjectId issueId, bool getAssignedUsers, bool getConversations,
@@ -70,32 +67,30 @@ namespace Goose.API.Services.issues
             var issueDto = _issueService.Get(issue.Id);
             var assignedUsers = getAll || getAssignedUsers
                 ? Task.WhenAll(issue.AssignedUserIds.Select(_userRepository.GetAsync))
-                : NullTask<User[]>();
+                : null;
             var conversations = getAll || getConversations
                 ? _conversationService.GetConversationsFromIssueAsync(issue.Id.ToString())
-                : NullTask<IList<IssueConversationDTO>>();
+                : null;
             var timeSheets = getAll || getTimeSheets
                 ? _timeSheetService.GetAllOfIssueAsync(issue.Id)
-                : NullTask<IList<IssueTimeSheetDTO>>();
+                : null;
             var parent = getAll || getParent
                 ? _issueService.GetParent(issue.Id)
-                : NullTask<IssueDTO?>();
+                : null;
             var predecessors = getAll || getPredecessors
                 ? Task.WhenAll(issue.PredecessorIssueIds.Select(_issueService.Get))
-                : NullTask<IssueDTO[]>();
+                : null;
             var successors = getAll || getSuccessors
                 ? Task.WhenAll(issue.SuccessorIssueIds.Select(_issueService.Get))
-                : NullTask<IssueDTO[]>();
+                : null;
 
             return new IssueDTODetailed((await issueDto).State, (await issueDto).Project, (await issueDto).Client,
-                (await issueDto).Author, (await assignedUsers).Select(it => new UserDTO(it)).ToList(),
-                await conversations, await timeSheets, issue.IssueDetail, await parent, await predecessors,
-                await successors);
-        }
-
-        private async Task<T> NullTask<T>()
-        {
-            return default;
+                (await issueDto).Author,
+                assignedUsers != null ? (await assignedUsers).Select(it => new UserDTO(it)).ToList() : null,
+                conversations != null ? await conversations : null, timeSheets != null ? await timeSheets : null,
+                issue.IssueDetail, parent != null ? await parent : null,
+                predecessors != null ? await predecessors : null,
+                successors != null ? await successors : null);
         }
     }
 }

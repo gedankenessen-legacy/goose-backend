@@ -46,7 +46,7 @@ namespace Goose.API.Services.issues
 
         public async Task<IList<IssueDTO>> GetAll()
         {
-            return await Task.WhenAll((await _issueRepo.GetAsync()).Select(CreateDtoFromIssue));
+            return (await Task.WhenAll((await _issueRepo.GetAsync()).Select(CreateDtoFromIssue))).ToList();
         }
 
         public async Task<IssueDTO> Get(ObjectId id)
@@ -56,7 +56,7 @@ namespace Goose.API.Services.issues
 
         public async Task<IList<IssueDTO>> GetAllOfProject(ObjectId projectId)
         {
-            return await Task.WhenAll((await _issueRepo.GetAllOfProjectAsync(projectId)).Select(CreateDtoFromIssue));
+            return (await Task.WhenAll((await _issueRepo.GetAllOfProjectAsync(projectId)).Select(CreateDtoFromIssue))).ToList();
         }
 
         public async Task<IssueDTO> GetOfProject(ObjectId projectId, ObjectId id)

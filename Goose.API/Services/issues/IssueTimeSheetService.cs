@@ -33,7 +33,7 @@ namespace Goose.API.Services.issues
         public async Task<IList<IssueTimeSheetDTO>> GetAllOfIssueAsync(ObjectId issueId)
         {
             var timeSheets = (await _issueRepo.GetAsync(issueId)).TimeSheets;
-            return await Task.WhenAll(timeSheets.Select(MapToTimeSheetDTO));
+            return (await Task.WhenAll(timeSheets.Select(MapToTimeSheetDTO))).ToList();
         }
 
         public async Task<IssueTimeSheetDTO> GetAsync(ObjectId issueId, ObjectId timeSheetId)

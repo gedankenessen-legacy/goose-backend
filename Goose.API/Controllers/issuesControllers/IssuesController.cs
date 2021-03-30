@@ -35,7 +35,7 @@ namespace Goose.API.Controllers.issuesControllers
         {
             var res = _issueDetailedService.GetAllOfProject(projectId.ToObjectId(), getAssignedUsers, getConversations,
                 getTimeSheets, getParent, getPredecessors, getSuccessors, getAll);
-            return Ok(res);
+            return Ok(await res);
         }
 
         //api/issues/{id}
