@@ -57,13 +57,13 @@ namespace Goose.API.Controllers.issuesControllers
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult> Post([FromRoute] string projectId, [FromBody] IssueCreateDTO issueRequest)
+        public async Task<ActionResult> Post([FromRoute] string projectId, [FromBody] IssueDTO dto)
         {
-            if (issueRequest.ProjectId != default && issueRequest.ProjectId != projectId.ToObjectId())
+            if (dto.Project.Id != default && dto.Project.Id != projectId.ToObjectId())
                 throw new Exception("Project id must be the same in url and body or not defined in body");
-            issueRequest.ProjectId = projectId.ToObjectId();
+            dto.Project.Id = projectId.ToObjectId();
 
-            var res = await _issueService.Create(issueRequest);
+            var res = await _issueService.Create(dto);
             return CreatedAtAction(nameof(Get), new {projectId, id = res.Id}, res);
         }
 
