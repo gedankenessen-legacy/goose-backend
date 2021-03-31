@@ -64,7 +64,7 @@ namespace Goose.API
         private void ConfigureMongoDB()
         {
             // In order prevent the [BsonElement("...")] Attribute on each property we configure the drive to assume this as default. Thanks @LuksTrackmaniaCorner
-            var conventionPack = new ConventionPack { new CamelCaseElementNameConvention() };
+            var conventionPack = new ConventionPack { new CamelCaseElementNameConvention(), new IgnoreExtraElementsConvention(true) };
             ConventionRegistry.Register("camelCase", conventionPack, t => true);
         }
 
