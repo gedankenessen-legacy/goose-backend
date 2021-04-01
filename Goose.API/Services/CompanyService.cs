@@ -30,7 +30,7 @@ namespace Goose.API.Services
         private readonly ICompanyUserService _companyUserService;
         
 
-        public CompanyService(ICompanyRepository companyRepository, IUserService userService, IRoleService roleService, IRoleRepository roleRepository)
+        public CompanyService(ICompanyRepository companyRepository, IUserService userService, IRoleService roleService, IRoleRepository roleRepository, ICompanyUserService companyUserService)
         {
             _companyRepository = companyRepository;
             _userService = userService;
