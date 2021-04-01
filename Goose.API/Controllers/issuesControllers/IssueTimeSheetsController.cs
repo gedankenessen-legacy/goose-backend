@@ -1,14 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Goose.API.Services.issues;
+using Goose.API.Utils;
 using Goose.Domain.DTOs.issues;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Goose.API.Controllers.issuesControllers
 {
-    [Route("api/issues/")]
+    [Route("api/issues/{issueId}/timesheets/")]
     [ApiController]
     public class IssueTimeSheetsController : Controller
     {

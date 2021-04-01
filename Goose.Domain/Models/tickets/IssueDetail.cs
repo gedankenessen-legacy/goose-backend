@@ -18,7 +18,6 @@ namespace Goose.Domain.Models.tickets
         public bool RequirementsAccepted { get; set; }
         public bool RequirementsNeeded { get; set; }
         public int Priority { get; set; }
-        public string FinalComment { get; set; }
         public bool Visibility { get; set; }
         public IList<string> RelevantDocuments { get; set; }
     }
