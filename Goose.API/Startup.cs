@@ -102,6 +102,7 @@ namespace Goose.API
 
             services.AddScoped<ICompanyRepository, CompanyRepository>();
             services.AddScoped<ICompanyService, CompanyService>();
+            services.AddScoped<ICompanyUserService, CompanyUserService>();
 
             services.AddAutoMapper(typeof(AutoMapping));
             services.AddScoped<IStateService, StateService>();
