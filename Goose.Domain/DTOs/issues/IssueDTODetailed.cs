@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿#nullable enable
+using System.Collections.Generic;
+using System.Linq;
+using Goose.Domain.DTOs.tickets;
 using Goose.Domain.Models.identity;
 using Goose.Domain.Models.projects;
 using Goose.Domain.Models.tickets;
@@ -7,16 +10,38 @@ namespace Goose.Domain.DTOs.issues
 {
     public class IssueDTODetailed
     {
-        public State State { get; set; }
-        public Project Project { get; set; }
-        public User Client { get; set; }
-        public User Author { get; set; }
-        public IList<User> AssignedUsers { get; set; }
-        public IList<IssueConversation> ConversationItems { get; set; }
-        public IList<TimeSheet> TimeSheets { get; set; }
+        public StateDTO State { get; set; }
+        public ProjectDTO Project { get; set; }
+        public UserDTO Client { get; set; }
+        public UserDTO Author { get; set; }
+        public IList<UserDTO>? AssignedUsers { get; set; }
+        public IList<IssueConversationDTO>? ConversationItems { get; set; }
+        public IList<IssueTimeSheetDTO>? TimeSheets { get; set; }
         public IssueDetail IssueDetail { get; set; }
-        public Issue ParentIssue { get; set; }
-        public IList<Issue> PredecessorIssues { get; set; }
-        public IList<Issue> SuccessorIssues { get; set; }
+        public IssueDTO? ParentIssue { get; set; }
+        public IList<IssueDTO>? PredecessorIssues { get; set; }
+        public IList<IssueDTO>? SuccessorIssues { get; set; }
+
+        public IssueDTODetailed()
+        {
+        }
+
+        public IssueDTODetailed(StateDTO state, ProjectDTO project, UserDTO client, UserDTO author,
+            IList<UserDTO>? assignedUsers, IList<IssueConversationDTO>? conversationItems,
+            IList<IssueTimeSheetDTO>? timeSheets, IssueDetail issueDetail, IssueDTO? parentIssue,
+            IList<IssueDTO>? predecessorIssues, IList<IssueDTO>? successorIssues)
+        {
+            State = state;
+            Project = project;
+            Client = client;
+            Author = author;
+            AssignedUsers = assignedUsers;
+            ConversationItems = conversationItems;
+            TimeSheets = timeSheets;
+            IssueDetail = issueDetail;
+            ParentIssue = parentIssue;
+            PredecessorIssues = predecessorIssues;
+            SuccessorIssues = successorIssues;
+        }
     }
 }

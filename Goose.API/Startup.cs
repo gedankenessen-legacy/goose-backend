@@ -70,7 +70,7 @@ namespace Goose.API
         private void ConfigureMongoDB()
         {
             // In order prevent the [BsonElement("...")] Attribute on each property we configure the drive to assume this as default. Thanks @LuksTrackmaniaCorner
-            var conventionPack = new ConventionPack { new CamelCaseElementNameConvention() };
+            var conventionPack = new ConventionPack { new CamelCaseElementNameConvention(), new IgnoreExtraElementsConvention(true) };
             ConventionRegistry.Register("camelCase", conventionPack, t => true);
         }
 
@@ -82,13 +82,12 @@ namespace Goose.API
         {
             services.Configure<DbSettings>(_configuration.GetSection(nameof(DbSettings)));
 
-            services.AddTransient<IIssueConversationService, IssueConversationService>();
+            services.AddScoped<IIssueConversationService, IssueConversationService>();
 
             services.AddAutoMapper(typeof(AutoMapping));
             services.AddSingleton<IDbContext, DbContext>();
 
             services.AddScoped<IIssueRepository, IssueRepository>();
-            services.AddScoped<IIssueService, IssueService>();
             services.AddScoped<IIssueService, IssueService>();
             services.AddScoped<IIssueAssignedUserService, IssueAssignedUserService>();
             services.AddScoped<IIssueRequirementService, IssueRequirementService>();
@@ -103,10 +102,12 @@ namespace Goose.API
 
             services.AddScoped<ICompanyRepository, CompanyRepository>();
             services.AddScoped<ICompanyService, CompanyService>();
+            services.AddScoped<ICompanyUserService, CompanyUserService>();
 
             services.AddAutoMapper(typeof(AutoMapping));
             services.AddScoped<IStateService, StateService>();
             services.AddScoped<IProjectUserService, ProjectUserService>();
+            services.AddScoped<IIssueDetailedService, IssueDetailedService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

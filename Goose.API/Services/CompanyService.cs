@@ -1,4 +1,5 @@
 ﻿using Goose.API.Repositories;
+using Goose.API.Utils.Exceptions;
 using Goose.Domain.DTOs;
 using Goose.Domain.Models;
 using Goose.Domain.Models.companies;
@@ -18,9 +19,6 @@ namespace Goose.API.Services
         public Task<CompanyDTO> CreateCompanyAsync(CompanyLogin companyLogin);
         public Task<CompanyDTO> UpdateCompanyAsync(string id, CompanyDTO company);
 
-        public Task<IList<PropertyUserDTO>> GetCompanyUsersAsync(string companyId);
-        public Task<PropertyUserDTO> GetCompanyUserAsync(string companyId, string userId);
-
     }
 
     public class CompanyService : ICompanyService
@@ -29,13 +27,16 @@ namespace Goose.API.Services
         private readonly IUserService _userService;
         private readonly IRoleService _roleService;
         private readonly IRoleRepository _roleRepository;
+        private readonly ICompanyUserService _companyUserService;
+        
 
-        public CompanyService(ICompanyRepository companyRepository, IUserService userService, IRoleService roleService, IRoleRepository roleRepository)
+        public CompanyService(ICompanyRepository companyRepository, IUserService userService, IRoleService roleService, IRoleRepository roleRepository, ICompanyUserService companyUserService)
         {
             _companyRepository = companyRepository;
             _userService = userService;
             _roleService = roleService;
             _roleRepository = roleRepository;
+            _companyUserService = companyUserService;
         }
 
         public async Task<CompanyDTO> CreateCompanyAsync(CompanyLogin companyLogin)
@@ -43,7 +44,7 @@ namespace Goose.API.Services
             var company = (await _companyRepository.FilterByAsync(x => x.Name.Equals(companyLogin.CompanyName))).FirstOrDefault();
 
             if (company is not null)
-                throw new Exception("A Company with this name is already existing");
+                throw new HttpStatusException(400, "Eine Company mit diesen Namen existiert bereit");
 
             var role = (await _roleRepository.FilterByAsync(x => x.Name.Equals("Firma"))).FirstOrDefault();
 
@@ -96,13 +97,15 @@ namespace Goose.API.Services
             var companies = await _companyRepository.GetAsync();
 
             if (companies is null)
-                throw new Exception("Something went wrong");
+                throw new HttpStatusException(400, "Etwas ist schief gelaufen");
 
             var companyDTOs = new List<CompanyDTO>();
 
             foreach(var company in companies)
             {
                 var companyDTO = (CompanyDTO)company;
+                companyDTO.User = (await _companyUserService.GetCompanyUsersAsync(company.Id.ToString()))
+                    .FirstOrDefault(x => x.Roles.FirstOrDefault(companyRole => companyRole.Name.Equals("Firma")) is not null);
                 companyDTOs.Add(companyDTO);
             }
 
@@ -113,89 +116,32 @@ namespace Goose.API.Services
         {
             var company = await _companyRepository.GetCompanyByIdAsync(companyId);
 
-            return (CompanyDTO)company;
+            var companyDTO = (CompanyDTO)company;
+
+            companyDTO.User = (await _companyUserService.GetCompanyUsersAsync(company.Id.ToString()))
+                    .FirstOrDefault(x => x.Roles.FirstOrDefault(companyRole => companyRole.Name.Equals("Firma")) is not null);
+
+            return companyDTO;
         }
 
         public async Task<CompanyDTO> UpdateCompanyAsync(string id, CompanyDTO company)
         {
             if (company is null)
-                throw new Exception("something went wronge");
+                throw new HttpStatusException(400, "Etwas ist schiefgelaufen");
 
             if (!id.Equals(company.Id))
-                throw new Exception();
+                throw new HttpStatusException(400, "Die mitgebene ID stimmt nicht mit der company überein");
 
             var companyToUpdate = await _companyRepository.GetCompanyByIdAsync(id);
 
             if (companyToUpdate is null)
-                throw new Exception();
+                throw new HttpStatusException(400, "Die mitgegebene Company existiert");
 
             companyToUpdate.Name = company.Name;
 
             await _companyRepository.UpdateAsync(companyToUpdate);
 
             return (CompanyDTO)companyToUpdate;
-        }
-
-        public async Task<IList<PropertyUserDTO>> GetCompanyUsersAsync(string companyId)
-        {
-            var company = await _companyRepository.GetCompanyByIdAsync(companyId);
-
-            var userList = await _userService.GetUsersAsync();
-
-            var roleList = await _roleService.GetRolesAsync();
-
-            IList<PropertyUserDTO> propertyUserList = new List<PropertyUserDTO>();
-
-            foreach(var propertyUser in company.Users)
-            {
-                var user = userList.FirstOrDefault(x => x.Id.Equals(propertyUser.UserId));
-
-                IList<RoleDTO> roles = new List<RoleDTO>();
-
-                foreach(var roleId in propertyUser.RoleIds)
-                {
-                    var role = roleList.FirstOrDefault(x => x.Id.Equals(roleId));
-
-                    if(role is not null)
-                        roles.Add(new RoleDTO(role));
-                }
-
-                propertyUserList.Add(new PropertyUserDTO() { User = user, Roles = roles });
-            }
-
-            return propertyUserList;
-        }
-
-        public async Task<PropertyUserDTO> GetCompanyUserAsync(string companyId, string userId)
-        {
-            var company = await _companyRepository.GetCompanyByIdAsync(companyId);
-
-            if (company is null)
-                throw new Exception("No Company with this Id exists");
-
-            var propertyUser = company.Users.FirstOrDefault(x => x.UserId.Equals(userId));
-
-            if (propertyUser is null)
-                throw new Exception("There is no User with this ID");
-
-            var user = await _userService.GetUser(propertyUser.UserId);
-
-            if(user is null)
-                throw new Exception("There is no User with this ID");
-
-            IList<RoleDTO> roles = new List<RoleDTO>();
-
-            var roleList = await _roleService.GetRolesAsync();
-
-            foreach (var roleId in propertyUser.RoleIds)
-            {
-                var role = roleList.FirstOrDefault(x => x.Equals(roleId));
-
-                if (role is not null)
-                    roles.Add(new RoleDTO(role));
-            }
-
-            return new PropertyUserDTO() { User = user, Roles = roles };
         }
     }
 }

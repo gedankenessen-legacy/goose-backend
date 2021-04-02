@@ -1,8 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Goose.API.Services.issues;
-using Goose.Domain.DTOs.issues;
+using Goose.API.Utils;
 using Goose.Domain.Models.tickets;
 using Microsoft.AspNetCore.Mvc;
 
