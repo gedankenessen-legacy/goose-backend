@@ -13,7 +13,7 @@ namespace Goose.API.Repositories
 {
     public interface IUserRepository : IRepository<User>
     {
-        Task<User?> GetByUsernameAsync(string email);
+        Task<User?> GetByUsernameAsync(string username);
     }
 
     public class UserRepository : Repository<User>, IUserRepository
