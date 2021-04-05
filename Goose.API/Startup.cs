@@ -1,3 +1,6 @@
+using Goose.API.Authorization.Handlers;
+using Goose.API.Authorization_Policies;
+using Goose.API.Authorization_Policies.Requirements;
 using Goose.API.Repositories;
 using Goose.API.Services;
 using Goose.API.Services.Issues;
@@ -7,6 +10,7 @@ using Goose.Data.Context;
 using Goose.Data.Settings;
 using Goose.Domain.Mapping;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -38,6 +42,7 @@ namespace Goose.API
         {
             ConfigureMongoDB();
             RegisterService(services);
+            ConfigureAuthorization(services);
 
             // Allows strings in the route parameter to be automatically be converted from strings.
             TypeDescriptor.AddAttributes(typeof(ObjectId), new TypeConverterAttribute(typeof(ObjectIdTypeConverter)));
@@ -119,6 +124,14 @@ namespace Goose.API
         }
 
         /// <summary>
+        /// Use this method to register imperative authorization policies
+        /// </summary>
+        private void ConfigureAuthorization(IServiceCollection services)
+        {
+            
+        }
+
+        /// <summary>
         /// This method is used to configure the mongodb driver.
         /// </summary>
         private void ConfigureMongoDB()
@@ -140,6 +153,7 @@ namespace Goose.API
             services.AddAutoMapper(typeof(AutoMapping));
             
             services.AddSingleton<IDbContext, DbContext>();
+            services.AddScoped<IAuthorizationHandler, CompanyRoleHandler>();
 
             services.AddScoped<IIssueRepository, IssueRepository>();
             services.AddScoped<IUserRepository, UserRepository>();

@@ -1,4 +1,5 @@
 ﻿using Goose.API.Repositories;
+using Goose.API.Utils.Authentication;
 using Goose.API.Utils.Exceptions;
 using Goose.Domain.DTOs;
 using Goose.Domain.Models;
@@ -16,10 +17,12 @@ namespace Goose.API.Services
     public interface ICompanyService
     {
         public Task<CompanyDTO> GetCompanyAsync(string companyId);
-        public Task<IList<CompanyDTO>> GetCompaniesAsync();
+        public Task<IList<CompanyDTO>> GetCompaniesAsync(ObjectId? userId = null);
         public Task<CompanyDTO> CreateCompanyAsync(string companyName, ObjectId creatorUserId);
         public Task<CompanyDTO> UpdateCompanyAsync(string id, CompanyDTO company);
+        
         public Task<bool> CompanyNameAvailableAsync(string companyName);
+        public Task<bool> UserHasRoleInCompany(ObjectId userId, ObjectId companyId, params string[] roles);
 
         public Task<IList<PropertyUserDTO>> GetCompanyUsersAsync(string companyId);
         public Task<PropertyUserDTO> GetCompanyUserAsync(string companyId, string userId);
@@ -31,13 +34,15 @@ namespace Goose.API.Services
         private readonly IUserService _userService;
         private readonly IRoleService _roleService;
         private readonly IRoleRepository _roleRepository;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public CompanyService(ICompanyRepository companyRepository, IUserService userService, IRoleService roleService, IRoleRepository roleRepository)
+        public CompanyService(ICompanyRepository companyRepository, IUserService userService, IRoleService roleService, IRoleRepository roleRepository, IHttpContextAccessor httpContextAccessor)
         {
             _companyRepository = companyRepository;
             _userService = userService;
             _roleService = roleService;
             _roleRepository = roleRepository;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<CompanyDTO> CreateCompanyAsync(string companyName, ObjectId creatorUserId)
@@ -48,8 +53,7 @@ namespace Goose.API.Services
             if (await CompanyNameAvailableAsync(companyName) is false)
                 throw new HttpStatusException(StatusCodes.Status409Conflict, "A company with this name is already existing.");
 
-            // TODO: After merged use const role names provided in Roles.cs
-            var role = (await _roleRepository.FilterByAsync(x => x.Name.Equals("Firma"))).FirstOrDefault();
+            var role = (await _roleRepository.FilterByAsync(x => x.Name.Equals(Role.CompanyRole))).FirstOrDefault();
 
             if (role is null)
                 role = await _roleService.CreateRoleAsync(new Role() { Name = "Firma" });
@@ -76,9 +80,13 @@ namespace Goose.API.Services
             return new CompanyDTO() { Id = newCompany.Id, Name = newCompany.Name };
         }
 
-        public async Task<IList<CompanyDTO>> GetCompaniesAsync()
+        public async Task<IList<CompanyDTO>> GetCompaniesAsync(ObjectId? userId = null)
         {
-            var companies = await _companyRepository.GetAsync();
+            if (userId is null)
+                userId = _httpContextAccessor.HttpContext.User.GetUserId();
+
+            //TODO: maybe move to repo.
+            var companies = await _companyRepository.FilterByAsync(cmp => cmp.Users.Any(pu => pu.UserId.Equals(userId)));
 
             if (companies is null)
                 throw new Exception("Something went wrong");
@@ -158,7 +166,7 @@ namespace Goose.API.Services
             if (company is null)
                 throw new Exception("No Company with this Id exists");
 
-            var propertyUser = company.Users.FirstOrDefault(x => x.UserId.Equals(userId));
+            var propertyUser = company.Users.FirstOrDefault(x => x.UserId.Equals(userId.ToObjectId()));
 
             if (propertyUser is null)
                 throw new Exception("There is no User with this ID");
@@ -185,9 +193,33 @@ namespace Goose.API.Services
 
         public async Task<bool> CompanyNameAvailableAsync(string companyName)
         {
-            var result = await _companyRepository.FilterByAsync(c => c.Name.Equals(companyName));
+            var result = await _companyRepository.FilterByAsync(c => c.Name.ToLower() == companyName.ToLower());
 
-            return result is null || result.Count == 0;
+            return result is null || !result.Any();
+        }
+
+        public async Task<bool> UserHasRoleInCompany(ObjectId userId, ObjectId companyId, params string[] roles)
+        {
+            Company company = await _companyRepository.GetAsync(companyId);
+
+            if (company is null) throw new HttpStatusException(StatusCodes.Status400BadRequest, "Company not found.");
+
+            PropertyUser companyUser = company.Users.Where(user => user.UserId.Equals(userId)).FirstOrDefault();
+
+            if (companyUser is null) throw new HttpStatusException(StatusCodes.Status400BadRequest, "Error determin company roles for user.");
+
+            foreach (var requestedRoleName in roles)
+            {
+                var requestedRole = await _roleRepository.GetFirstRoleByNameAsync(requestedRoleName);
+
+                if (requestedRole is null)
+                    throw new HttpStatusException(StatusCodes.Status400BadRequest, $"No role found with name: {requestedRoleName}");
+
+                if (companyUser.RoleIds.Contains(requestedRole.Id))
+                    return true;
+            }
+
+            return false;
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Goose.API.Repositories;
 using Goose.API.Utils;
+using Goose.API.Utils.Authentication;
 using Goose.API.Utils.Exceptions;
 using Goose.Domain.DTOs;
 using Goose.Domain.Models.Auth;
@@ -9,8 +10,10 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Goose.API.Services
@@ -24,13 +27,15 @@ namespace Goose.API.Services
     public class AuthService : IAuthService
     {
         private readonly ICompanyService _companyService;
+        private readonly ICompanyRepository _companyRepository;
         private readonly IUserService _userService;
         private readonly IUserRepository _userRepository;
         private readonly IOptions<TokenSettings> _tokenSettings;
 
-        public AuthService(ICompanyService companyService, IUserService userService, IUserRepository userRepository, IOptions<TokenSettings> tokenSettings)
+        public AuthService(ICompanyService companyService, IUserService userService, IUserRepository userRepository, IOptions<TokenSettings> tokenSettings, ICompanyRepository companyRepository)
         {
             _companyService = companyService;
+            _companyRepository = companyRepository;
             _userService = userService;
             _userRepository = userRepository;
             _tokenSettings = tokenSettings;
@@ -67,7 +72,7 @@ namespace Goose.API.Services
             return new SignInResponse()
             {
                 User = new UserDTO(newUser),
-                Companies = await _companyService.GetCompaniesAsync(),
+                Companies = await _companyService.GetCompaniesAsync(newUser.Id),
                 Token = token
             };
         }
@@ -90,7 +95,7 @@ namespace Goose.API.Services
             return new SignInResponse()
             {
                 User = new UserDTO(user),
-                Companies = await _companyService.GetCompaniesAsync(), // TODO: as soon the signin is enabled and the api is secured, the requests cann be restricted to the ressources that the client can view. Currently he receives all, even the ones he should not see.
+                Companies = await _companyService.GetCompaniesAsync(user.Id),
                 Token = token
             };
         }
@@ -110,7 +115,7 @@ namespace Goose.API.Services
             {
                 Subject = new ClaimsIdentity(new Claim[]
                 {
-                    new Claim("userId", user.Id.ToString())
+                    new Claim(UserClaimTypes.UserIdClaimType, user.Id.ToString())
                 }),
                 Expires = DateTime.UtcNow.AddHours(_tokenSettings.Value.ExpireInHours),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
