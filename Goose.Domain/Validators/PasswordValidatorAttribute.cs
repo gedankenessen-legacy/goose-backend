@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace Goose.API.Utils.Validators
@@ -9,8 +10,6 @@ namespace Goose.API.Utils.Validators
     {
         public int MinLength { get; }
         public bool NumberRequired { get; }
-
-        private const RegexOptions _regexOptions = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture;
 
         public PasswordValidatorAttribute(int minLength = 8, bool numberRequired = true)
         {
@@ -32,13 +31,9 @@ namespace Goose.API.Utils.Validators
                 return new ValidationResult($"The password must be at least {MinLength} characters long.");
 
             // check if a number is in the password.
-            if (NumberRequired)
-            {
-                Regex regexNumberRequired = new (@"\d", _regexOptions);
-
-                if (regexNumberRequired.Match(password).Success is false)
-                    return new ValidationResult($"Please add a number to the provided password.");
-            }
+            if (NumberRequired)        
+                if (password.Any(char.IsDigit) is false)
+                    return new ValidationResult($"Please add a number to the provided password.");         
 
             return ValidationResult.Success;
         }

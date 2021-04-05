@@ -25,8 +25,7 @@ namespace Goose.API.Repositories
 
         public async Task<User?> GetByUsernameAsync(string username)
         {
-            FilterDefinition<User> filter = Builders<User>.Filter.Regex(u => u.Username, new MongoDB.Bson.BsonRegularExpression(username, "i"));
-            return await _dbCollection.Find(filter).FirstOrDefaultAsync();
+            return await _dbCollection.Find(usr => usr.Username.ToLower() == username.ToLower()).FirstOrDefaultAsync();
         }
     }
 }
