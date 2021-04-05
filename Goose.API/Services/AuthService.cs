@@ -65,7 +65,7 @@ namespace Goose.API.Services
             CompanyDTO newCompanyDTO = await _companyService.CreateCompanyAsync(signUpRequest.CompanyName, newUser.Id);
 
             // generate token
-            var token = CreatToken(newUser);
+            var token = CreateToken(newUser);
 
             return new SignInResponse()
             {
@@ -88,7 +88,7 @@ namespace Goose.API.Services
                 throw new HttpStatusException(StatusCodes.Status400BadRequest, "Cannot signIn."); // generic message in order to not let the clients know what is wrong.
 
             // Generate Token
-            var token = CreatToken(user);
+            var token = CreateToken(user);
 
             return new SignInResponse()
             {
@@ -103,7 +103,7 @@ namespace Goose.API.Services
         /// </summary>
         /// <param name="user">The Subject the token will be issued for</param>
         /// <returns>A JWT-Token with all user claims.</returns>
-        private string CreatToken(User user)
+        private string CreateToken(User user)
         {
             var key = Encoding.ASCII.GetBytes(_tokenSettings.Value.Secret);
 
