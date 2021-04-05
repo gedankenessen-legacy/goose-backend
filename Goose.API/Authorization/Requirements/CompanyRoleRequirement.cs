@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Goose.API.Authorization_Policies.Requirements
+namespace Goose.API.Authorization.Requirements
 {
     /// <summary>
     /// To achive the requirment, the user needs to have the defined role (<see cref="RoleName"/> and <see cref="RoleId"/>)

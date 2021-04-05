@@ -7,6 +7,8 @@ using Goose.Domain.Models.Identity;
 using Microsoft.AspNetCore.Identity;
 using MongoDB.Bson;
 
+#nullable enable
+
 namespace Goose.API.Services.Issues
 {
     public interface IIssueAssignedUserService

@@ -1,15 +1,12 @@
-﻿using Goose.API.Authorization_Policies;
-using Goose.API.Authorization_Policies.Requirements;
+﻿using Goose.API.Authorization.Requirements;
 using Goose.API.Repositories;
 using Goose.API.Utils.Exceptions;
 using Goose.Domain.DTOs;
-using Goose.Domain.Models;
 using Goose.Domain.Models.Companies;
 using Goose.Domain.Models.Projects;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;

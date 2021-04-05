@@ -1,6 +1,4 @@
 using Goose.API.Authorization.Handlers;
-using Goose.API.Authorization_Policies;
-using Goose.API.Authorization_Policies.Requirements;
 using Goose.API.Repositories;
 using Goose.API.Services;
 using Goose.API.Services.Issues;

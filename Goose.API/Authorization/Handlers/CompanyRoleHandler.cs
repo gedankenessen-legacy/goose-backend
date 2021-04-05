@@ -1,13 +1,9 @@
-﻿using Goose.API.Authorization_Policies.Requirements;
+﻿using Goose.API.Authorization.Requirements;
 using Goose.API.Services;
 using Goose.API.Utils.Authentication;
 using Goose.Domain.Models.Companies;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Authorization.Infrastructure;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc.Controllers;
 using MongoDB.Bson;
-using System;
 using System.Threading.Tasks;
 
 namespace Goose.API.Authorization.Handlers

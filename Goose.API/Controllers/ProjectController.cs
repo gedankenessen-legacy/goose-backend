@@ -1,4 +1,4 @@
-﻿using Goose.API.Authorization_Policies;
+﻿using Goose.API.Authorization;
 using Goose.API.Services;
 using Goose.Domain.DTOs;
 using Microsoft.AspNetCore.Authorization;
