@@ -49,7 +49,7 @@ namespace Goose.API.Services
 
            // ALSO POSSIBLE => ...AuthorizeAsync(_httpContextAccessor.HttpContext.User, company, new[]{ CompanyRolesRequirement.CompanyOwner, CompanyRolesRequirement.CompanyCustomer })...
             if ((await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, company, CompanyRolesRequirement.CompanyOwner)).Succeeded is false)
-                throw new HttpStatusException(StatusCodes.Status403Forbidden, "Missing roles.");
+                throw new HttpStatusException(StatusCodes.Status403Forbidden, "Missing role(s).");
 
             var newProject = new Project()
             {

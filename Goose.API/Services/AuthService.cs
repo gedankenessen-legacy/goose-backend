@@ -27,15 +27,13 @@ namespace Goose.API.Services
     public class AuthService : IAuthService
     {
         private readonly ICompanyService _companyService;
-        private readonly ICompanyRepository _companyRepository;
         private readonly IUserService _userService;
         private readonly IUserRepository _userRepository;
         private readonly IOptions<TokenSettings> _tokenSettings;
 
-        public AuthService(ICompanyService companyService, IUserService userService, IUserRepository userRepository, IOptions<TokenSettings> tokenSettings, ICompanyRepository companyRepository)
+        public AuthService(ICompanyService companyService, IUserService userService, IUserRepository userRepository, IOptions<TokenSettings> tokenSettings)
         {
             _companyService = companyService;
-            _companyRepository = companyRepository;
             _userService = userService;
             _userRepository = userRepository;
             _tokenSettings = tokenSettings;

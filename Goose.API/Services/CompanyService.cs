@@ -198,24 +198,32 @@ namespace Goose.API.Services
             return result is null || !result.Any();
         }
 
-        public async Task<bool> UserHasRoleInCompany(ObjectId userId, ObjectId companyId, params string[] roles)
+        public async Task<bool> UserHasRoleInCompany(ObjectId userId, ObjectId companyId, params string[] requiredRoleNames)
         {
+            // no roles to check
+            if (requiredRoleNames.Any() is false)
+                return true;
+
             Company company = await _companyRepository.GetAsync(companyId);
 
-            if (company is null) throw new HttpStatusException(StatusCodes.Status400BadRequest, "Company not found.");
+            if (company is null) 
+                throw new HttpStatusException(StatusCodes.Status400BadRequest, "Company not found.");
 
             PropertyUser companyUser = company.Users.Where(user => user.UserId.Equals(userId)).FirstOrDefault();
 
-            if (companyUser is null) throw new HttpStatusException(StatusCodes.Status400BadRequest, "Error determin company roles for user.");
+            if (companyUser is null) 
+                throw new HttpStatusException(StatusCodes.Status400BadRequest, "Error determin company roles for user.");
 
-            foreach (var requestedRoleName in roles)
+            var roles = await _roleRepository.GetAsync();
+
+            foreach (var requiredRoleName in requiredRoleNames)
             {
-                var requestedRole = await _roleRepository.GetFirstRoleByNameAsync(requestedRoleName);
+                var requiredRole = roles.Where(r => r.Name.Equals(requiredRoleName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
 
-                if (requestedRole is null)
-                    throw new HttpStatusException(StatusCodes.Status400BadRequest, $"No role found with name: {requestedRoleName}");
+                if (requiredRole is null)
+                    throw new HttpStatusException(StatusCodes.Status400BadRequest, $"No role found with name: {requiredRoleName}");
 
-                if (companyUser.RoleIds.Contains(requestedRole.Id))
+                if (companyUser.RoleIds.Contains(requiredRole.Id))
                     return true;
             }
 
