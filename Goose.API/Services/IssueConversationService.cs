@@ -1,4 +1,5 @@
 ﻿using Goose.API.Repositories;
+using Goose.API.Services.issues;
 using Goose.API.Utils.Exceptions;
 using Goose.API.Utils.Validators;
 using Goose.Domain.DTOs.tickets;
@@ -22,11 +23,13 @@ namespace Goose.API.Services
     public class IssueConversationService : IIssueConversationService
     {
         private readonly IIssueRepository _issueRepository;
+        private readonly IIssueService _issueService;
         private readonly IUserService _userService;
 
-        public IssueConversationService(IIssueRepository issueRepository, IUserService userService)
+        public IssueConversationService(IIssueRepository issueRepository, IIssueService issueService, IUserService userService)
         {
             _issueRepository = issueRepository;
+            _issueService = issueService;
             _userService = userService;
         }
 
@@ -98,6 +101,9 @@ namespace Goose.API.Services
         public async Task<IssueConversationDTO> CreateNewIssueConversationAsync(string issueId, IssueConversationDTO conversationItem)
         {
             var issue = await _issueRepository.GetIssueByIdAsync(issueId);
+
+            await _issueService.AssertNotArchived(issue);
+
             var conversationItems = issue.ConversationItems;
 
             // if ConversationItems are null = empty, create a new list, which will gets appended.
