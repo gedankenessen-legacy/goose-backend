@@ -25,6 +25,8 @@ namespace Goose.API.Services.Issues
         public Task<IssueDTO?> GetParent(ObjectId issueId);
         public Task SetParent(ObjectId issueId, ObjectId parentId);
         public Task RemoveParent(ObjectId issueId);
+
+        public Task AssertNotArchived(Issue issue);
     }
 
     public class IssueService : IIssueService
@@ -193,6 +195,23 @@ namespace Goose.API.Services.Issues
             return new IssueDTO(issue, await state, await project != null ? new ProjectDTO(await project) : null,
                 await client != null ? new UserDTO(await client) : null,
                 await author != null ? new UserDTO(await author) : null);
+        }
+
+        /// <summary>
+        /// This method checks that the issue is not archived. If it is, it throws a
+        /// HttpStatusException with 403 - Forbidden
+        /// </summary>
+        /// <param name="issue"></param>
+        /// <returns></returns>
+        public async Task AssertNotArchived(Issue issue)
+        {
+            var project = await _projectRepository.GetAsync(issue.ProjectId);
+            var archivedState = project.States.Single(s => s.UserGenerated == false && s.Name == State.ArchivedState);
+
+            if (issue.StateId == archivedState.Id)
+            {
+                throw new HttpStatusException(403, "Issue is archived.");
+            }
         }
     }
 }
