@@ -1,15 +1,14 @@
 ﻿#nullable enable
 using System.Collections.Generic;
-using System.Linq;
 using Goose.Domain.DTOs.tickets;
-using Goose.Domain.Models.identity;
-using Goose.Domain.Models.projects;
 using Goose.Domain.Models.tickets;
+using MongoDB.Bson;
 
 namespace Goose.Domain.DTOs.issues
 {
     public class IssueDTODetailed
     {
+        public ObjectId? Id { get; set; }
         public StateDTO State { get; set; }
         public ProjectDTO Project { get; set; }
         public UserDTO Client { get; set; }
@@ -26,11 +25,12 @@ namespace Goose.Domain.DTOs.issues
         {
         }
 
-        public IssueDTODetailed(StateDTO state, ProjectDTO project, UserDTO client, UserDTO author,
+        public IssueDTODetailed(ObjectId id, StateDTO state, ProjectDTO project, UserDTO client, UserDTO author,
             IList<UserDTO>? assignedUsers, IList<IssueConversationDTO>? conversationItems,
             IList<IssueTimeSheetDTO>? timeSheets, IssueDetail issueDetail, IssueDTO? parentIssue,
             IList<IssueDTO>? predecessorIssues, IList<IssueDTO>? successorIssues)
         {
+            Id = id;
             State = state;
             Project = project;
             Client = client;

@@ -6,7 +6,6 @@ using Goose.API.Utils;
 using Goose.Domain.DTOs.issues;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using MongoDB.Bson;
 
 namespace Goose.API.Controllers.issuesControllers
 {
@@ -42,14 +41,14 @@ namespace Goose.API.Controllers.issuesControllers
         [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<IssueDTODetailed>> Get([FromRoute] string id,
+        public async Task<ActionResult<IssueDTODetailed>> Get([FromRoute] string projectId, [FromRoute] string id,
             [FromQuery] bool getAssignedUsers = false, [FromQuery] bool getConversations = false,
             [FromQuery] bool getTimeSheets = false, [FromQuery] bool getParent = false,
             [FromQuery] bool getPredecessors = false, [FromQuery] bool getSuccessors = false,
             [FromQuery] bool getAll = false)
         {
-            var res = await _issueDetailedService.Get(id.ToObjectId(), getAssignedUsers, getConversations,
-                getTimeSheets, getParent, getPredecessors, getSuccessors, getAll);
+            var res = await _issueDetailedService.Get(projectId.ToObjectId(), id.ToObjectId(), getAssignedUsers,
+                getConversations, getTimeSheets, getParent, getPredecessors, getSuccessors, getAll);
             return res == null ? NotFound() : Ok(res);
         }
 

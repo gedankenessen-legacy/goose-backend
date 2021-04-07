@@ -14,6 +14,7 @@ using Microsoft.OpenApi.Models;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Conventions;
 using System.ComponentModel;
+using Goose.API.Utils.Validators;
 
 namespace Goose.API
 {
@@ -39,23 +40,20 @@ namespace Goose.API
             services.AddCors(options =>
             {
                 options.AddPolicy("cors",
-                builder =>
-                {
-                    builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader().WithOrigins(_configuration.GetSection("AllowedHosts").Get<string[]>());
-                });
+                    builder =>
+                    {
+                        builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader().WithOrigins(_configuration.GetSection("AllowedHosts").Get<string[]>());
+                    });
             });
 
-            services.AddControllers(options =>
-            {
-                options.ModelBinderProviders.Insert(0, new ObjectIdBinderProvider());
-            }).AddJsonOptions(options =>
+            services.AddControllers(options => { options.ModelBinderProviders.Insert(0, new ObjectIdBinderProvider()); }).AddJsonOptions(options =>
             {
                 options.JsonSerializerOptions.Converters.Add(new ObjectIdJsonConverter());
             });
 
             services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "Goose.API", Version = "v1" });
+                c.SwaggerDoc("v1", new OpenApiInfo {Title = "Goose.API", Version = "v1"});
                 c.MapType<ObjectId>(() => new OpenApiSchema
                 {
                     Type = "string",
@@ -70,7 +68,7 @@ namespace Goose.API
         private void ConfigureMongoDB()
         {
             // In order prevent the [BsonElement("...")] Attribute on each property we configure the drive to assume this as default. Thanks @LuksTrackmaniaCorner
-            var conventionPack = new ConventionPack { new CamelCaseElementNameConvention(), new IgnoreExtraElementsConvention(true) };
+            var conventionPack = new ConventionPack {new CamelCaseElementNameConvention(), new IgnoreExtraElementsConvention(true)};
             ConventionRegistry.Register("camelCase", conventionPack, t => true);
         }
 
@@ -107,6 +105,7 @@ namespace Goose.API
             services.AddScoped<IStateService, StateService>();
             services.AddScoped<IProjectUserService, ProjectUserService>();
             services.AddScoped<IIssueDetailedService, IssueDetailedService>();
+            services.AddScoped<IIssueRequestValidator, IssueRequestValidator>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -129,10 +128,7 @@ namespace Goose.API
 
             app.UseAuthorization();
 
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapControllers();
-            });
+            app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
         }
     }
 }

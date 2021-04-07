@@ -10,10 +10,13 @@ namespace Goose.Tests.Application.IntegrationTests
 {
     public static class TestUtil
     {
+        public static string ToJson(this object obj)
+        {
+            return JsonConvert.SerializeObject(obj, new ObjectIdConverter());
+        }
         public static StringContent ToStringContent(this object obj)
         {
-            var json = JsonConvert.SerializeObject(obj, new ObjectIdConverter());
-            return new StringContent(json, Encoding.UTF8, "application/json");
+            return new(obj.ToJson(), Encoding.UTF8, "application/json");
         }
 
         public static async Task<E> Parse<E>(this HttpContent content)

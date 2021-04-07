@@ -9,7 +9,7 @@ namespace Goose.API.Utils
         public static ObjectId ToObjectId(this string id)
         {
             if (ObjectId.TryParse(id, out var newId) is false)
-              throw new HttpStatusException(StatusCodes.Status400BadRequest, $"[{id}] is not a valid object id.");
+                throw new HttpStatusException(StatusCodes.Status400BadRequest, $"[{id}] is not a valid object id.");
             return newId;
         }
     }
