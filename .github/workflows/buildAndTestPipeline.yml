@@ -10,8 +10,8 @@ jobs:
   buildAndTest:
     runs-on: ubuntu-latest
     env: 
-       DbSettings.ConnectionString: ${{ secrets.CONNECTION_STRING }}
-       DbSettings.DatabaseName: ${{ secrets.DATABASE_NAME }}
+       ASPNETCORE_DbSettings__ConnectionString: ${{ secrets.CONNECTION_STRING }}
+       ASPNETCORE_DbSettings__DatabaseName: ${{ secrets.DATABASE_NAME }}
     steps:
     - uses: actions/checkout@v2
     - name: Setup .NET
