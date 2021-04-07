@@ -178,7 +178,6 @@ namespace Goose.API
             services.AddScoped<IAuthService, AuthService>();
 
             services.AddHttpContextAccessor();
-
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
