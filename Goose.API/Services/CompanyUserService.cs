@@ -2,7 +2,7 @@
 using Goose.API.Utils.Exceptions;
 using Goose.Domain.DTOs;
 using Goose.Domain.Models;
-using Goose.Domain.Models.identity;
+using Goose.Domain.Models.Identity;
 using MongoDB.Bson;
 using System;
 using System.Collections.Generic;
@@ -37,7 +37,9 @@ namespace Goose.API.Services
         {
             var company = await _companyRepository.GetCompanyByIdAsync(companyId);
 
-            var newUser = await _userService.CreateNewUserAsync(user.User);
+            await _userService.CreateNewUserAsync(user.User);
+
+            var newUser = user.User;
 
             var roles = await GetRoleIds(user.Roles);
 
@@ -124,7 +126,7 @@ namespace Goose.API.Services
             var roles = await GetRoleIds(user.Roles);
 
             var company = await _companyRepository.GetCompanyByIdAsync(companyId);
-            var companyUser = company.Users.FirstOrDefault(x => x.Id.Equals(userId));
+            var companyUser = company.Users.FirstOrDefault(x => x.UserId.Equals(userId));
 
             if (companyUser is null)
                 throw new HttpStatusException(400, "Es wurde kein User mit dieser ID gefunden");

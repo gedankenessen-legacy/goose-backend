@@ -6,7 +6,6 @@ using Goose.Domain.DTOs.Issues;
 using Goose.API.Utils;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using MongoDB.Bson;
 
 namespace Goose.API.Controllers.IssuesControllers
 {

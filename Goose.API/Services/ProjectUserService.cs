@@ -8,7 +8,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Goose.API.Utils;
 using Goose.API.Utils.Exceptions;
-using Goose.Domain.Models.identity;
+using Goose.Domain.Models.Identity;
 
 namespace Goose.API.Services
 {

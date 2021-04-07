@@ -1,4 +1,5 @@
 ﻿using Goose.API.Repositories;
+using Goose.API.Utils;
 using Goose.API.Utils.Authentication;
 using Goose.API.Utils.Exceptions;
 using Goose.Domain.DTOs;
@@ -96,13 +97,14 @@ namespace Goose.API.Services
 
             var companyDTOs = new List<CompanyDTO>();
 
-            foreach (var company in companies)
-            {
-                var companyDTO = (CompanyDTO)company;
-                companyDTO.User = (await _companyUserService.GetCompanyUsersAsync(company.Id.ToString()))
-                    .FirstOrDefault(x => x.Roles.FirstOrDefault(companyRole => companyRole.Name.Equals("Firma")) is not null);
-                companyDTOs.Add(companyDTO);
-            }
+            //! @Madara789: CompanyDTO does not have property Users, please check
+            //foreach (var company in companies)
+            //{
+            //    var companyDTO = (CompanyDTO)company;
+            //    companyDTO.User = (await _companyUserService.GetCompanyUsersAsync(company.Id.ToString()))
+            //        .FirstOrDefault(x => x.Roles.FirstOrDefault(companyRole => companyRole.Name.Equals("Firma")) is not null);
+            //    companyDTOs.Add(companyDTO);
+            //}
 
             return companyDTOs;
         }
@@ -113,8 +115,9 @@ namespace Goose.API.Services
 
             var companyDTO = (CompanyDTO)company;
 
-            companyDTO.User = (await _companyUserService.GetCompanyUsersAsync(company.Id.ToString()))
-                    .FirstOrDefault(x => x.Roles.FirstOrDefault(companyRole => companyRole.Name.Equals("Firma")) is not null);
+            //! @Madara789: CompanyDTO does not have property Users, please check
+            //companyDTO.User = (await _companyUserService.GetCompanyUsersAsync(company.Id.ToString()))
+            //        .FirstOrDefault(x => x.Roles.FirstOrDefault(companyRole => companyRole.Name.Equals("Firma")) is not null);
 
             return companyDTO;
         }

@@ -2,15 +2,13 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Goose.API.Repositories;
+using Goose.API.Services.Issues;
 using Goose.Domain.DTOs;
-using Goose.Domain.DTOs.issues;
-using Goose.Domain.DTOs.tickets;
-using Goose.Domain.Models.identity;
-using Goose.Domain.Models.tickets;
-using Microsoft.AspNetCore.Http.Features;
+using Goose.Domain.DTOs.Issues;
+using Goose.Domain.Models.Tickets;
 using MongoDB.Bson;
 
-namespace Goose.API.Services.issues
+namespace Goose.API.Services.Issues
 {
     public interface IIssueDetailedService
     {
