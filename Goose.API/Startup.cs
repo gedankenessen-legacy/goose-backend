@@ -23,6 +23,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Reflection;
 using System.Text;
+using Goose.API.Utils.Validators;
 
 namespace Goose.API
 {
@@ -49,10 +50,10 @@ namespace Goose.API
             services.AddCors(options =>
             {
                 options.AddPolicy("cors",
-                builder =>
-                {
-                    builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader().WithOrigins(_configuration.GetSection("AllowedHosts").Get<string[]>());
-                });
+                    builder =>
+                    {
+                        builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader().WithOrigins(_configuration.GetSection("AllowedHosts").Get<string[]>());
+                    });
             });
 
             services.AddAuthentication(opt =>
@@ -135,7 +136,7 @@ namespace Goose.API
         private void ConfigureMongoDB()
         {
             // In order prevent the [BsonElement("...")] Attribute on each property we configure the drive to assume this as default. Thanks @LuksTrackmaniaCorner
-            var conventionPack = new ConventionPack { new CamelCaseElementNameConvention(), new IgnoreExtraElementsConvention(true) };
+            var conventionPack = new ConventionPack {new CamelCaseElementNameConvention(), new IgnoreExtraElementsConvention(true)};
             ConventionRegistry.Register("camelCase", conventionPack, t => true);
         }
 
@@ -164,6 +165,7 @@ namespace Goose.API
             services.AddScoped<IIssueConversationService, IssueConversationService>();
             services.AddScoped<IIssueAssignedUserService, IssueAssignedUserService>();
             services.AddScoped<IIssueRequirementService, IssueRequirementService>();
+            services.AddScoped<IIssueRequestValidator, IssueRequestValidator>();
             services.AddScoped<IIssuePredecessorService, IssuePredecessorService>();
             services.AddScoped<IIssueTimeSheetService, IssueTimeSheetService>(); 
             services.AddScoped<IUserService, UserService>();     
@@ -173,10 +175,10 @@ namespace Goose.API
             services.AddScoped<IStateService, StateService>();
             services.AddScoped<ICompanyService, CompanyService>();
             services.AddScoped<ICompanyUserService, CompanyUserService>();
-
             services.AddScoped<IAuthService, AuthService>();
 
             services.AddHttpContextAccessor();
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -3,7 +3,6 @@ using Goose.Data.Models;
 using Goose.Domain.Models.Identity;
 using Goose.Domain.Models.Projects;
 using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
 
 namespace Goose.Domain.Models.Tickets
 {
