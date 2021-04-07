@@ -119,8 +119,11 @@ namespace Goose.API.Services.issues
             var project = _projectRepository.GetAsync(issue.ProjectId);
             var client = _userRepository.GetAsync(issue.ClientId);
             var author = _userRepository.GetAsync(issue.AuthorId);
-            return new IssueDTO(issue, await state, new ProjectDTO(await project), new UserDTO(await client),
-                new UserDTO(await author));
+            
+            
+            return new IssueDTO(issue, await state, await project != null ? new ProjectDTO(await project) : null, 
+                await client != null ? new UserDTO(await client) : null,
+                await author != null ? new UserDTO(await author) : null);
         }
     }
 }
