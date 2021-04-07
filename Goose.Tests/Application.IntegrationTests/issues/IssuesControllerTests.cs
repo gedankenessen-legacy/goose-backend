@@ -17,7 +17,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
     /**
      * The issue endpoint is dependant of the State, Company, project and User controller. Tests may fail if those weren't tested first.
      */
-    [TestFixture]
+  /*  [TestFixture]
     [SingleThreaded]
     public class IssuesControllerTests
     {
@@ -251,4 +251,6 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             return await response.Content.Parse<StateDTO>();
         }
     }
+    
+    */
 }
