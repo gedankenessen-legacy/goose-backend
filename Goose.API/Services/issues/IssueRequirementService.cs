@@ -41,7 +41,8 @@ namespace Goose.API.Services.Issues
 
         public async Task<IssueRequirement> CreateAsync(ObjectId issueId, IssueRequirement requirement)
         {
-            //TODO nicht atomar
+            requirement.Id = ObjectId.GenerateNewId();
+            
             var issue = await _issueRepo.GetAsync(issueId);
             issue.IssueDetail.Requirements.Add(requirement);
             await _issueRepo.UpdateAsync(issue);

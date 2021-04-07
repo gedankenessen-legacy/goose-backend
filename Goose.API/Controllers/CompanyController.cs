@@ -38,12 +38,5 @@ namespace Goose.API.Controllers
             var companyToUpdate = await _companyService.UpdateCompanyAsync(id, company);
             return Ok(companyToUpdate);
         }
-
-        [HttpGet("~/api/companies/{companyId}/user")]
-        public async Task<ActionResult<IList<PropertyUserDTO>>> GetCompanyUsersAsync([FromRoute] string companyId)
-        {
-            var userList = await _companyService.GetCompanyUsersAsync(companyId);
-            return Ok(userList);
-        }
     }
 }

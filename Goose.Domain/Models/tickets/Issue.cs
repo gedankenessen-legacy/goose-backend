@@ -17,7 +17,7 @@ namespace Goose.Domain.Models.Tickets
         public IList<IssueConversation> ConversationItems { get; set; }
         public IList<TimeSheet> TimeSheets { get; set; }
         public IssueDetail IssueDetail { get; set; }
-        public ObjectId ParentIssueId { get; set; }
+        public ObjectId? ParentIssueId { get; set; }
         public IList<ObjectId> PredecessorIssueIds { get; set; }
         public IList<ObjectId> SuccessorIssueIds { get; set; }
     }

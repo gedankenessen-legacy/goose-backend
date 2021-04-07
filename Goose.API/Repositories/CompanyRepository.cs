@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Goose.API.Utils.Exceptions;
 
 namespace Goose.API.Repositories
 {
@@ -26,12 +27,12 @@ namespace Goose.API.Repositories
         {
             // check if the parsed objectId is not the 000...000 default objectId.
             if (ObjectId.TryParse(companyId, out ObjectId companyOid) is false)
-                throw new Exception("Cannot parse company string id to a valid object id");
+                throw new HttpStatusException(400, "Die mitgegebene ID lässt sich nicht in eine valiede Object ID parsen");
 
             var company = await GetAsync(companyOid);
 
             if(company is null)
-                throw new Exception($"No Company found with Id = {companyId}");
+                throw new HttpStatusException(400, "Die angeforderte Company existiert nicht");
 
             return company;
         }

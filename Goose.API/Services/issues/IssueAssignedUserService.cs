@@ -40,8 +40,7 @@ namespace Goose.API.Services.Issues
         public async Task<UserDTO>? GetAssignedUserOfIssueAsync(ObjectId issueId, ObjectId userId)
         {
             var issue = await _issueRepo.GetAsync(issueId);
-            if (!issue.AssignedUserIds.Contains(userId)) return null;
-            return new UserDTO(await _userRepo.GetAsync(userId));
+            return !issue.AssignedUserIds.Contains(userId) ? null : new UserDTO(await _userRepo.GetAsync(userId));
         }
 
         public async Task AssignUserAsync(ObjectId issueId, ObjectId userId)
@@ -55,8 +54,8 @@ namespace Goose.API.Services.Issues
         public async Task UnassignUserAsync(ObjectId issueId, ObjectId userId)
         {
             var issue = await _issueRepo.GetAsync(issueId);
-            issue.AssignedUserIds.Remove(userId);
-            await _issueRepo.UpdateAsync(issue);
+            if (issue.AssignedUserIds.Remove(userId))
+                await _issueRepo.UpdateAsync(issue);
         }
     }
 }

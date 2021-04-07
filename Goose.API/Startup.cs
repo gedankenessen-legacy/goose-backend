@@ -160,17 +160,20 @@ namespace Goose.API
             services.AddScoped<ICompanyRepository, CompanyRepository>();
 
             services.AddScoped<IIssueService, IssueService>();
+            services.AddScoped<IIssueDetailedService, IssueDetailedService>();
             services.AddScoped<IIssueConversationService, IssueConversationService>();
             services.AddScoped<IIssueAssignedUserService, IssueAssignedUserService>();
             services.AddScoped<IIssueRequirementService, IssueRequirementService>();
             services.AddScoped<IIssuePredecessorService, IssuePredecessorService>();
-            services.AddScoped<IIssueTimeSheetService, IssueTimeSheetService>();       
+            services.AddScoped<IIssueTimeSheetService, IssueTimeSheetService>(); 
             services.AddScoped<IUserService, UserService>();     
             services.AddScoped<IRoleService, RoleService>();    
             services.AddScoped<IProjectService, ProjectService>();
             services.AddScoped<IProjectUserService, ProjectUserService>();
             services.AddScoped<IStateService, StateService>();
             services.AddScoped<ICompanyService, CompanyService>();
+            services.AddScoped<ICompanyUserService, CompanyUserService>();
+
             services.AddScoped<IAuthService, AuthService>();
 
             services.AddHttpContextAccessor();

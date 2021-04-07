@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Goose.API.Repositories;
+using Goose.API.Utils.Exceptions;
 using Goose.Domain.DTOs;
 using Goose.Domain.Models.Identity;
 using MongoDB.Bson;
@@ -33,16 +34,16 @@ namespace Goose.API.Services
         public async Task CreateNewUserAsync(User user)
         {
             if (user == null)
-                throw new Exception();
+                throw new HttpStatusException(400, "Der mitgegebene User ist null");
 
             if (string.IsNullOrWhiteSpace(user.Firstname))
-                throw new Exception();
+                throw new HttpStatusException(400, "Bitte geben Sie einen Vornamen für den User an");
 
             if (string.IsNullOrWhiteSpace(user.Lastname))
-                throw new Exception();
+                throw new HttpStatusException(400, "Bitte geben Sie einen Nachnamen für den User an");
 
             if (string.IsNullOrWhiteSpace(user.HashedPassword))
-                throw new Exception();
+                throw new HttpStatusException(400, "Bitte geben Sie ein Passwort für den User an");
 
             await _userRepository.CreateAsync(user);
         }
@@ -52,7 +53,7 @@ namespace Goose.API.Services
             var user = await _userRepository.GetAsync(id);
 
             if (user == null)
-                throw new Exception();
+                throw new HttpStatusException(400, "Es wurde kein User mit dieser ID wurde nicht gefunden");
 
             return new UserDTO() { Id = user.Id, Firstname = user.Firstname, Lastname = user.Lastname};
         }
@@ -72,24 +73,24 @@ namespace Goose.API.Services
         public async Task<User> UpdateUserAsync(ObjectId id, User user)
         {
             if (user == null)
-                throw new Exception();
+                throw new HttpStatusException(400, "Der mitgegebene User ist null");
 
             if (id != user.Id)
-                throw new Exception();
+                throw new HttpStatusException(400, "die migegebene ID stimmt nicht mit der User ID überein");
 
             if (string.IsNullOrWhiteSpace(user.Firstname))
-                throw new Exception();
+                throw new HttpStatusException(400, "Bitte geben Sie einen Vornamen für den User an");
 
             if (string.IsNullOrWhiteSpace(user.Lastname))
-                throw new Exception();
+                throw new HttpStatusException(400, "Bitte geben Sie einen Nachnamen für den User an");
 
             if (string.IsNullOrWhiteSpace(user.HashedPassword))
-                throw new Exception();
+                throw new HttpStatusException(400, "Bitte geben Sie ein Passwort für den User an");
 
             var userToUpdate = await _userRepository.GetAsync(user.Id);
 
             if (userToUpdate == null)
-                throw new Exception();
+                throw new HttpStatusException(400, "Es wurde kein User mit dieser ID gefunden");
 
             userToUpdate.Firstname = user.Firstname;
             userToUpdate.Lastname = user.Lastname;

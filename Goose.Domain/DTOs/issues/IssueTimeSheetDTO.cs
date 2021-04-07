@@ -15,6 +15,17 @@ namespace Goose.Domain.DTOs.Issues
             User = new UserDTO(user);
         }
 
+        public TimeSheet ToTimeSheet()
+        {
+            return new()
+            {
+                End = End,
+                Id = Id,
+                Start = Start,
+                UserId = User.Id
+            };
+        }
+
         public ObjectId Id { get; set; }
         public UserDTO User { get; set; }
         public DateTime Start { get; set; }

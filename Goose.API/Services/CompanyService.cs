@@ -35,14 +35,17 @@ namespace Goose.API.Services
         private readonly IRoleService _roleService;
         private readonly IRoleRepository _roleRepository;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly ICompanyUserService _companyUserService;
+        
 
-        public CompanyService(ICompanyRepository companyRepository, IUserService userService, IRoleService roleService, IRoleRepository roleRepository, IHttpContextAccessor httpContextAccessor)
+        public CompanyService(ICompanyRepository companyRepository, IUserService userService, IRoleService roleService, IRoleRepository roleRepository, ICompanyUserService companyUserService, IHttpContextAccessor httpContextAccessor)
         {
             _companyRepository = companyRepository;
             _userService = userService;
             _roleService = roleService;
             _roleRepository = roleRepository;
             _httpContextAccessor = httpContextAccessor;
+            _companyUserService = companyUserService;
         }
 
         public async Task<CompanyDTO> CreateCompanyAsync(string companyName, ObjectId creatorUserId)
@@ -89,13 +92,15 @@ namespace Goose.API.Services
             var companies = await _companyRepository.FilterByAsync(cmp => cmp.Users.Any(pu => pu.UserId.Equals(userId)));
 
             if (companies is null)
-                throw new Exception("Something went wrong");
+                throw new HttpStatusException(400, "Etwas ist schief gelaufen");
 
             var companyDTOs = new List<CompanyDTO>();
 
             foreach (var company in companies)
             {
                 var companyDTO = (CompanyDTO)company;
+                companyDTO.User = (await _companyUserService.GetCompanyUsersAsync(company.Id.ToString()))
+                    .FirstOrDefault(x => x.Roles.FirstOrDefault(companyRole => companyRole.Name.Equals("Firma")) is not null);
                 companyDTOs.Add(companyDTO);
             }
 
@@ -106,21 +111,26 @@ namespace Goose.API.Services
         {
             var company = await _companyRepository.GetCompanyByIdAsync(companyId);
 
-            return (CompanyDTO)company;
+            var companyDTO = (CompanyDTO)company;
+
+            companyDTO.User = (await _companyUserService.GetCompanyUsersAsync(company.Id.ToString()))
+                    .FirstOrDefault(x => x.Roles.FirstOrDefault(companyRole => companyRole.Name.Equals("Firma")) is not null);
+
+            return companyDTO;
         }
 
         public async Task<CompanyDTO> UpdateCompanyAsync(string id, CompanyDTO company)
         {
             if (company is null)
-                throw new Exception("something went wronge");
+                throw new HttpStatusException(400, "Etwas ist schiefgelaufen");
 
             if (!id.Equals(company.Id))
-                throw new Exception();
+                throw new HttpStatusException(400, "Die mitgebene ID stimmt nicht mit der company überein");
 
             var companyToUpdate = await _companyRepository.GetCompanyByIdAsync(id);
 
             if (companyToUpdate is null)
-                throw new Exception();
+                throw new HttpStatusException(400, "Die mitgegebene Company existiert");
 
             companyToUpdate.Name = company.Name;
 
