@@ -1,5 +1,5 @@
-﻿using System.Collections.Generic;
-using Goose.Domain.Models.Identity;
+﻿using Goose.Domain.Models.Identity;
+using System.Collections.Generic;
 
 namespace Goose.Domain.DTOs
 {

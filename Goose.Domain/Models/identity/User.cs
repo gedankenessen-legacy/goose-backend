@@ -5,6 +5,7 @@ namespace Goose.Domain.Models.Identity
 {
     public class User : Document
     {
+        public string Username { get; set; }
         public string Firstname { get; set; }
         public string Lastname { get; set; }
         public string HashedPassword { get; set; }

@@ -14,9 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Application.IntegrationTests\" />
     <Folder Include="Domain.UnitTests\" />
-    <Folder Include="Application.UnitTests\" />
   </ItemGroup>
 
   <ItemGroup>

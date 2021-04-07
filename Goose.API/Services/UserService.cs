@@ -15,8 +15,9 @@ namespace Goose.API.Services
     {
         Task<UserDTO> GetUser(ObjectId id);
         Task<IList<UserDTO>> GetUsersAsync();
-        Task<User> CreateNewUserAsync(User user);
+        Task CreateNewUserAsync(User user);
         Task<User> UpdateUserAsync(ObjectId id, User user);
+        Task<bool> UsernameAvailableAsync(string username);
     }
 
     public class UserService : IUserService
@@ -30,7 +31,7 @@ namespace Goose.API.Services
             _mapper = mapper;
         }
 
-        public async Task<User> CreateNewUserAsync(User user)
+        public async Task CreateNewUserAsync(User user)
         {
             if (user == null)
                 throw new HttpStatusException(400, "Der mitgegebene User ist null");
@@ -44,16 +45,7 @@ namespace Goose.API.Services
             if (string.IsNullOrWhiteSpace(user.HashedPassword))
                 throw new HttpStatusException(400, "Bitte geben Sie ein Passwort für den User an");
 
-            var newUser = new User()
-            {
-                Firstname = user.Firstname,
-                Lastname = user.Lastname,
-                HashedPassword = user.HashedPassword
-            };
-
-            await _userRepository.CreateAsync(newUser);
-
-            return newUser;
+            await _userRepository.CreateAsync(user);
         }
 
         public async Task<UserDTO> GetUser(ObjectId id)
@@ -107,6 +99,11 @@ namespace Goose.API.Services
             await _userRepository.UpdateAsync(userToUpdate);
 
             return userToUpdate;
+        }
+
+        public async Task<bool> UsernameAvailableAsync(string username)
+        {
+            return await _userRepository.GetByUsernameAsync(username) is null;
         }
     }
 }

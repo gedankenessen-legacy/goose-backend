@@ -1,13 +1,11 @@
-﻿using Goose.API.Services;
-using Goose.API.Utils.Validators;
-using Goose.Data;
+﻿using Goose.API.Authorization;
+using Goose.API.Services;
 using Goose.Domain.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace Goose.API.Controllers

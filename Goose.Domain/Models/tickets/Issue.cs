@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
 using Goose.Data.Models;
+using Goose.Domain.Models.Identity;
+using Goose.Domain.Models.Projects;
 using MongoDB.Bson;
 
 namespace Goose.Domain.Models.Tickets
