@@ -19,3 +19,7 @@ Steps to reproduce the behavior:
 
 **Erwartetes Verhalten**
 A clear and concise description of what you expected to happen.
+
+**Branches**
+- Frontend: main
+- Backend: master
