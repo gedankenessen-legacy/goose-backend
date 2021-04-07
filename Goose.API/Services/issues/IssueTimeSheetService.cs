@@ -3,11 +3,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using Goose.API.Repositories;
 using Goose.API.Utils;
-using Goose.Domain.DTOs.issues;
-using Goose.Domain.Models.tickets;
+using Goose.Domain.DTOs.Issues;
+using Goose.Domain.Models.Tickets;
 using MongoDB.Bson;
 
-namespace Goose.API.Services.issues
+namespace Goose.API.Services.Issues
 {
     public interface IIssueTimeSheetService
     {

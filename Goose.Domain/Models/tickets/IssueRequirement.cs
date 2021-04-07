@@ -1,6 +1,6 @@
 ﻿using MongoDB.Bson;
 
-namespace Goose.Domain.Models.tickets
+namespace Goose.Domain.Models.Tickets
 {
     public class IssueRequirement
     {
