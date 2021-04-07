@@ -9,6 +9,9 @@ on:
 jobs:
   buildAndTest:
     runs-on: ubuntu-latest
+    env: 
+       DbSettings.ConnectionString: ${{ secrets.CONNECTION_STRING }}
+       DbSettings.DatabaseName: ${{ secrets.DATABASE_NAME }}
     steps:
     - uses: actions/checkout@v2
     - name: Setup .NET

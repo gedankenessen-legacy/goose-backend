@@ -42,7 +42,7 @@ namespace Goose.API.Services
         public async Task<SignInResponse> SignUpAsync(SignUpRequest signUpRequest)
         {
             // validate company name
-            if (await _companyService.CompanyNameAvailableAsync(signUpRequest.CompanyName) is false)
+            if ((await _companyService.CompanyNameAvailableAsync(signUpRequest.CompanyName)) is false)
                 throw new HttpStatusException(StatusCodes.Status409Conflict, "A company with this name is already existing.");
 
             // create new user
