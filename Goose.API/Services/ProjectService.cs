@@ -37,12 +37,44 @@ namespace Goose.API.Services
                 ProjectDetail = new ProjectDetail()
                 {
                     Name = requestedProject.Name,
-                }
+                },
+                States = GetDefaultStates()
             };
 
             await _projectRepository.CreateAsync(newProject);
 
             return new ProjectDTO(newProject);
+        }
+
+        private IList<State> GetDefaultStates()
+        {
+            State CreateDefaultState(string name, string phase)
+            {
+                return new State()
+                {
+                    Id = ObjectId.GenerateNewId(),
+                    Name = name,
+                    Phase = phase,
+                    UserGenerated = false,
+                };
+            }
+
+            var states = new List<State>()
+            {
+                CreateDefaultState(State.CheckingState, State.NegotiationPhase),
+                CreateDefaultState(State.NegotiationState, State.NegotiationPhase),
+
+                CreateDefaultState(State.BlockedState, State.ProcessingPhase),
+                CreateDefaultState(State.WaitingState, State.ProcessingPhase),
+                CreateDefaultState(State.ProcessingState, State.ProcessingPhase),
+                CreateDefaultState(State.ReviewState, State.ProcessingPhase),
+
+                CreateDefaultState(State.CompletedState, State.ConclusionPhase),
+                CreateDefaultState(State.CancelledState, State.ConclusionPhase),
+                CreateDefaultState(State.ArchivedState, State.ConclusionPhase),
+            };
+
+            return states;
         }
 
         public async Task<ProjectDTO> GetProject(ObjectId projectId)
