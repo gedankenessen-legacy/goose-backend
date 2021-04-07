@@ -2,7 +2,7 @@
 using Goose.API.Utils.Validators;
 using Goose.Data.Context;
 using Goose.Data.Repository;
-using Goose.Domain.Models.tickets;
+using Goose.Domain.Models.Tickets;
 using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
 using MongoDB.Driver;

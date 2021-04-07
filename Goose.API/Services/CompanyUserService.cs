@@ -1,13 +1,12 @@
-﻿using Goose.API.Repositories;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Goose.API.Repositories;
 using Goose.API.Utils.Exceptions;
 using Goose.Domain.DTOs;
 using Goose.Domain.Models;
-using Goose.Domain.Models.identity;
+using Goose.Domain.Models.Identity;
 using MongoDB.Bson;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Goose.API.Services
 {
@@ -17,7 +16,6 @@ namespace Goose.API.Services
         public Task<PropertyUserDTO> GetCompanyUserAsync(string companyId, string userId);
         public Task<PropertyUserDTO> CreateComapanyUserAsync(string companyId, PropertyUserLoginDTO user);
         public Task<PropertyUserDTO> UpdateComapanyUserAsync(string companyId, string userId, PropertyUserLoginDTO user);
-
     }
 
     public class CompanyUserService : ICompanyUserService
@@ -41,7 +39,7 @@ namespace Goose.API.Services
 
             var roles = await GetRoleIds(user.Roles);
 
-            company.Users.Add(new PropertyUser() { UserId = newUser.Id, RoleIds = roles });
+            company.Users.Add(new PropertyUser() {UserId = newUser.Id, RoleIds = roles});
 
             await _companyRepository.UpdateAsync(company);
 
@@ -52,7 +50,7 @@ namespace Goose.API.Services
             foreach (var roleId in roles)
                 roleDTOs.Add(new RoleDTO(roleList.FirstOrDefault(x => x.Id.Equals(roleId))));
 
-            return new PropertyUserDTO() { User = new UserDTO(newUser), Roles = roleDTOs };
+            return new PropertyUserDTO() {User = new UserDTO(newUser), Roles = roleDTOs};
         }
 
         public async Task<IList<PropertyUserDTO>> GetCompanyUsersAsync(string companyId)
@@ -79,7 +77,7 @@ namespace Goose.API.Services
                         roles.Add(new RoleDTO(role));
                 }
 
-                propertyUserList.Add(new PropertyUserDTO() { User = user, Roles = roles });
+                propertyUserList.Add(new PropertyUserDTO() {User = user, Roles = roles});
             }
 
             return propertyUserList;
@@ -111,7 +109,7 @@ namespace Goose.API.Services
                     roles.Add(new RoleDTO(role));
             }
 
-            return new PropertyUserDTO() { User = user, Roles = roles };
+            return new PropertyUserDTO() {User = user, Roles = roles};
         }
 
         public async Task<PropertyUserDTO> UpdateComapanyUserAsync(string companyId, string userId, PropertyUserLoginDTO user)
@@ -139,7 +137,7 @@ namespace Goose.API.Services
             foreach (var roleId in roles)
                 roleDTOs.Add(new RoleDTO(roleList.FirstOrDefault(x => x.Id.Equals(roleId))));
 
-            return new PropertyUserDTO() { User = new UserDTO(user.User), Roles = user.Roles };
+            return new PropertyUserDTO() {User = new UserDTO(user.User), Roles = user.Roles};
         }
 
         private async Task<List<ObjectId>> GetRoleIds(IList<RoleDTO> roles)
@@ -148,19 +146,19 @@ namespace Goose.API.Services
 
             var roleList = await _roleService.GetRolesAsync();
 
-            foreach(var role in roles)
+            foreach (var role in roles)
             {
                 var roleFromDB = roleList.FirstOrDefault(x => x.Id.Equals(role.Id) || x.Name.Equals(role.Name));
 
                 if (roleFromDB == null)
                 {
-                    roleFromDB = await _roleService.CreateRoleAsync(new Role() { Name = role.Name });
+                    roleFromDB = await _roleService.CreateRoleAsync(new Role() {Name = role.Name});
                 }
 
                 roleIds.Add(roleFromDB.Id);
             }
 
-           return roleIds;
+            return roleIds;
         }
     }
 }

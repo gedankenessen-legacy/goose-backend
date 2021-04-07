@@ -1,7 +1,7 @@
 ﻿using Goose.API.Repositories;
 using Goose.API.Utils.Exceptions;
 using Goose.Domain.DTOs;
-using Goose.Domain.Models.projects;
+using Goose.Domain.Models.Projects;
 using MongoDB.Bson;
 using System;
 using System.Collections.Generic;

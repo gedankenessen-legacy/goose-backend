@@ -4,7 +4,7 @@ using Goose.Data.Models;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace Goose.Domain.Models.companies
+namespace Goose.Domain.Models.Companies
 {
     public class Company : Document
     {

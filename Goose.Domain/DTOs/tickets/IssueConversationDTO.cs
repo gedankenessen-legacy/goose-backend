@@ -1,9 +1,9 @@
-﻿using Goose.Domain.Models.tickets;
+﻿using Goose.Domain.Models.Tickets;
 using MongoDB.Bson;
 using System;
 using System.Collections.Generic;
 
-namespace Goose.Domain.DTOs.tickets
+namespace Goose.Domain.DTOs.Tickets
 {
     public class IssueConversationDTO
     {

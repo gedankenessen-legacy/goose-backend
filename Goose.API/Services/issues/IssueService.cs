@@ -1,16 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AutoMapper;
 using Goose.API.Repositories;
+using Goose.API.Utils.Exceptions;
+using Goose.API.Utils.Validators;
 using Goose.Domain.DTOs;
-using Goose.Domain.DTOs.issues;
-using Goose.Domain.Models.tickets;
+using Goose.Domain.DTOs.Issues;
+using Goose.Domain.Models.Tickets;
+using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
-using MongoDB.Driver;
 
-namespace Goose.API.Services.issues
+namespace Goose.API.Services.Issues
 {
     public interface IIssueService
     {
@@ -33,14 +33,16 @@ namespace Goose.API.Services.issues
         private readonly IUserRepository _userRepository;
 
         private readonly IIssueRepository _issueRepo;
+        private readonly IIssueRequestValidator _issueValidator;
 
         public IssueService(IIssueRepository issueRepo, IStateService stateService,
-            IProjectRepository projectRepository, IUserRepository userRepository)
+            IProjectRepository projectRepository, IUserRepository userRepository, IIssueRequestValidator issueValidator)
         {
             _issueRepo = issueRepo;
             _stateService = stateService;
             _projectRepository = projectRepository;
             _userRepository = userRepository;
+            _issueValidator = issueValidator;
         }
 
         public async Task<IList<IssueDTO>> GetAll()
@@ -55,7 +57,8 @@ namespace Goose.API.Services.issues
 
         public async Task<IList<IssueDTO>> GetAllOfProject(ObjectId projectId)
         {
-            return (await Task.WhenAll((await _issueRepo.GetAllOfProjectAsync(projectId)).Select(CreateDtoFromIssue))).ToList();
+            return (await Task.WhenAll((await _issueRepo.GetAllOfProjectAsync(projectId)).Select(CreateDtoFromIssue)))
+                .ToList();
         }
 
         public async Task<IssueDTO> GetOfProject(ObjectId projectId, ObjectId id)
@@ -65,6 +68,10 @@ namespace Goose.API.Services.issues
 
         public async Task<IssueDTO> Create(IssueDTO issueDto)
         {
+            if (!await _issueValidator.HasExistingProjectId(issueDto.Project.Id))
+                throw new HttpStatusException(StatusCodes.Status400BadRequest,
+                    $"Cannot create an Issue. Project with id [{issueDto.Project.Id}] does not exist");
+
             var issue = issueDto.ToIssue();
             await _issueRepo.CreateAsync(issue);
 
@@ -112,8 +119,11 @@ namespace Goose.API.Services.issues
             var project = _projectRepository.GetAsync(issue.ProjectId);
             var client = _userRepository.GetAsync(issue.ClientId);
             var author = _userRepository.GetAsync(issue.AuthorId);
-            return new IssueDTO(issue, await state, new ProjectDTO(await project), new UserDTO(await client),
-                new UserDTO(await author));
+            
+            //TODO temporarily allowing state/project/client/author to be null
+            return new IssueDTO(issue, await state, await project != null ? new ProjectDTO(await project) : null, 
+                await client != null ? new UserDTO(await client) : null,
+                await author != null ? new UserDTO(await author) : null);
         }
     }
 }

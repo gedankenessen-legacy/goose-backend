@@ -1,9 +1,5 @@
-﻿using Goose.Domain.Models.identity;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using Goose.Domain.Models.Identity;
 
 namespace Goose.Domain.DTOs
 {

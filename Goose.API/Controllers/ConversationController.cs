@@ -1,6 +1,6 @@
 ﻿
 using Goose.API.Services;
-using Goose.Domain.DTOs.tickets;
+using Goose.Domain.DTOs.Tickets;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;

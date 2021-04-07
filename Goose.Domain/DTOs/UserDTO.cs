@@ -1,5 +1,5 @@
 ﻿using Goose.Data.Models;
-using Goose.Domain.Models.identity;
+using Goose.Domain.Models.Identity;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using System;

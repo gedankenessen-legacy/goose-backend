@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Goose.Domain.Models.companies
+namespace Goose.Domain.Models.Companies
 {
     public class CompanyLogin
     {
