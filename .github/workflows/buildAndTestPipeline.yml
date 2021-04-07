@@ -25,5 +25,5 @@ jobs:
     - name: Test
       run: dotnet test --no-build --verbosity normal
       env: 
-         ConnectionString: ${{ secrets.ConnectionString }}
-         DatabaseName: ${{ secrets.DatabaseName }}
+         DbSettings.ConnectionString: ${{ secrets.ConnectionString }}
+         DbSettings.DatabaseName: ${{ secrets.DatabaseName }}
