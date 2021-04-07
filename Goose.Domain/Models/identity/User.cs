@@ -1,7 +1,7 @@
 ﻿using Goose.Data.Models;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace Goose.Domain.Models.identity
+namespace Goose.Domain.Models.Identity
 {
     public class User : Document
     {

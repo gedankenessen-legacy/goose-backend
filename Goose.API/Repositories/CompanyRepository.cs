@@ -1,6 +1,6 @@
 ﻿using Goose.Data.Context;
 using Goose.Data.Repository;
-using Goose.Domain.Models.companies;
+using Goose.Domain.Models.Companies;
 using MongoDB.Bson;
 using Microsoft.AspNetCore.Http;
 using System;

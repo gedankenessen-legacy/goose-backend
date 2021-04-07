@@ -5,12 +5,12 @@ using Goose.API.Repositories;
 using Goose.API.Utils.Exceptions;
 using Goose.API.Utils.Validators;
 using Goose.Domain.DTOs;
-using Goose.Domain.DTOs.issues;
-using Goose.Domain.Models.tickets;
+using Goose.Domain.DTOs.Issues;
+using Goose.Domain.Models.Tickets;
 using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
 
-namespace Goose.API.Services.issues
+namespace Goose.API.Services.Issues
 {
     public interface IIssueDetailedService
     {

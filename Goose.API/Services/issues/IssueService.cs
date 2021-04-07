@@ -5,12 +5,12 @@ using Goose.API.Repositories;
 using Goose.API.Utils.Exceptions;
 using Goose.API.Utils.Validators;
 using Goose.Domain.DTOs;
-using Goose.Domain.DTOs.issues;
-using Goose.Domain.Models.tickets;
+using Goose.Domain.DTOs.Issues;
+using Goose.Domain.Models.Tickets;
 using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
 
-namespace Goose.API.Services.issues
+namespace Goose.API.Services.Issues
 {
     public interface IIssueService
     {
@@ -120,7 +120,7 @@ namespace Goose.API.Services.issues
             var client = _userRepository.GetAsync(issue.ClientId);
             var author = _userRepository.GetAsync(issue.AuthorId);
             
-            
+            //TODO temporarily allowing state/project/client/author to be null
             return new IssueDTO(issue, await state, await project != null ? new ProjectDTO(await project) : null, 
                 await client != null ? new UserDTO(await client) : null,
                 await author != null ? new UserDTO(await author) : null);

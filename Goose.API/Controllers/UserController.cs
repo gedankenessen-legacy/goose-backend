@@ -1,6 +1,6 @@
 ﻿using Goose.API.Services;
 using Goose.Domain.DTOs;
-using Goose.Domain.Models.identity;
+using Goose.Domain.Models.Identity;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 using System;

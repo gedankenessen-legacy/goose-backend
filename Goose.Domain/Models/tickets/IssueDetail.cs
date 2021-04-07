@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Goose.Domain.Models.tickets
+namespace Goose.Domain.Models.Tickets
 {
     public class IssueDetail
     {

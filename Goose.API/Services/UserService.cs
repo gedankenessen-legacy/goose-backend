@@ -1,7 +1,7 @@
 ﻿using AutoMapper;
 using Goose.API.Repositories;
 using Goose.Domain.DTOs;
-using Goose.Domain.Models.identity;
+using Goose.Domain.Models.Identity;
 using MongoDB.Bson;
 using System;
 using System.Collections.Generic;

@@ -1,10 +1,10 @@
 ﻿#nullable enable
 using System.Collections.Generic;
-using Goose.Domain.DTOs.tickets;
-using Goose.Domain.Models.tickets;
+using Goose.Domain.DTOs.Tickets;
+using Goose.Domain.Models.Tickets;
 using MongoDB.Bson;
 
-namespace Goose.Domain.DTOs.issues
+namespace Goose.Domain.DTOs.Issues
 {
     public class IssueDTODetailed
     {

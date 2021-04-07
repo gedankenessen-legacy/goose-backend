@@ -1,9 +1,9 @@
 ﻿using System;
-using Goose.Domain.Models.identity;
+using Goose.Domain.Models.Identity;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace Goose.Domain.Models.tickets
+namespace Goose.Domain.Models.Tickets
 {
     public class TimeSheet
     {

@@ -1,7 +1,7 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace Goose.Domain.Models.projects
+namespace Goose.Domain.Models.Projects
 {
     public class State
     {

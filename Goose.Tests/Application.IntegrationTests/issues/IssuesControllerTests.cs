@@ -5,14 +5,14 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Goose.API;
 using Goose.Domain.DTOs;
-using Goose.Domain.DTOs.issues;
-using Goose.Domain.Models.companies;
-using Goose.Domain.Models.tickets;
+using Goose.Domain.DTOs.Issues;
+using Goose.Domain.Models.Companies;
+using Goose.Domain.Models.Tickets;
 using Microsoft.AspNetCore.Mvc.Testing;
 using MongoDB.Bson;
 using NUnit.Framework;
 
-namespace Goose.Tests.Application.IntegrationTests.issues
+namespace Goose.Tests.Application.IntegrationTests.Issues
 {
     /**
      * The issue endpoint is dependant of the State, Company, project and User controller. Tests may fail if those weren't tested first.

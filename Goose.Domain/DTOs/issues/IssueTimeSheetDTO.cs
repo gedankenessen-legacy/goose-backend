@@ -1,9 +1,9 @@
 ﻿using System;
-using Goose.Domain.Models.identity;
-using Goose.Domain.Models.tickets;
+using Goose.Domain.Models.Identity;
+using Goose.Domain.Models.Tickets;
 using MongoDB.Bson;
 
-namespace Goose.Domain.DTOs.issues
+namespace Goose.Domain.DTOs.Issues
 {
     public class IssueTimeSheetDTO
     {
