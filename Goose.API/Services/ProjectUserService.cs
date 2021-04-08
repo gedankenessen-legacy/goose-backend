@@ -8,6 +8,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Goose.API.Utils;
 using Goose.API.Utils.Exceptions;
+using Goose.Domain.Models.Identity;
 
 namespace Goose.API.Services
 {
@@ -109,7 +110,7 @@ namespace Goose.API.Services
             var roleIds = from role in projectUserDTO.Roles
                           select role.Id;
 
-            var projectUser = new PropertyUser()
+            var newProjectUser = new PropertyUser()
             {
                 UserId = userId,
                 RoleIds = roleIds.ToList(),
@@ -122,7 +123,24 @@ namespace Goose.API.Services
                 throw new HttpStatusException(404, "Invalid projectId");
             }
 
-            existingProject.ProjectUsers.ReplaceOrInsert(x => x.UserId == userId, projectUser);
+            var projectLeaderRole = (await _roleRepository.FilterByAsync(x => x.Name == Role.ProjectLeaderRole)).Single();
+
+            if (roleIds.Contains(projectLeaderRole.Id))
+            {
+                // Nutzer soll die Projektleiterrolle bekommen, in jedem Projekt
+                // darf es aber nur einen ProjektLeiter geben
+
+                var existingProjectLeader = from projectUser in existingProject.ProjectUsers
+                                            where projectUser.RoleIds.Contains(projectLeaderRole.Id)
+                                            select projectUser;
+
+                if (existingProjectLeader.Any())
+                {
+                    throw new HttpStatusException(403, "Cannot make to users a project Leader");
+                }
+            }
+
+            existingProject.ProjectUsers.ReplaceOrInsert(x => x.UserId == userId, newProjectUser);
 
             await _projectRepository.UpdateAsync(existingProject);
         }

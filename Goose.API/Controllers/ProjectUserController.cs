@@ -26,12 +26,10 @@ namespace Goose.API.Controllers
         [HttpPut("{userId}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult> UpdateProjectUser([FromBody] PropertyUserDTO projectUserDTO, [FromRoute] string projectId, string userId)
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<ActionResult> UpdateProjectUser([FromBody] PropertyUserDTO projectUserDTO, [FromRoute] ObjectId projectId, ObjectId userId)
         {
-            await _projectUserService.UpdateProjectUser(
-                Validators.ValidateObjectId(projectId),
-                Validators.ValidateObjectId(userId),
-                projectUserDTO);
+            await _projectUserService.UpdateProjectUser(projectId, userId, projectUserDTO);
 
             return NoContent();
         }
@@ -40,9 +38,9 @@ namespace Goose.API.Controllers
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<IList<ProjectDTO>>> GetProjectUsers([FromRoute] string projectId)
+        public async Task<ActionResult<IList<ProjectDTO>>> GetProjectUsers([FromRoute] ObjectId projectId)
         {
-            var projectIter = await _projectUserService.GetProjectUsers(Validators.ValidateObjectId(projectId));
+            var projectIter = await _projectUserService.GetProjectUsers(projectId);
             return Ok(projectIter);
         }
 
@@ -51,11 +49,9 @@ namespace Goose.API.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<ProjectDTO>> GetProjectUser([FromRoute] string projectId, string userId)
+        public async Task<ActionResult<ProjectDTO>> GetProjectUser([FromRoute] ObjectId projectId, ObjectId userId)
         {
-            var projectUser = await _projectUserService.GetProjectUser(
-                Validators.ValidateObjectId(projectId),
-                Validators.ValidateObjectId(userId));
+            var projectUser = await _projectUserService.GetProjectUser(projectId, userId);
 
             if (projectUser != null)
             {
@@ -73,11 +69,9 @@ namespace Goose.API.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult> DeleteUserFromProject([FromRoute] string projectId, string userId)
+        public async Task<ActionResult> DeleteUserFromProject([FromRoute] ObjectId projectId, ObjectId userId)
         {
-            await _projectUserService.RemoveUserFromProject(
-                Validators.ValidateObjectId(projectId),
-                Validators.ValidateObjectId(userId));
+            await _projectUserService.RemoveUserFromProject(projectId, userId);
 
             return Ok();
         }

@@ -1,19 +1,28 @@
+using Goose.API.Authorization.Handlers;
 using Goose.API.Repositories;
 using Goose.API.Services;
 using Goose.API.Services.Issues;
+using Goose.API.Utils;
 using Goose.Data;
 using Goose.Data.Context;
 using Goose.Data.Settings;
 using Goose.Domain.Mapping;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Conventions;
+using System;
 using System.ComponentModel;
+using System.IO;
+using System.Reflection;
+using System.Text;
 using Goose.API.Utils.Validators;
 
 namespace Goose.API
@@ -32,6 +41,7 @@ namespace Goose.API
         {
             ConfigureMongoDB();
             RegisterService(services);
+            ConfigureAuthorization(services);
 
             // Allows strings in the route parameter to be automatically be converted from strings.
             TypeDescriptor.AddAttributes(typeof(ObjectId), new TypeConverterAttribute(typeof(ObjectIdTypeConverter)));
@@ -46,20 +56,78 @@ namespace Goose.API
                     });
             });
 
-            services.AddControllers(options => { options.ModelBinderProviders.Insert(0, new ObjectIdBinderProvider()); }).AddJsonOptions(options =>
+            services.AddAuthentication(opt =>
+            {
+                opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(opt =>
+            {
+                opt.RequireHttpsMetadata = false;
+                opt.SaveToken = true;
+                opt.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_configuration.GetSection(nameof(TokenSettings)).Get<TokenSettings>().Secret)),
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                };
+            });
+
+            services.AddControllers(options =>
+            {
+                options.ModelBinderProviders.Insert(0, new ObjectIdBinderProvider());
+            }).AddJsonOptions(options =>
             {
                 options.JsonSerializerOptions.Converters.Add(new ObjectIdJsonConverter());
             });
 
             services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v1", new OpenApiInfo {Title = "Goose.API", Version = "v1"});
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "Goose.API", Version = "v1" });
+                
                 c.MapType<ObjectId>(() => new OpenApiSchema
                 {
                     Type = "string",
                     Format = "ObjectId",
                 });
+
+                c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                {
+                    In = ParameterLocation.Header,
+                    Description = "Please add the 'Bearer' prefix. \r\n\r\n Example: Bearer eyJhbGciO...iJIUzI1NiIsInR5",
+                    Name = "Authorization",
+                    Type = SecuritySchemeType.ApiKey,
+                    BearerFormat = "JWT",
+                    Scheme = "Bearer"
+                });
+                c.AddSecurityRequirement(new OpenApiSecurityRequirement {
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference
+                                {
+                                    Type = ReferenceType.SecurityScheme,
+                                    Id = "Bearer"
+                                }
+                        },
+                        Array.Empty<string>()
+                    }
+                });
+
+                // show comments in swagger
+                var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+                c.IncludeXmlComments(xmlPath);
             });
+        }
+
+        /// <summary>
+        /// Use this method to register imperative authorization policies
+        /// </summary>
+        private void ConfigureAuthorization(IServiceCollection services)
+        {
+            
         }
 
         /// <summary>
@@ -79,33 +147,37 @@ namespace Goose.API
         private void RegisterService(IServiceCollection services)
         {
             services.Configure<DbSettings>(_configuration.GetSection(nameof(DbSettings)));
-
-            services.AddScoped<IIssueConversationService, IssueConversationService>();
+            services.Configure<TokenSettings>(_configuration.GetSection(nameof(TokenSettings)));
 
             services.AddAutoMapper(typeof(AutoMapping));
+            
             services.AddSingleton<IDbContext, DbContext>();
+            services.AddScoped<IAuthorizationHandler, CompanyRoleHandler>();
 
             services.AddScoped<IIssueRepository, IssueRepository>();
+            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IRoleRepository, RoleRepository>();
+            services.AddScoped<IProjectRepository, ProjectRepository>();
+            services.AddScoped<ICompanyRepository, CompanyRepository>();
+
             services.AddScoped<IIssueService, IssueService>();
+            services.AddScoped<IIssueDetailedService, IssueDetailedService>();
+            services.AddScoped<IIssueConversationService, IssueConversationService>();
             services.AddScoped<IIssueAssignedUserService, IssueAssignedUserService>();
             services.AddScoped<IIssueRequirementService, IssueRequirementService>();
-            services.AddScoped<IIssuePredecessorService, IssuePredecessorService>();
-            services.AddScoped<IIssueTimeSheetService, IssueTimeSheetService>();
-            services.AddScoped<IUserRepository, UserRepository>();
-            services.AddScoped<IUserService, UserService>();
-            services.AddScoped<IRoleRepository, RoleRepository>();
-            services.AddScoped<IRoleService, RoleService>();
-            services.AddScoped<IProjectRepository, ProjectRepository>();
-            services.AddScoped<IProjectService, ProjectService>();
-
-            services.AddScoped<ICompanyRepository, CompanyRepository>();
-            services.AddScoped<ICompanyService, CompanyService>();
-
-            services.AddAutoMapper(typeof(AutoMapping));
-            services.AddScoped<IStateService, StateService>();
-            services.AddScoped<IProjectUserService, ProjectUserService>();
-            services.AddScoped<IIssueDetailedService, IssueDetailedService>();
             services.AddScoped<IIssueRequestValidator, IssueRequestValidator>();
+            services.AddScoped<IIssuePredecessorService, IssuePredecessorService>();
+            services.AddScoped<IIssueTimeSheetService, IssueTimeSheetService>(); 
+            services.AddScoped<IUserService, UserService>();     
+            services.AddScoped<IRoleService, RoleService>();    
+            services.AddScoped<IProjectService, ProjectService>();
+            services.AddScoped<IProjectUserService, ProjectUserService>();
+            services.AddScoped<IStateService, StateService>();
+            services.AddScoped<ICompanyService, CompanyService>();
+            services.AddScoped<ICompanyUserService, CompanyUserService>();
+            services.AddScoped<IAuthService, AuthService>();
+
+            services.AddHttpContextAccessor();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -126,9 +198,14 @@ namespace Goose.API
 
             app.UseRouting();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
-            app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+                //endpoints.MapControllers().RequireAuthorization(); // enforce jwt token validation on all controllers...
+            });
         }
     }
 }
