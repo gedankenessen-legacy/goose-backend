@@ -9,6 +9,9 @@ on:
 jobs:
   buildAndTest:
     runs-on: ubuntu-latest
+    env: 
+       ASPNETCORE_DbSettings__ConnectionString: ${{ secrets.CONNECTION_STRING }}
+       ASPNETCORE_DbSettings__DatabaseName: ${{ secrets.DATABASE_NAME }}
     steps:
     - uses: actions/checkout@v2
     - name: Setup .NET
@@ -19,11 +22,5 @@ jobs:
       run: dotnet restore
     - name: Build
       run: dotnet build --no-restore
-      env:
-         ConnectionString: ${{ secrets.ConnectionString }}
-         DatabaseName: ${{ secrets.DatabaseName }}
     - name: Test
       run: dotnet test --no-build --verbosity normal
-      env: 
-         ConnectionString: ${{ secrets.ConnectionString }}
-         DatabaseName: ${{ secrets.DatabaseName }}
