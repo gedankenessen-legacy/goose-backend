@@ -2,9 +2,7 @@
 using Goose.Domain.DTOs;
 using Goose.Domain.Models.Companies;
 using Microsoft.AspNetCore.Mvc;
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace Goose.API.Controllers
@@ -32,13 +30,6 @@ namespace Goose.API.Controllers
         {
             var company = await _companyService.GetCompanyAsync(id);
             return Ok(company);
-        }
-
-        [HttpPost]
-        public async Task<ActionResult<CompanyDTO>> CreateCompanyAsync([FromBody] CompanyLogin companyLogin)
-        {
-            var newCompany = await _companyService.CreateCompanyAsync(companyLogin);
-            return Ok(newCompany);
         }
 
         [HttpPut("{id}")]

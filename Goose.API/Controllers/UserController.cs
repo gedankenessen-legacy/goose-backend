@@ -36,12 +36,12 @@ namespace Goose.API.Controllers
             return Ok(User);
         }
 
-        [HttpPost]
-        public async Task<ActionResult<User>> CreateUserAsync([FromBody] User User)
-        {
-            var newUser = await _userService.CreateNewUserAsync(User);
-            return Ok(newUser);
-        }
+        //[HttpPost]
+        //public async Task<ActionResult<User>> CreateUserAsync([FromBody] User User)
+        //{
+        //    var newUser = await _userService.CreateNewUserAsync(User);
+        //    return Ok(newUser);
+        //}
 
         [HttpPut("{id}")]
         public async Task<ActionResult<User>> UpdateUserAsync(string id, [FromBody] User User)

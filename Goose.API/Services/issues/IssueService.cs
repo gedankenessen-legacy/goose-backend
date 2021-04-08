@@ -2,6 +2,9 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Goose.API.Repositories;
+using Goose.Domain.DTOs.Issues;
+using Goose.Domain.Models.Tickets;
+using Goose.Domain.DTOs;
 using Goose.API.Utils.Exceptions;
 using Goose.API.Utils.Validators;
 using Goose.Domain.DTOs;

@@ -7,6 +7,7 @@ namespace Goose.Domain.Models.Identity
     {
         public string Name { get; set; }
 
+        public const string AdminRole = "Admin";
         public const string CompanyRole = "Firma";
         public const string CustomerRole = "Kunde";
         public const string ProjectLeaderRole = "Projektleiter";
