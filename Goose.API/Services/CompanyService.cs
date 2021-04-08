@@ -98,13 +98,11 @@ namespace Goose.API.Services
             var companyDTOs = new List<CompanyDTO>();
 
             //! @Madara789: CompanyDTO does not have property Users, please check
-            //foreach (var company in companies)
-            //{
-            //    var companyDTO = (CompanyDTO)company;
-            //    companyDTO.User = (await _companyUserService.GetCompanyUsersAsync(company.Id.ToString()))
-            //        .FirstOrDefault(x => x.Roles.FirstOrDefault(companyRole => companyRole.Name.Equals("Firma")) is not null);
-            //    companyDTOs.Add(companyDTO);
-            //}
+            foreach (var company in companies)
+            {
+                var companyDTO = (CompanyDTO)company;
+                companyDTOs.Add(companyDTO);
+            }
 
             return companyDTOs;
         }
