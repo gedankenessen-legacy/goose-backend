@@ -55,7 +55,7 @@ namespace Goose.API.Services
             if (user == null)
                 throw new HttpStatusException(400, "Es wurde kein User mit dieser ID wurde nicht gefunden");
 
-            return new UserDTO() { Id = user.Id, Firstname = user.Firstname, Lastname = user.Lastname};
+            return new UserDTO(user);
         }
 
         public async Task<IList<UserDTO>> GetUsersAsync()
@@ -65,7 +65,7 @@ namespace Goose.API.Services
             IList<UserDTO> userDTOList = new List<UserDTO>();
 
             foreach (var user in userList)
-                userDTOList.Add(new UserDTO() { Id = user.Id, Firstname = user.Firstname, Lastname = user.Lastname });
+                userDTOList.Add(new UserDTO(user));
 
             return userDTOList;
         }
