@@ -167,6 +167,7 @@ namespace Goose.API
             services.AddScoped<IIssueRequirementService, IssueRequirementService>();
             services.AddScoped<IIssueRequestValidator, IssueRequestValidator>();
             services.AddScoped<IIssuePredecessorService, IssuePredecessorService>();
+            services.AddScoped<IIssuePredecessorService, IssuePredecessorService>();
             services.AddScoped<IIssueTimeSheetService, IssueTimeSheetService>(); 
             services.AddScoped<IUserService, UserService>();     
             services.AddScoped<IRoleService, RoleService>();    
