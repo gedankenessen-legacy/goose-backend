@@ -1,7 +1,7 @@
-﻿using System;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Goose.API.Services.Issues;
-using Goose.API.Utils;
+using Goose.Domain.DTOs.Issues;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
@@ -17,6 +17,14 @@ namespace Goose.API.Controllers.IssuesControllers
         public IssuesPredecessorController(IIssuePredecessorService issueService)
         {
             _issueService = issueService;
+        }
+
+        [HttpGet]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IList<IssueDTO>> GetAll([FromRoute] ObjectId issueId)
+        {
+            return await _issueService.GetAll(issueId);
         }
 
         [HttpPut("{predecessorId}")]
