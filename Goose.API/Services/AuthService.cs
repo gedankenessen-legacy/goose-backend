@@ -22,6 +22,7 @@ namespace Goose.API.Services
     {
         Task<SignInResponse> SignUpAsync(SignUpRequest signUpRequest);
         Task<SignInResponse> SignInAsync(SignInRequest signInRequest);
+        Task<string> GenerateUserNameAsync(string firstName, string lastName);
     }
 
     public class AuthService : IAuthService
@@ -130,7 +131,7 @@ namespace Goose.API.Services
         /// <param name="firstName">Firstname</param>
         /// <param name="lastName">Lastname</param>
         /// <returns>Unique Username with Firstname+Lastname plus number suffix if needed.</returns>
-        private async Task<string> GenerateUserNameAsync(string firstName, string lastName)
+        public async Task<string> GenerateUserNameAsync(string firstName, string lastName)
         {
             int index = 0;
             string username;

@@ -2,10 +2,12 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Goose.API.Repositories;
+using Goose.API.Utils.Authentication;
 using Goose.API.Utils.Exceptions;
 using Goose.Domain.DTOs;
 using Goose.Domain.Models;
 using Goose.Domain.Models.Identity;
+using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
 
 namespace Goose.API.Services
@@ -23,21 +25,47 @@ namespace Goose.API.Services
         private readonly IUserService _userService;
         private readonly IRoleService _roleService;
         private readonly ICompanyRepository _companyRepository;
+        private readonly IAuthService _authService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public CompanyUserService(ICompanyRepository companyRepository, IUserService userService, IRoleService roleService)
+        public CompanyUserService(ICompanyRepository companyRepository, IUserService userService, IRoleService roleService, IAuthService authService, IHttpContextAccessor httpContextAccessor)
         {
             _companyRepository = companyRepository;
             _userService = userService;
             _roleService = roleService;
+            _authService = authService;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<PropertyUserDTO> CreateComapanyUserAsync(string companyId, PropertyUserLoginDTO user)
         {
             var company = await _companyRepository.GetCompanyByIdAsync(companyId);
 
-            await _userService.CreateNewUserAsync(user.User);
+            var requestUserId = _httpContextAccessor.HttpContext.User.GetUserId();
 
-            var newUser = user.User;
+            var requestUser = await GetCompanyUserAsync(companyId, requestUserId.ToString());
+
+            if (requestUser is null)
+                throw new HttpStatusException(400, "Der angefragte Benutzer Existiert nicht in der Firma");
+
+            if(requestUser.Roles.FirstOrDefault(x => x.Name.Equals(Role.CompanyRole)) is null)
+                throw new HttpStatusException(400, "Nur der Firmen Account darf einen Benutzer erstellen");
+
+            // create new user
+            User newUser = new User()
+            {
+                Firstname = user.User.Firstname,
+                Lastname = user.User.Lastname
+            };
+
+            // generate username
+            newUser.Username = await _authService.GenerateUserNameAsync(newUser.Firstname, newUser.Lastname);
+
+            // password hashed by BCrypt with workFactor of 11 => round about 150-300 ms depends on hardware.
+            newUser.HashedPassword = BCrypt.Net.BCrypt.HashPassword(user.User.HashedPassword);
+
+            // save user
+            await _userService.CreateNewUserAsync(newUser);
 
             var roles = await GetRoleIds(user.Roles);
 
@@ -89,7 +117,7 @@ namespace Goose.API.Services
         {
             var company = await _companyRepository.GetCompanyByIdAsync(companyId);
 
-            var propertyUser = company.Users.FirstOrDefault(x => x.UserId.Equals(userId));
+            var propertyUser = company.Users.FirstOrDefault(x => x.UserId.Equals(new ObjectId(userId)));
 
             if (propertyUser is null)
                 throw new HttpStatusException(400, "Es wurde kein User mit dieser ID gefunden");
@@ -105,7 +133,7 @@ namespace Goose.API.Services
 
             foreach (var roleId in propertyUser.RoleIds)
             {
-                var role = roleList.FirstOrDefault(x => x.Equals(roleId));
+                var role = roleList.FirstOrDefault(x => x.Id.Equals(roleId));
 
                 if (role is not null)
                     roles.Add(new RoleDTO(role));

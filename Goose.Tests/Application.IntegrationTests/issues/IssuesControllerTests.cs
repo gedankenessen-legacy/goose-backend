@@ -17,7 +17,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
     /**
      * The issue endpoint is dependant of the State, Company, project and User controller. Tests may fail if those weren't tested first.
      */
-  /*  [TestFixture]
+    /*[TestFixture]
     [SingleThreaded]
     public class IssuesControllerTests
     {
