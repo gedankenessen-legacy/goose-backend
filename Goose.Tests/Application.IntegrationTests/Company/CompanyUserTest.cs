@@ -58,19 +58,7 @@ namespace Goose.Tests.Application.IntegrationTests.Company
             var company = (await _companyRepository.FilterByAsync(x => x.Name.Equals(FirmenName))).FirstOrDefault();
             var uri = $"api/companies/{company.Id}/users";
 
-            PropertyUserLoginDTO user = new PropertyUserLoginDTO()
-            {
-                User = new User()
-                {
-                    Firstname = "Phillip",
-                    Lastname = "Schmidt",
-                    HashedPassword = "Test123456"
-                },
-                Roles = new List<RoleDTO>()
-                {
-                    new RoleDTO() { Name = "Mitarbeiter" }
-                }
-            };
+            PropertyUserLoginDTO user = GetUser("Phillip", "Schmidt", "Test123456", new List<RoleDTO>() { new RoleDTO() { Name = "Mitarbeiter" } });
 
             var response = await _client.PostAsync(uri, user.ToStringContent());
             var newUser = await response.Content.Parse<PropertyUserDTO>();
@@ -92,19 +80,7 @@ namespace Goose.Tests.Application.IntegrationTests.Company
             var company = (await _companyRepository.FilterByAsync(x => x.Name.Equals(FirmenName))).FirstOrDefault();
             var uri = $"api/companies/{company.Id}/users";
 
-            PropertyUserLoginDTO user = new PropertyUserLoginDTO()
-            {
-                User = new User()
-                {
-                    Firstname = "Phillip",
-                    Lastname = "Schmidt",
-                    HashedPassword = "Test123456"
-                },
-                Roles = new List<RoleDTO>()
-                {
-                    new RoleDTO() { Name = "Mitarbeiter" }
-                }
-            };
+            PropertyUserLoginDTO user = GetUser("Phillip", "Schmidt", "Test123456", new List<RoleDTO>() { new RoleDTO() { Name = "Mitarbeiter" } });
 
             var response = await _client.PostAsync(uri, user.ToStringContent());
             var newUser = await response.Content.Parse<PropertyUserDTO>();
@@ -134,19 +110,7 @@ namespace Goose.Tests.Application.IntegrationTests.Company
             var company = (await _companyRepository.FilterByAsync(x => x.Name.Equals(FirmenName))).FirstOrDefault();
             var uri = $"api/companies/{company.Id}/users";
 
-            PropertyUserLoginDTO user = new PropertyUserLoginDTO()
-            {
-                User = new User()
-                {
-                    Firstname = " ",
-                    Lastname = "Schmidt",
-                    HashedPassword = "Test123456"
-                },
-                Roles = new List<RoleDTO>()
-                {
-                    new RoleDTO() { Name = "Mitarbeiter" }
-                }
-            };
+            PropertyUserLoginDTO user = GetUser(" ", "Schmidt", "Test123456", new List<RoleDTO>() { new RoleDTO() { Name = "Mitarbeiter" } });
 
             var response = await _client.PostAsync(uri, user.ToStringContent());
 
@@ -159,19 +123,7 @@ namespace Goose.Tests.Application.IntegrationTests.Company
             var company = (await _companyRepository.FilterByAsync(x => x.Name.Equals(FirmenName))).FirstOrDefault();
             var uri = $"api/companies/{company.Id}/users";
 
-            PropertyUserLoginDTO user = new PropertyUserLoginDTO()
-            {
-                User = new User()
-                {
-                    Firstname = "Philipp",
-                    Lastname = " ",
-                    HashedPassword = "Test123456"
-                },
-                Roles = new List<RoleDTO>()
-                {
-                    new RoleDTO() { Name = "Mitarbeiter" }
-                }
-            };
+            PropertyUserLoginDTO user = GetUser("Phillip", " ", "Test123456", new List<RoleDTO>() { new RoleDTO() { Name = "Mitarbeiter" } });
 
             var response = await _client.PostAsync(uri, user.ToStringContent());
 
@@ -204,6 +156,18 @@ namespace Goose.Tests.Application.IntegrationTests.Company
             SignInRequest signInRequest = new SignInRequest() { Username = userName, Password = password };
             var response = await _client.PostAsync(uri, signInRequest.ToStringContent());
             return await response.Content.Parse<SignInResponse>();
+        }
+
+        private PropertyUserLoginDTO GetUser(string firstname, string lastname, string password, List<RoleDTO> roles)
+        {
+            return new PropertyUserLoginDTO()
+            {
+
+                Firstname = firstname,
+                Lastname = lastname,
+                Password = password,
+                Roles = roles
+            };
         }
     }
 }

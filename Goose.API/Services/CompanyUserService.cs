@@ -54,15 +54,15 @@ namespace Goose.API.Services
             // create new user
             User newUser = new User()
             {
-                Firstname = user.User.Firstname,
-                Lastname = user.User.Lastname
+                Firstname = user.Firstname,
+                Lastname = user.Lastname
             };
 
             // generate username
             newUser.Username = await _authService.GenerateUserNameAsync(newUser.Firstname, newUser.Lastname);
 
             // password hashed by BCrypt with workFactor of 11 => round about 150-300 ms depends on hardware.
-            newUser.HashedPassword = BCrypt.Net.BCrypt.HashPassword(user.User.HashedPassword);
+            newUser.HashedPassword = _authService.GetHashedPassword(user.Password);
 
             // save user
             await _userService.CreateNewUserAsync(newUser);
@@ -144,10 +144,17 @@ namespace Goose.API.Services
 
         public async Task<PropertyUserDTO> UpdateComapanyUserAsync(string companyId, string userId, PropertyUserLoginDTO user)
         {
-            if (!userId.Equals(user.User.Id))
+            if (!userId.Equals(user.UserId))
                 throw new HttpStatusException(400, "Die angegebene UserID stimmt nicht mit dem User Überein");
 
-            await _userService.UpdateUserAsync(new ObjectId(userId), user.User);
+            var userToUpdate = new User()
+            {
+                Firstname = user.Firstname,
+                Lastname = user.Lastname,
+                HashedPassword = _authService.GetHashedPassword(user.Password)
+            };
+
+            await _userService.UpdateUserAsync(new ObjectId(userId), userToUpdate);
 
             var roles = await GetRoleIds(user.Roles);
 
@@ -167,7 +174,7 @@ namespace Goose.API.Services
             foreach (var roleId in roles)
                 roleDTOs.Add(new RoleDTO(roleList.FirstOrDefault(x => x.Id.Equals(roleId))));
 
-            return new PropertyUserDTO() {User = new UserDTO(user.User), Roles = user.Roles};
+            return new PropertyUserDTO() { User = new UserDTO(userToUpdate), Roles = user.Roles };
         }
 
         private async Task<List<ObjectId>> GetRoleIds(IList<RoleDTO> roles)
