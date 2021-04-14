@@ -19,7 +19,7 @@ namespace Goose.API.Services
     {
         Task<ProjectDTO> CreateProjectAsync(ObjectId companyId, ProjectDTO requestedProject);
         Task UpdateProject(ObjectId projectId, ProjectDTO projectDTO);
-        Task<IList<ProjectDTO>> GetProjects();
+        Task<IList<ProjectDTO>> GetProjects(ObjectId companyId);
         Task<ProjectDTO> GetProject(ObjectId projectId);
     }
 
@@ -100,12 +100,13 @@ namespace Goose.API.Services
         public async Task<ProjectDTO> GetProject(ObjectId projectId)
         {
             var project = await _projectRepository.GetAsync(projectId);
+
             return new ProjectDTO(project);
         }
 
-        public async Task<IList<ProjectDTO>> GetProjects()
+        public async Task<IList<ProjectDTO>> GetProjects(ObjectId companyId)
         {
-            var projects = await _projectRepository.GetAsync();
+            var projects = await _projectRepository.FilterByAsync(x => x.CompanyId == companyId);
 
             var projectDTOs = from project in projects
                               select new ProjectDTO(project);
@@ -115,11 +116,6 @@ namespace Goose.API.Services
 
         public async Task UpdateProject(ObjectId projectId, ProjectDTO projectDTO)
         {
-            if (projectDTO.Id != projectId)
-            {
-                throw new HttpStatusException(400, "Project ID does not match");
-            }
-
             await _projectRepository.UpdateProject(projectId, projectDTO.Name);
         }
     }

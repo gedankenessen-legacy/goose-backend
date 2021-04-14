@@ -22,6 +22,8 @@ namespace Goose.API.Services
     {
         Task<SignInResponse> SignUpAsync(SignUpRequest signUpRequest);
         Task<SignInResponse> SignInAsync(SignInRequest signInRequest);
+        Task<string> GenerateUserNameAsync(string firstName, string lastName);
+        string GetHashedPassword(string password);
     }
 
     public class AuthService : IAuthService
@@ -56,7 +58,7 @@ namespace Goose.API.Services
             newUser.Username = await GenerateUserNameAsync(newUser.Firstname, newUser.Lastname);
 
             // password hashed by BCrypt with workFactor of 11 => round about 150-300 ms depends on hardware.
-            newUser.HashedPassword = BCrypt.Net.BCrypt.HashPassword(signUpRequest.Password);
+            newUser.HashedPassword = GetHashedPassword(signUpRequest.Password);
 
             // save user
             await _userService.CreateNewUserAsync(newUser);
@@ -130,7 +132,7 @@ namespace Goose.API.Services
         /// <param name="firstName">Firstname</param>
         /// <param name="lastName">Lastname</param>
         /// <returns>Unique Username with Firstname+Lastname plus number suffix if needed.</returns>
-        private async Task<string> GenerateUserNameAsync(string firstName, string lastName)
+        public async Task<string> GenerateUserNameAsync(string firstName, string lastName)
         {
             int index = 0;
             string username;
@@ -150,6 +152,11 @@ namespace Goose.API.Services
             while (await _userService.UsernameAvailableAsync(username) is false);
 
             return username;
+        }
+
+        public string GetHashedPassword(string password)
+        {
+            return BCrypt.Net.BCrypt.HashPassword(password);
         }
     }
 }

@@ -36,17 +36,15 @@ namespace Goose.API.Services
         private readonly IRoleService _roleService;
         private readonly IRoleRepository _roleRepository;
         private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly ICompanyUserService _companyUserService;
         
 
-        public CompanyService(ICompanyRepository companyRepository, IUserService userService, IRoleService roleService, IRoleRepository roleRepository, ICompanyUserService companyUserService, IHttpContextAccessor httpContextAccessor)
+        public CompanyService(ICompanyRepository companyRepository, IUserService userService, IRoleService roleService, IRoleRepository roleRepository, IHttpContextAccessor httpContextAccessor)
         {
             _companyRepository = companyRepository;
             _userService = userService;
             _roleService = roleService;
             _roleRepository = roleRepository;
             _httpContextAccessor = httpContextAccessor;
-            _companyUserService = companyUserService;
         }
 
         public async Task<CompanyDTO> CreateCompanyAsync(string companyName, ObjectId creatorUserId)
