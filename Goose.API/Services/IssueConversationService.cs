@@ -2,7 +2,7 @@
 using Goose.API.Services.issues;
 using Goose.API.Utils.Exceptions;
 using Goose.API.Utils.Validators;
-using Goose.Domain.DTOs.tickets;
+using Goose.Domain.DTOs.Issues;
 using Goose.Domain.Models.tickets;
 using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
