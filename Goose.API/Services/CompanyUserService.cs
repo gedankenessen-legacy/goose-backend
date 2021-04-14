@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Goose.API.Repositories;
+using Goose.API.Utils;
 using Goose.API.Utils.Exceptions;
 using Goose.Domain.DTOs;
 using Goose.Domain.Models;
@@ -89,7 +90,7 @@ namespace Goose.API.Services
         {
             var company = await _companyRepository.GetCompanyByIdAsync(companyId);
 
-            var propertyUser = company.Users.FirstOrDefault(x => x.UserId.Equals(userId));
+            var propertyUser = company.Users.FirstOrDefault(x => x.UserId.Equals(userId.ToObjectId()));
 
             if (propertyUser is null)
                 throw new HttpStatusException(400, "Es wurde kein User mit dieser ID gefunden");
@@ -105,7 +106,7 @@ namespace Goose.API.Services
 
             foreach (var roleId in propertyUser.RoleIds)
             {
-                var role = roleList.FirstOrDefault(x => x.Equals(roleId));
+                var role = roleList.FirstOrDefault(x => x.Id.Equals(roleId));
 
                 if (role is not null)
                     roles.Add(new RoleDTO(role));
