@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Goose.API.Repositories;
 using Goose.API.Utils.Authentication;
+using Goose.API.Utils;
 using Goose.API.Utils.Exceptions;
 using Goose.Domain.DTOs;
 using Goose.Domain.Models;
