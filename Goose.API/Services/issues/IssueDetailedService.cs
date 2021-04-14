@@ -3,7 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Goose.API.Repositories;
 using Goose.Domain.DTOs;
-using Goose.Domain.DTOs.issues;
+using Goose.Domain.DTOs.Issues;
 using Goose.Domain.DTOs.tickets;
 using Goose.Domain.Models.identity;
 using Goose.Domain.Models.tickets;

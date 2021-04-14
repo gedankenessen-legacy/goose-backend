@@ -6,7 +6,7 @@ using Goose.Domain.Models.identity;
 using Goose.Domain.Models.projects;
 using Goose.Domain.Models.tickets;
 
-namespace Goose.Domain.DTOs.issues
+namespace Goose.Domain.DTOs.Issues
 {
     public class IssueDTODetailed
     {

@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using Goose.API.Services.issues;
 using Goose.API.Utils;
-using Goose.Domain.DTOs.issues;
+using Goose.Domain.DTOs.Issues;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 

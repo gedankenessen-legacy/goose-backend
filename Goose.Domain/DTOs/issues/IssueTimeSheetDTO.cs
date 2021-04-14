@@ -3,7 +3,7 @@ using Goose.Domain.Models.identity;
 using Goose.Domain.Models.tickets;
 using MongoDB.Bson;
 
-namespace Goose.Domain.DTOs.issues
+namespace Goose.Domain.DTOs.Issues
 {
     public class IssueTimeSheetDTO
     {

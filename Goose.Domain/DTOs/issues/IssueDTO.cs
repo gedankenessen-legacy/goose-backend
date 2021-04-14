@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations;
 using Goose.Domain.Models.tickets;
 using MongoDB.Bson;
 
-namespace Goose.Domain.DTOs.issues
+namespace Goose.Domain.DTOs.Issues
 {
     public class IssueDTO
     {

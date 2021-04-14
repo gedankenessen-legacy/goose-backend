@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 using Goose.Domain.DTOs;
-using Goose.Domain.DTOs.issues;
+using Goose.Domain.DTOs.Issues;
 using Goose.Domain.Models.identity;
 using Goose.Domain.Models.tickets;
 using Goose.Domain.DTOs.tickets;

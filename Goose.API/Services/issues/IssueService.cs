@@ -6,7 +6,7 @@ using AutoMapper;
 using Goose.API.Repositories;
 using Goose.API.Utils.Exceptions;
 using Goose.Domain.DTOs;
-using Goose.Domain.DTOs.issues;
+using Goose.Domain.DTOs.Issues;
 using Goose.Domain.Models.projects;
 using Goose.Domain.Models.tickets;
 using MongoDB.Bson;
@@ -78,7 +78,35 @@ namespace Goose.API.Services.issues
 
         public async Task<IssueDTO> Update(IssueDTO issueDto, ObjectId id)
         {
-            var issue = issueDto.IntoIssue(await _issueRepo.GetAsync(id));
+            var previousIssue = await _issueRepo.GetAsync(id);
+            ObjectId? previousStateId = null;
+            var stateChanged = false;
+
+            if (previousIssue != null) {
+                previousStateId = previousIssue.StateId;
+                
+                if (previousStateId != issueDto.State.Id)
+                {
+                    stateChanged = true;
+                }
+            }
+
+            var issue = issueDto.IntoIssue(previousIssue);
+
+            if (stateChanged)
+            {
+                var previousState = await _stateService.GetState(issueDto.Project.Id, previousStateId.Value);
+                var currentState = await _stateService.GetState(issue.ProjectId, issue.StateId);
+
+                issue.ConversationItems.Add(new IssueConversation()
+                {
+                    Id = ObjectId.GenerateNewId(),
+                    CreatorUserId = null,
+                    Type = IssueConversation.StateChangeType,
+                    Data = $"Status von {previousState.Name} zu {currentState.Name} geändert.",
+                });
+            }
+
             await _issueRepo.UpdateAsync(issue);
             return issueDto;
         }
@@ -100,13 +128,39 @@ namespace Goose.API.Services.issues
             var issue = await _issueRepo.GetAsync(issueId);
             issue.ParentIssueId = parentId;
             await _issueRepo.UpdateAsync(issue);
+
+            // ConversationItem im Oberticket hinzufügen
+            var parent = await _issueRepo.GetAsync(parentId);
+            issue.ConversationItems.Add(new IssueConversation()
+            {
+                Id = ObjectId.GenerateNewId(),
+                CreatorUserId = null,
+                Type = IssueConversation.ChildIssueAddedType,
+                Data = $"{issueId}",
+            });
+            await _issueRepo.UpdateAsync(parent);
         }
 
         public async Task RemoveParent(ObjectId issueId)
         {
             var issue = await _issueRepo.GetAsync(issueId);
+            var mightBeParentId = issue.ParentIssueId;
             issue.ParentIssueId = null;
             await _issueRepo.UpdateAsync(issue);
+
+            if (mightBeParentId is ObjectId parentId)
+            {
+                // ConversationItem im Oberticket hinzufügen
+                var parent = await _issueRepo.GetAsync(parentId);
+                issue.ConversationItems.Add(new IssueConversation()
+                {
+                    Id = ObjectId.GenerateNewId(),
+                    CreatorUserId = null,
+                    Type = IssueConversation.ChildIssueRemovedType,
+                    Data = $"{issueId}",
+                });
+                await _issueRepo.UpdateAsync(parent);
+            }
         }
 
 

@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using AutoMapper;
 using AutoMapper.Mappers;
 using Goose.API.Repositories;
-using Goose.Domain.DTOs.issues;
+using Goose.Domain.DTOs.Issues;
 using Goose.Domain.Models.tickets;
 using MongoDB.Bson;
 
