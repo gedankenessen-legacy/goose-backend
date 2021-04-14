@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Goose.API.Repositories;
+using Goose.Domain.Models.tickets;
 using MongoDB.Bson;
 
 namespace Goose.API.Services.Issues
@@ -32,6 +33,14 @@ namespace Goose.API.Services.Issues
             successor.PredecessorIssueIds.Add(predecessorId);
             predecessor.SuccessorIssueIds.Add(successorId);
 
+            successor.ConversationItems.Add(new IssueConversation()
+            {
+                Id = ObjectId.GenerateNewId(),
+                CreatorUserId = null,
+                Type = IssueConversation.PredecessorAddedType,
+                Data = $"{predecessorId}",
+            });
+
             await Task.WhenAll(_issueRepo.UpdateAsync(successor), _issueRepo.UpdateAsync(predecessor));
         }
 
@@ -41,7 +50,17 @@ namespace Goose.API.Services.Issues
             var predecessor = await _issueRepo.GetOfProjectAsync(projectId, predecessorId);
             if (successor.PredecessorIssueIds.Remove(predecessorId) ||
                 predecessor.SuccessorIssueIds.Remove(successorId))
+            {
+                successor.ConversationItems.Add(new IssueConversation()
+                {
+                    Id = ObjectId.GenerateNewId(),
+                    CreatorUserId = null,
+                    Type = IssueConversation.PredecessorRemovedType,
+                    Data = $"{predecessorId}",
+                });
+
                 await Task.WhenAll(_issueRepo.UpdateAsync(successor), _issueRepo.UpdateAsync(predecessor));
+            }
         }
     }
 }

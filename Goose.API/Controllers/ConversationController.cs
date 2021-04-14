@@ -1,6 +1,8 @@
 ﻿
 using Goose.API.Services;
-using Goose.Domain.DTOs.Tickets;
+using Goose.API.Utils.Exceptions;
+using Goose.Domain.DTOs.tickets;
+using Goose.Domain.Models.tickets;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
@@ -44,6 +46,11 @@ namespace Goose.API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Post([FromRoute] string issueId, [FromBody] IssueConversationDTO conversationItem)
         {
+            if (conversationItem.Type != IssueConversation.MessageType)
+            {
+                throw new HttpStatusException(400, $"Invalid conversation type, only \"{IssueConversation.MessageType}\" allowed");
+            }
+
             var newIssueConversation = await _issueConversationService.CreateNewIssueConversationAsync(issueId, conversationItem);
             return CreatedAtAction(nameof(GetById), new { issueId, id = newIssueConversation.Id }, newIssueConversation);
         }
@@ -54,6 +61,11 @@ namespace Goose.API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Put([FromRoute] string issueId, [FromRoute] string id, [FromBody] IssueConversationDTO conversationItem)
         {
+            if (conversationItem.Type != IssueConversation.MessageType)
+            {
+                throw new HttpStatusException(400, $"Invalid conversation type, only \"{IssueConversation.MessageType}\" allowed");
+            }
+
             await _issueConversationService.CreateOrReplaceConversationItemAsync(issueId, id, conversationItem);
             return NoContent();
         }

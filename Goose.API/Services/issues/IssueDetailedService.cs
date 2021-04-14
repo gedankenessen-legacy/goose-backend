@@ -9,6 +9,11 @@ using Goose.Domain.Models.Tickets;
 using Goose.API.Utils.Exceptions;
 using Goose.API.Utils.Validators;
 using Microsoft.AspNetCore.Http;
+using Goose.Domain.DTOs.Issues;
+using Goose.Domain.DTOs.tickets;
+using Goose.Domain.Models.identity;
+using Goose.Domain.Models.tickets;
+using Microsoft.AspNetCore.Http.Features;
 using MongoDB.Bson;
 
 namespace Goose.API.Services.Issues
