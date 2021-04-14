@@ -64,8 +64,8 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             IssueRequirement issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen" };
             await _issueRequirementService.CreateAsync(issue.Id, issueRequirement);
 
-            var uri = $"/api/issues/{issue.Id}/summaries/create";
-            var responce = await _client.GetAsync(uri);
+            var uri = $"/api/issues/{issue.Id}/summaries";
+            var responce = await _client.PostAsync(uri, new object().ToStringContent());
             Assert.IsTrue(responce.IsSuccessStatusCode);
 
             uri = $"/api/issues/{issue.Id}/summaries";
@@ -87,8 +87,8 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         {
             var issue = (await _issueRepository.FilterByAsync(x => x.IssueDetail.Name.Equals(TestHelper.TicketName))).FirstOrDefault();
 
-            var uri = $"/api/issues/{issue.Id}/summaries/create";
-            var responce = await _client.GetAsync(uri);
+            var uri = $"/api/issues/{issue.Id}/summaries";
+            var responce = await _client.PostAsync(uri, new object().ToStringContent());
             Assert.IsFalse(responce.IsSuccessStatusCode);
 
             uri = $"/api/issues/{issue.Id}/summaries";
@@ -103,12 +103,12 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             IssueRequirement issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen" };
             await _issueRequirementService.CreateAsync(issue.Id, issueRequirement);
 
-            var uri = $"/api/issues/{issue.Id}/summaries/create";
-            var responce = await _client.GetAsync(uri);
+            var uri = $"/api/issues/{issue.Id}/summaries";
+            var responce = await _client.PostAsync(uri, new object().ToStringContent());
             Assert.IsTrue(responce.IsSuccessStatusCode);
 
-            uri = $"/api/issues/{issue.Id}/summaries/accept";
-            responce = await _client.GetAsync(uri);
+            uri = $"/api/issues/{issue.Id}/summaries?accept=true";
+            responce = await _client.PutAsync(uri, new object().ToStringContent());
             Assert.IsTrue(responce.IsSuccessStatusCode);
 
             issue = (await _issueRepository.FilterByAsync(x => x.IssueDetail.Name.Equals(TestHelper.TicketName))).FirstOrDefault();
@@ -127,8 +127,8 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         public async Task AcceptSummaryFalse()
         {
             var issue = (await _issueRepository.FilterByAsync(x => x.IssueDetail.Name.Equals(TestHelper.TicketName))).FirstOrDefault();
-            var uri = $"/api/issues/{issue.Id}/summaries/accept";
-            var responce = await _client.GetAsync(uri);
+            var uri = $"/api/issues/{issue.Id}/summaries?accept=true";
+            var responce = await _client.PutAsync(uri, new object().ToStringContent());
             Assert.IsFalse(responce.IsSuccessStatusCode);
         }
 
@@ -139,12 +139,12 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             IssueRequirement issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen" };
             await _issueRequirementService.CreateAsync(issue.Id, issueRequirement);
 
-            var uri = $"/api/issues/{issue.Id}/summaries/create";
-            var responce = await _client.GetAsync(uri);
+            var uri = $"/api/issues/{issue.Id}/summaries";
+            var responce = await _client.PostAsync(uri, new object().ToStringContent());
             Assert.IsTrue(responce.IsSuccessStatusCode);
 
-            uri = $"/api/issues/{issue.Id}/summaries/decline";
-            responce = await _client.GetAsync(uri);
+            uri = $"/api/issues/{issue.Id}/summaries?accept=false";
+            responce = await _client.PutAsync(uri, new object().ToStringContent());
             Assert.IsTrue(responce.IsSuccessStatusCode);
 
             issue = (await _issueRepository.FilterByAsync(x => x.IssueDetail.Name.Equals(TestHelper.TicketName))).FirstOrDefault();
@@ -162,8 +162,8 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         {
             var issue = (await _issueRepository.FilterByAsync(x => x.IssueDetail.Name.Equals(TestHelper.TicketName))).FirstOrDefault();
            
-            var uri = $"/api/issues/{issue.Id}/summaries/decline";
-            var responce = await _client.GetAsync(uri);
+            var uri = $"/api/issues/{issue.Id}/summaries?accept=false";
+            var responce = await _client.PutAsync(uri, new object().ToStringContent());
             Assert.IsFalse(responce.IsSuccessStatusCode);
 
             var issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen2" };
@@ -179,12 +179,12 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             IssueRequirement issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen" };
             await _issueRequirementService.CreateAsync(issue.Id, issueRequirement);
 
-            var uri = $"/api/issues/{issue.Id}/summaries/create";
-            var responce = await _client.GetAsync(uri);
+            var uri = $"/api/issues/{issue.Id}/summaries";
+            var responce = await _client.PostAsync(uri, new object().ToStringContent());
             Assert.IsTrue(responce.IsSuccessStatusCode);
 
-            uri = $"/api/issues/{issue.Id}/summaries/accept";
-            responce = await _client.GetAsync(uri);
+            uri = $"/api/issues/{issue.Id}/summaries?accept=true";
+            responce = await _client.PutAsync(uri, new object().ToStringContent());
             Assert.IsTrue(responce.IsSuccessStatusCode);
 
             issue = (await _issueRepository.FilterByAsync(x => x.IssueDetail.Name.Equals(TestHelper.TicketName))).FirstOrDefault();
@@ -193,8 +193,8 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             var state = await TestHelper.Instance.GetStateByName(_client, issue.ProjectId.ToString(), State.WaitingState);
             Assert.AreEqual(state.Id, issue.StateId);
 
-            uri = $"/api/issues/{issue.Id}/summaries/decline";
-            responce = await _client.GetAsync(uri);
+            uri = $"/api/issues/{issue.Id}/summaries?accept=false";
+            responce = await _client.PutAsync(uri, new object().ToStringContent()); 
             Assert.IsFalse(responce.IsSuccessStatusCode);
         }
 

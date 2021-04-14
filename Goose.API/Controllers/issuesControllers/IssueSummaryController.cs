@@ -26,24 +26,20 @@ namespace Goose.API.Controllers.issuesControllers
             return Ok(requirements);
         }
 
-        [HttpGet("create")]
+        [HttpPost]
         public async Task<ActionResult<IList<IssueRequirement>>> CreateSummary([FromRoute] string issueId)
         {
             var requirements = await _issueSummaryService.CreateSummary(issueId);
             return Ok(requirements);
         }
 
-        [HttpGet("accept")]
-        public async Task<ActionResult> AcceptSummary([FromRoute] string issueId)
+        [HttpPut]
+        public async Task<ActionResult> AcceptSummary([FromRoute] string issueId, [FromQuery] bool accept)
         {
-            await _issueSummaryService.AcceptSummary(issueId);
-            return Ok();
-        }
-
-        [HttpGet("decline")]
-        public async Task<ActionResult> DeclineSummary([FromRoute] string issueId)
-        {
-            await _issueSummaryService.DeclineSummary(issueId);
+            if(accept)
+                await _issueSummaryService.AcceptSummary(issueId);
+            else
+                await _issueSummaryService.DeclineSummary(issueId);
             return Ok();
         }
     }
