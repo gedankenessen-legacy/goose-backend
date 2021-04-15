@@ -1,20 +1,15 @@
 ﻿using Goose.API;
 using Goose.API.Repositories;
-using Goose.API.Services;
 using Goose.Domain.DTOs;
 using Goose.Domain.Models.Auth;
-using Goose.Domain.Models.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
 using NUnit.Framework;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Goose.Tests.Application.IntegrationTests.Company
@@ -27,8 +22,6 @@ namespace Goose.Tests.Application.IntegrationTests.Company
         private ICompanyRepository _companyRepository;
         private IUserRepository _userRepository;
         private SignInResponse signInObject;
-        private const string FirmenName = "WillysTestFirma";
-
 
         [OneTimeSetUp]
         public void OneTimeSetUp()
@@ -44,18 +37,24 @@ namespace Goose.Tests.Application.IntegrationTests.Company
             }
         }
 
+        [OneTimeTearDown]
+        public async Task OneTimeTearDown()
+        {
+            await TestHelper.Instance.ClearCompany(_companyRepository, _userRepository);
+        }
+
         [SetUp]
         public async Task Setup()
         {
-            await ClearCompany();
-            signInObject = await GenerateCompany();
+            await TestHelper.Instance.ClearCompany(_companyRepository, _userRepository);
+            signInObject = await TestHelper.Instance.GenerateCompany(_client);
             _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signInObject.Token);
         }
 
         [Test]
         public async Task CreateUserTrue()
         {
-            var company = (await _companyRepository.FilterByAsync(x => x.Name.Equals(FirmenName))).FirstOrDefault();
+            var company = (await _companyRepository.FilterByAsync(x => x.Name.Equals(TestHelper.FirmenName))).FirstOrDefault();
             var uri = $"api/companies/{company.Id}/users";
 
             PropertyUserLoginDTO user = GetUser("Phillip", "Schmidt", "Test123456", new List<RoleDTO>() { new RoleDTO() { Name = "Mitarbeiter" } });
@@ -77,7 +76,7 @@ namespace Goose.Tests.Application.IntegrationTests.Company
         [Test]
         public async Task CreateUserWithOutCompanyRole()
         {
-            var company = (await _companyRepository.FilterByAsync(x => x.Name.Equals(FirmenName))).FirstOrDefault();
+            var company = (await _companyRepository.FilterByAsync(x => x.Name.Equals(TestHelper.FirmenName))).FirstOrDefault();
             var uri = $"api/companies/{company.Id}/users";
 
             PropertyUserLoginDTO user = GetUser("Phillip", "Schmidt", "Test123456", new List<RoleDTO>() { new RoleDTO() { Name = "Mitarbeiter" } });
@@ -107,7 +106,7 @@ namespace Goose.Tests.Application.IntegrationTests.Company
         [Test]
         public async Task CreateUserFirstNameFalse()
         {
-            var company = (await _companyRepository.FilterByAsync(x => x.Name.Equals(FirmenName))).FirstOrDefault();
+            var company = (await _companyRepository.FilterByAsync(x => x.Name.Equals(TestHelper.FirmenName))).FirstOrDefault();
             var uri = $"api/companies/{company.Id}/users";
 
             PropertyUserLoginDTO user = GetUser(" ", "Schmidt", "Test123456", new List<RoleDTO>() { new RoleDTO() { Name = "Mitarbeiter" } });
@@ -120,7 +119,7 @@ namespace Goose.Tests.Application.IntegrationTests.Company
         [Test]
         public async Task CreateUserLastNameFalse()
         {
-            var company = (await _companyRepository.FilterByAsync(x => x.Name.Equals(FirmenName))).FirstOrDefault();
+            var company = (await _companyRepository.FilterByAsync(x => x.Name.Equals(TestHelper.FirmenName))).FirstOrDefault();
             var uri = $"api/companies/{company.Id}/users";
 
             PropertyUserLoginDTO user = GetUser("Phillip", " ", "Test123456", new List<RoleDTO>() { new RoleDTO() { Name = "Mitarbeiter" } });
@@ -128,26 +127,6 @@ namespace Goose.Tests.Application.IntegrationTests.Company
             var response = await _client.PostAsync(uri, user.ToStringContent());
 
             Assert.IsFalse(response.IsSuccessStatusCode);
-        }
-
-        private async Task ClearCompany()
-        {
-            var company = (await _companyRepository.FilterByAsync(x => x.Name.Equals(FirmenName))).FirstOrDefault();
-
-            if (company is not null)
-            {
-                foreach (var user in company.Users)
-                    await _userRepository.DeleteAsync(user.UserId);
-                await _companyRepository.DeleteAsync(company.Id);
-            }
-        }
-
-        private async Task<SignInResponse> GenerateCompany()
-        {
-            var uri = "/api/auth/signUp";
-            SignUpRequest signUpRequest = new SignUpRequest() { Firstname = "William", Lastname = "Mendat", CompanyName = FirmenName, Password = "Test12345" };
-            var response = await _client.PostAsync(uri, signUpRequest.ToStringContent());
-            return await response.Content.Parse<SignInResponse>();
         }
 
         private async Task<SignInResponse> SignIn(string userName, string password)
