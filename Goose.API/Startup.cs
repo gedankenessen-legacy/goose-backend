@@ -24,6 +24,7 @@ using System.IO;
 using System.Reflection;
 using System.Text;
 using Goose.API.Utils.Validators;
+using Goose.API.Services.issues;
 
 namespace Goose.API
 {
@@ -174,8 +175,9 @@ namespace Goose.API
             services.AddScoped<IProjectUserService, ProjectUserService>();
             services.AddScoped<IStateService, StateService>();
             services.AddScoped<ICompanyService, CompanyService>();
-            services.AddScoped<ICompanyUserService, CompanyUserService>();
             services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<ICompanyUserService, CompanyUserService>();
+            services.AddScoped<IIssueSummaryService, IssueSummaryService>();
 
             services.AddHttpContextAccessor();
         }

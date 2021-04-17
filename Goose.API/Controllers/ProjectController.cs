@@ -44,9 +44,9 @@ namespace Goose.API.Controllers
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<IList<ProjectDTO>>> GetProjects()
+        public async Task<ActionResult<IList<ProjectDTO>>> GetProjects([FromRoute] ObjectId companyId)
         {
-            var projectIter = await _projectService.GetProjects();
+            var projectIter = await _projectService.GetProjects(companyId);
             return Ok(projectIter);
         }
 
