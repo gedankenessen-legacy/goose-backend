@@ -59,7 +59,7 @@ namespace Goose.API.Controllers.IssuesControllers
         public async Task<ActionResult> Post([FromRoute] string projectId, [FromBody] IssueDTO dto)
         {
             if (dto.Project.Id != default && dto.Project.Id != projectId.ToObjectId())
-                throw new Exception("Project id must be the same in url and body or not defined in body");
+                throw new Exception($"Project id must be the same in url ({projectId}) and body ({dto.Project.Id}) or not defined in body");
             dto.Project.Id = projectId.ToObjectId();
 
             var res = await _issueService.Create(dto);
