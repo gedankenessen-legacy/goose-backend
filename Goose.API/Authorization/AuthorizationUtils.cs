@@ -1,11 +1,8 @@
-﻿using Goose.API.Authorization.Requirements;
 using Goose.API.Utils.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace Goose.API.Authorization
 {
