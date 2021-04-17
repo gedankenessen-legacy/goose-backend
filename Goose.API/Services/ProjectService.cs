@@ -12,6 +12,9 @@ using MongoDB.Bson;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Goose.API.Authorization.Handlers.Project;
+using System;
+using Goose.API.Authorization;
 
 namespace Goose.API.Services
 {
@@ -46,9 +49,7 @@ namespace Goose.API.Services
             if (company is null)
                 throw new HttpStatusException(StatusCodes.Status400BadRequest, "Company not found.");
 
-           // ALSO POSSIBLE => ...AuthorizeAsync(_httpContextAccessor.HttpContext.User, company, new[]{ CompanyRolesRequirement.CompanyOwner, CompanyRolesRequirement.CompanyCustomer })...
-            if ((await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, company, CompanyRolesRequirement.CompanyOwner)).Succeeded is false)
-                throw new HttpStatusException(StatusCodes.Status403Forbidden, "Missing role(s).");
+            await AuthorizeCreationAsync(company);
 
             var newProject = new Project()
             {
@@ -64,6 +65,21 @@ namespace Goose.API.Services
             await _projectRepository.CreateAsync(newProject);
 
             return new ProjectDTO(newProject);
+        }
+
+        private async Task<bool> AuthorizeCreationAsync(Company company)
+        {
+            // Dict with the requirement as key und the error message as value.
+            Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
+            {
+                { CompanyRolesRequirement.CompanyOwner, "You need to be the owner of this company, in order to create a project."},
+                { new ProjectHasClientRequirement(), "Your company is missing a client, in order to create a project." }
+            };
+
+            // validate requirements with the appropriate handlers.
+            (await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, company, requirementsWithErrors.Keys)).ThrowErrorForFailedRequirements(requirementsWithErrors);
+
+            return true;
         }
 
         private IList<State> GetDefaultStates()

@@ -23,4 +23,8 @@
     <ProjectReference Include="..\Goose.Domain\Goose.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Authorization\Requirements\Project\" />
+  </ItemGroup>
+
 </Project>
