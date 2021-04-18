@@ -78,11 +78,6 @@ namespace Goose.API.Services
             Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
             {
                 { CompanyRolesRequirement.CompanyOwner, "You need to be the owner of this company, in order to create a project."},
-<<<<<<< HEAD
-                //{ new ProjectHasClientRequirement(), "Your company is missing a client, in order to create a project." }
-=======
-                { new ProjectHasClientRequirement(), "Your company is missing a client, in order to create a project." }
->>>>>>> + empty projectClientReq with handler
             };
 
             // validate requirements with the appropriate handlers.
