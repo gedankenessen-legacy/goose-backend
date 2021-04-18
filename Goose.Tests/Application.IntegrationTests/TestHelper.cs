@@ -8,7 +8,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Goose.API;
@@ -267,13 +266,6 @@ namespace Goose.Tests.Application.IntegrationTests
             return await response.Content.Parse<SignInResponse>();
         }
 
-        public async Task<SignInResponse> SignIn(HttpClient client, SignInRequest signInRequest)
-        {
-            var uri = "/api/auth/signIn";
-            var response = await client.PostAsync(uri, signInRequest.ToStringContent());
-            return await response.Content.Parse<SignInResponse>();
-        }
-
         /// <summary>
         /// Generates a Test Company, User, Project and Issue.
         /// These objects can be retrieved from the DB via the Get???() methods.
@@ -286,7 +278,7 @@ namespace Goose.Tests.Application.IntegrationTests
             var signInResult = await GenerateCompany(client);
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signInResult.Token);
             await GenerateProject(client);
-            await AddUserToProject(client, Role.ProjectLeaderRole);
+            await AddUserToProject(client, Role.ProjectLeaderRole.Name);
             await GenerateIssue(client);
         }
         #endregion
