@@ -20,5 +20,6 @@ namespace Goose.API.Authorization.Requirements
     {
         public readonly static CompanyRoleRequirement CompanyOwner = new(Role.CompanyRole);
         public readonly static CompanyRoleRequirement CompanyCustomer = new(Role.CustomerRole);
+        public readonly static CompanyRoleRequirement CompanyEmployee = new(Role.EmployeeRole);
     }
 }
