@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using MongoDB.Bson;
 
 namespace Goose.API.Services.issues
 {
@@ -55,6 +56,14 @@ namespace Goose.API.Services.issues
 
             issue.IssueDetail.RequirementsAccepted = true;
             issue.StateId = state.Id;
+            issue.ConversationItems.Add(new IssueConversation()
+            {
+                Id = ObjectId.GenerateNewId(),
+                CreatorUserId = null,
+                Type = IssueConversation.SummaryAcceptedType,
+                Data = "",
+                RequirementIds = issue.IssueDetail.Requirements.Select(x => x.Id).ToList(),
+            });
             await _issueRepository.UpdateAsync(issue);
         }
 
@@ -72,6 +81,14 @@ namespace Goose.API.Services.issues
                 throw new HttpStatusException(400, "Um eine Zusammenfassung erstellen zu können muss mindestens eine Anforderung oder eine geschätze Zeit vorhanden sein");
 
             issue.IssueDetail.RequirementsSummaryCreated = true;
+            issue.ConversationItems.Add(new IssueConversation()
+            {
+                Id = ObjectId.GenerateNewId(),
+                CreatorUserId = null,
+                Type = IssueConversation.SummaryCreatedType,
+                Data = "",
+                RequirementIds = issue.IssueDetail.Requirements.Select(x => x.Id).ToList(),
+            });
             await _issueRepository.UpdateAsync(issue);
 
             return await _issueRequirementService.GetAllOfIssueAsync(issueId.ToObjectId());
@@ -91,6 +108,14 @@ namespace Goose.API.Services.issues
                 throw new HttpStatusException(400, "Die Zusammenfassung wurde schon angenommen und kann nicht abgelehnt werden");
 
             issue.IssueDetail.RequirementsSummaryCreated = false;
+            issue.ConversationItems.Add(new IssueConversation()
+            {
+                Id = ObjectId.GenerateNewId(),
+                CreatorUserId = null,
+                Type = IssueConversation.SummaryDeclinedType,
+                Data = "",
+                RequirementIds = issue.IssueDetail.Requirements.Select(x => x.Id).ToList(),
+            });
             await _issueRepository.UpdateAsync(issue);
         }
 
