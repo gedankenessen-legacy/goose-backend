@@ -23,20 +23,20 @@ namespace Goose.API.Controllers.IssuesControllers
         [HttpGet]
         public async Task<ActionResult<IList<IssueRequirement>>> GetAll([FromRoute] ObjectId issueId)
         {
-            return Ok(await _issueService.GetAllOfIssueAsync(issueId));
+            return Ok(await _issueRequirementService.GetAllOfIssueAsync(issueId));
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<IssueRequirement>> Get([FromRoute] ObjectId issueId, [FromRoute] ObjectId id)
         {
-            return Ok(await _issueService.GetAsync(issueId, id));
+            return Ok(await _issueRequirementService.GetAsync(issueId, id));
         }
 
         [HttpPost]
         public async Task<ActionResult<IList<IssueRequirement>>> Post([FromRoute] ObjectId issueId,
             [FromBody] IssueRequirement requirement)
         {
-            var res = await _issueService.CreateAsync(issueId, requirement);
+            var res = await _issueRequirementService.CreateAsync(issueId, requirement);
             return CreatedAtAction(nameof(Get), new {id = res.Id}, res);
         }
 
@@ -44,7 +44,7 @@ namespace Goose.API.Controllers.IssuesControllers
         public async Task<ActionResult<IList<IssueRequirement>>> Put([FromRoute] ObjectId id,
             [FromBody] IssueRequirement requirement)
         {
-            await _issueService.UpdateAsync(id, requirement);
+            await _issueRequirementService.UpdateAsync(id, requirement);
             return NoContent();
         }
 
@@ -52,7 +52,7 @@ namespace Goose.API.Controllers.IssuesControllers
         public async Task<ActionResult<IList<IssueRequirement>>> Delete([FromRoute] ObjectId issueId,
             [FromRoute] ObjectId id)
         {
-            await _issueService.DeleteAsync(issueId, id);
+            await _issueRequirementService.DeleteAsync(issueId, id);
             return NoContent();
         }
     }
