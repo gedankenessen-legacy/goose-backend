@@ -97,11 +97,6 @@ namespace Goose.Tests.Application.IntegrationTests.Project
             Assert.IsTrue(response.IsSuccessStatusCode, "Company owner was not be able to create a customer for a project!");
         }
 
-        [Test]
-        public async Task AssignCustomerToProjektAsEmployeeTest()
-        {
-        }
-
         private async Task Clear()
         {
             await TestHelper.Instance.ClearCompany(_companyRepository, _userRepository);
