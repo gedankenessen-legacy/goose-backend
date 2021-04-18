@@ -10,6 +10,7 @@ using Goose.Domain.Models.Projects;
 using Goose.Domain.Models.Issues;
 using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
+using Goose.API.Utils.Authentication;
 
 namespace Goose.API.Services.Issues
 {
@@ -38,14 +39,22 @@ namespace Goose.API.Services.Issues
         private readonly IIssueRepository _issueRepo;
         private readonly IIssueRequestValidator _issueValidator;
 
-        public IssueService(IIssueRepository issueRepo, IStateService stateService,
-            IProjectRepository projectRepository, IUserRepository userRepository, IIssueRequestValidator issueValidator)
+        private readonly IHttpContextAccessor _httpContextAccessor;
+
+        public IssueService(
+            IIssueRepository issueRepo,
+            IStateService stateService,
+            IProjectRepository projectRepository,
+            IUserRepository userRepository,
+            IIssueRequestValidator issueValidator,
+            IHttpContextAccessor httpContextAccessor)
         {
             _issueRepo = issueRepo;
             _stateService = stateService;
             _projectRepository = projectRepository;
             _userRepository = userRepository;
             _issueValidator = issueValidator;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<IList<IssueDTO>> GetAll()
@@ -137,7 +146,7 @@ namespace Goose.API.Services.Issues
                     old.ConversationItems.Add(new IssueConversation()
                     {
                         Id = ObjectId.GenerateNewId(),
-                        CreatorUserId = null,
+                        CreatorUserId = _httpContextAccessor.HttpContext.User.GetUserId(),
                         Type = IssueConversation.StateChangeType,
                         Data = $"Status von {oldState.Name} zu {newState.Name} geändert.",
                     });
@@ -190,7 +199,7 @@ namespace Goose.API.Services.Issues
             issue.ConversationItems.Add(new IssueConversation()
             {
                 Id = ObjectId.GenerateNewId(),
-                CreatorUserId = null,
+                CreatorUserId = _httpContextAccessor.HttpContext.User.GetUserId(),
                 Type = IssueConversation.ChildIssueAddedType,
                 Data = $"{issueId}",
             });
@@ -211,7 +220,7 @@ namespace Goose.API.Services.Issues
                 issue.ConversationItems.Add(new IssueConversation()
                 {
                     Id = ObjectId.GenerateNewId(),
-                    CreatorUserId = null,
+                    CreatorUserId = _httpContextAccessor.HttpContext.User.GetUserId(),
                     Type = IssueConversation.ChildIssueRemovedType,
                     Data = $"{issueId}",
                 });

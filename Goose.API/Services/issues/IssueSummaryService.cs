@@ -9,6 +9,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using MongoDB.Bson;
+using Microsoft.AspNetCore.Http;
+using Goose.API.Utils.Authentication;
 
 namespace Goose.API.Services.issues
 {
@@ -25,12 +27,18 @@ namespace Goose.API.Services.issues
         private readonly IIssueRepository _issueRepository;
         private readonly IIssueRequirementService _issueRequirementService;
         private readonly IStateService _stateService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public IssueSummaryService(IIssueRepository issueRepository, IIssueRequirementService issueRequirementService, IStateService stateService)
+        public IssueSummaryService(
+            IIssueRepository issueRepository,
+            IIssueRequirementService issueRequirementService,
+            IStateService stateService,
+            IHttpContextAccessor httpContextAccessor)
         {
             _issueRepository = issueRepository;
             _issueRequirementService = issueRequirementService;
             _stateService = stateService;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task AcceptSummary(string issueId)
@@ -59,7 +67,7 @@ namespace Goose.API.Services.issues
             issue.ConversationItems.Add(new IssueConversation()
             {
                 Id = ObjectId.GenerateNewId(),
-                CreatorUserId = null,
+                CreatorUserId = _httpContextAccessor.HttpContext.User.GetUserId(),
                 Type = IssueConversation.SummaryAcceptedType,
                 Data = "",
                 RequirementIds = issue.IssueDetail.Requirements.Select(x => x.Id).ToList(),
@@ -84,7 +92,7 @@ namespace Goose.API.Services.issues
             issue.ConversationItems.Add(new IssueConversation()
             {
                 Id = ObjectId.GenerateNewId(),
-                CreatorUserId = null,
+                CreatorUserId = _httpContextAccessor.HttpContext.User.GetUserId(),
                 Type = IssueConversation.SummaryCreatedType,
                 Data = "",
                 RequirementIds = issue.IssueDetail.Requirements.Select(x => x.Id).ToList(),
@@ -111,7 +119,7 @@ namespace Goose.API.Services.issues
             issue.ConversationItems.Add(new IssueConversation()
             {
                 Id = ObjectId.GenerateNewId(),
-                CreatorUserId = null,
+                CreatorUserId = _httpContextAccessor.HttpContext.User.GetUserId(),
                 Type = IssueConversation.SummaryDeclinedType,
                 Data = "",
                 RequirementIds = issue.IssueDetail.Requirements.Select(x => x.Id).ToList(),

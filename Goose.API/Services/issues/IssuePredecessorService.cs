@@ -1,7 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Goose.API.Repositories;
+using Goose.API.Utils.Authentication;
 using Goose.Domain.Models.Issues;
+using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
 
 namespace Goose.API.Services.Issues
@@ -19,9 +21,12 @@ namespace Goose.API.Services.Issues
         //TODO wie bekommt man am besten alle issues in einem vorgänger baum? phil fragen?
         private readonly IIssueRepository _issueRepo;
 
-        public IssuePredecessorService(IIssueRepository issueRepo)
+        private readonly IHttpContextAccessor _httpContextAccessor;
+
+        public IssuePredecessorService(IIssueRepository issueRepo, IHttpContextAccessor httpContextAccessor)
         {
             _issueRepo = issueRepo;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task SetPredecessor(ObjectId projectId, ObjectId successorId, ObjectId predecessorId)
@@ -36,7 +41,7 @@ namespace Goose.API.Services.Issues
             successor.ConversationItems.Add(new IssueConversation()
             {
                 Id = ObjectId.GenerateNewId(),
-                CreatorUserId = null,
+                CreatorUserId = _httpContextAccessor.HttpContext.User.GetUserId(),
                 Type = IssueConversation.PredecessorAddedType,
                 Data = $"{predecessorId}",
             });
@@ -54,7 +59,7 @@ namespace Goose.API.Services.Issues
                 successor.ConversationItems.Add(new IssueConversation()
                 {
                     Id = ObjectId.GenerateNewId(),
-                    CreatorUserId = null,
+                    CreatorUserId = _httpContextAccessor.HttpContext.User.GetUserId(),
                     Type = IssueConversation.PredecessorRemovedType,
                     Data = $"{predecessorId}",
                 });
