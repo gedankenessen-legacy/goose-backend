@@ -2,7 +2,7 @@
 using Goose.API.Services;
 using Goose.API.Utils.Exceptions;
 using Goose.Domain.DTOs.Issues;
-using Goose.Domain.Models.tickets;
+using Goose.Domain.Models.Tickets;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;

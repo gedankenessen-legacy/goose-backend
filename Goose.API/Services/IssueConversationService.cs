@@ -1,9 +1,9 @@
 ﻿using Goose.API.Repositories;
-using Goose.API.Services.issues;
+using Goose.API.Services.Issues;
 using Goose.API.Utils.Exceptions;
 using Goose.API.Utils.Validators;
 using Goose.Domain.DTOs.Issues;
-using Goose.Domain.Models.tickets;
+using Goose.Domain.Models.Tickets;
 using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
 using System.Collections.Generic;
@@ -59,7 +59,7 @@ namespace Goose.API.Services
 
         private async Task<IssueConversationDTO> MapIssueConversationDTOAsync(ObjectId issueId, IssueConversation ic)
         {
-            var creator = await _userService.GetUser(ic.CreatorUserId);
+            var creator = await _userService.GetUser(ic.CreatorUserId.Value);
 
             var requirements = await Task.WhenAll(ic.RequirementIds.Select(async reqOid => await _issueRepository.GetRequirementByIdAsync(issueId, reqOid)).ToList());
 

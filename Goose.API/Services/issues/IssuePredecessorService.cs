@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Goose.API.Repositories;
-using Goose.Domain.Models.tickets;
+using Goose.Domain.Models.Tickets;
 using MongoDB.Bson;
 
 namespace Goose.API.Services.Issues
