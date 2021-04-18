@@ -123,9 +123,9 @@ namespace Goose.API.Services
                 throw new HttpStatusException(404, "Invalid projectId");
             }
 
-            var projectLeaderRole = (await _roleRepository.FilterByAsync(x => x.Name == Role.ProjectLeaderRole)).Single();
+            var projectLeaderRole = (await _roleRepository.FilterByAsync(x => x.Name == Role.ProjectLeaderRole)).SingleOrDefault();
 
-            if (roleIds.Contains(projectLeaderRole.Id))
+            if (projectLeaderRole != null && roleIds.Contains(projectLeaderRole.Id))
             {
                 // Nutzer soll die Projektleiterrolle bekommen, in jedem Projekt
                 // darf es aber nur einen ProjektLeiter geben

@@ -16,7 +16,8 @@ namespace Goose.Tests.Application.IntegrationTests
         }
         public static StringContent ToStringContent(this object obj)
         {
-            return new(obj.ToJson(), Encoding.UTF8, "application/json");
+            var content = new StringContent(obj.ToJson(), Encoding.UTF8, "application/json");
+            return content;
         }
 
         public static async Task<E> Parse<E>(this HttpContent content)

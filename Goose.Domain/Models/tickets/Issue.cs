@@ -8,6 +8,9 @@ namespace Goose.Domain.Models.Tickets
 {
     public class Issue : Document
     {
+        public const string TypeBug = "bug";
+        public const string TypeFeature = "feature";
+        
         public ObjectId StateId { get; set; }
         public ObjectId ProjectId { get; set; }
         public ObjectId ClientId { get; set; }

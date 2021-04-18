@@ -13,11 +13,11 @@ namespace Goose.API.Controllers.IssuesControllers
     [ApiController]
     public class IssueRequirementsController : Controller
     {
-        private readonly IIssueRequirementService _issueService;
+        private readonly IIssueRequirementService _issueRequirementService;
 
-        public IssueRequirementsController(IIssueRequirementService issueRepo)
+        public IssueRequirementsController(IIssueRequirementService issueReqService)
         {
-            _issueService = issueRepo;
+            _issueRequirementService = issueReqService;
         }
 
         [HttpGet]
