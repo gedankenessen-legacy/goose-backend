@@ -6,14 +6,10 @@ using Goose.Domain.Models.Companies;
 using Goose.Domain.Models.Projects;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
-using Goose.Domain.Models;
-using Goose.Domain.Models.Projects;
 using MongoDB.Bson;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Goose.API.Authorization.Handlers.Project;
-using System;
 using Goose.API.Authorization;
 
 namespace Goose.API.Services
@@ -73,7 +69,7 @@ namespace Goose.API.Services
             Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
             {
                 { CompanyRolesRequirement.CompanyOwner, "You need to be the owner of this company, in order to create a project."},
-                { new ProjectHasClientRequirement(), "Your company is missing a client, in order to create a project." }
+                //{ new ProjectHasClientRequirement(), "Your company is missing a client, in order to create a project." }
             };
 
             // validate requirements with the appropriate handlers.
