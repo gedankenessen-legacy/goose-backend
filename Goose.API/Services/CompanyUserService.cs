@@ -49,7 +49,7 @@ namespace Goose.API.Services
             if (requestUser is null)
                 throw new HttpStatusException(400, "Der angefragte Benutzer Existiert nicht in der Firma");
 
-            if(requestUser.Roles.FirstOrDefault(x => x.Name.Equals(Role.CompanyRole)) is null)
+            if(requestUser.Roles.FirstOrDefault(x => x.Name.Equals(Role.CompanyRole.Name)) is null)
                 throw new HttpStatusException(400, "Nur der Firmen Account darf einen Benutzer erstellen");
 
             // create new user
