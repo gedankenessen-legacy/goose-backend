@@ -1,15 +1,23 @@
 ﻿using Goose.API.Utils;
 using Goose.API.Utils.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-
+using Microsoft.Extensions.Hosting;
 
 namespace Goose.API.Controllers
 {
     [ApiExplorerSettings(IgnoreApi = true)]
     public class ErrorController : ControllerBase
     {
+        private readonly IWebHostEnvironment _env;
+        
+        public ErrorController(IWebHostEnvironment env)
+        {
+            _env = env;
+        }
+
         [Route("error")]
         public ErrorResponse Error()
         {
@@ -20,10 +28,9 @@ namespace Goose.API.Controllers
             if (exception is HttpStatusException statusException)         
                 code = statusException.Status; 
             
-
             Response.StatusCode = code;
 
-            return new ErrorResponse(exception, code);
+            return new ErrorResponse(exception, code, _env.IsDevelopment() ? exception.StackTrace : "");
         }
     }
 }

@@ -19,7 +19,7 @@ namespace Goose.API.Authorization.Requirements
     /// </summary>
     public static class CompanyRolesRequirement
     {
-        public readonly static CompanyRoleRequirement CompanyOwner = new(Role.CompanyRole, new ObjectId("604a3420db17824bca29698f"));
-        public readonly static CompanyRoleRequirement CompanyCustomer = new(Role.CustomerRole, new ObjectId("605cc95dd37ccd8527c2ead7"));
+        public readonly static CompanyRoleRequirement CompanyOwner = new(Role.CompanyRole.Name, Role.CompanyRole.Id);
+        public readonly static CompanyRoleRequirement CompanyCustomer = new(Role.CustomerRole.Name, Role.CustomerRole.Id);
     }
 }

@@ -1,0 +1,132 @@
+﻿using Goose.API;
+using Goose.API.Repositories;
+using Goose.Domain.DTOs;
+using Goose.Domain.Models.Auth;
+using Goose.Domain.Models.Identity;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
+using NUnit.Framework;
+using System;
+using System.Collections.Generic;
+using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Threading.Tasks;
+
+namespace Goose.Tests.Application.IntegrationTests.Project
+{
+    [TestFixture]
+    public class ProjectAuthorizationTests
+    {
+        private HttpClient _client;
+        private WebApplicationFactory<Startup> _factory;
+
+        private ICompanyRepository _companyRepository;
+        private IUserRepository _userRepository;
+        private IProjectRepository _projectRepository;
+        private SignInResponse companyOwnerSignIn;
+        private SignInResponse companyClientSignIn;
+        private ProjectDTO createdProject;
+
+        [OneTimeSetUp]
+        public void OneTimeSetUp()
+        {
+            _factory = new WebApplicationFactory<Startup>();
+            _client = _factory.CreateClient();
+            var scopeFactory = _factory.Server.Services.GetService<IServiceScopeFactory>();
+
+            using (var scope = scopeFactory.CreateScope())
+            {
+                _companyRepository = scope.ServiceProvider.GetService<ICompanyRepository>();
+                _userRepository = scope.ServiceProvider.GetService<IUserRepository>();
+                _projectRepository = scope.ServiceProvider.GetService<IProjectRepository>();
+            }
+        }
+
+        [OneTimeTearDown]
+        public async Task OneTimeTearDown()
+        {
+            await Clear();
+        }
+
+        [SetUp]
+        public async Task Setup()
+        {
+            await Clear();
+            await Generate();
+        }
+
+        [Test]
+        public async Task AssignCustomerToProjektAsCustomerTest()
+        {
+            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", companyClientSignIn.Token);
+
+            var uri = $"api/projects/{createdProject.Id}/users/{companyClientSignIn.User.Id}";
+
+            var newCustomer = new PropertyUserDTO()
+            {
+                User = companyClientSignIn.User,
+                Roles = new List<RoleDTO>() {
+                        new RoleDTO (Role.CustomerRole)
+                }
+            };
+
+            var response = await _client.PutAsync(uri, newCustomer.ToStringContent());
+
+            Assert.AreEqual(HttpStatusCode.Forbidden, response.StatusCode, "Customer was able to create a customer for a project!");
+        }
+
+        [Test]
+        public async Task AssignCustomerToProjektAsOwnerTest()
+        {
+            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", companyOwnerSignIn.Token);
+
+            var uri = $"api/projects/{createdProject.Id}/users/{companyClientSignIn.User.Id}";
+
+            var newCustomer = new PropertyUserDTO()
+            {
+                User = companyClientSignIn.User,
+                Roles = new List<RoleDTO>() {
+                        new RoleDTO (Role.CustomerRole)
+                }
+            };
+
+            var response = await _client.PutAsync(uri, newCustomer.ToStringContent());
+
+            Assert.IsTrue(response.IsSuccessStatusCode, "Company owner was not be able to create a customer for a project!");
+        }
+
+        [Test]
+        public async Task AssignCustomerToProjektAsEmployeeTest()
+        {
+        }
+
+        private async Task Clear()
+        {
+            await TestHelper.Instance.ClearCompany(_companyRepository, _userRepository);
+            await TestHelper.Instance.ClearProject(_projectRepository);
+        }
+
+        private async Task Generate()
+        {
+            companyOwnerSignIn = await TestHelper.Instance.GenerateCompany(_client);
+            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", companyOwnerSignIn.Token);
+            createdProject = await TestHelper.Instance.GenerateProject(_client, _companyRepository);
+
+            PropertyUserLoginDTO customerSignIn = new()
+            {
+                Firstname = "Test",
+                Lastname = "Kunde",
+                Password = "string1234",
+                Roles = new List<RoleDTO>() {
+                        new RoleDTO (Role.CustomerRole)
+                }
+
+            };
+
+            companyClientSignIn = await TestHelper.Instance.GenerateCustomerForCompany(_client, _companyRepository, customerSignIn);
+            companyClientSignIn = await TestHelper.Instance.SignIn(_client, new() { Username = companyClientSignIn.User.Username, Password = customerSignIn.Password });
+        }
+    }
+}

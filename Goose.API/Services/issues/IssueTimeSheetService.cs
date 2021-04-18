@@ -2,7 +2,6 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Goose.API.Repositories;
-using Goose.Domain.DTOs;
 using Goose.Domain.DTOs.Issues;
 using Goose.Domain.Models.Issues;
 using Goose.API.Utils;
