@@ -7,7 +7,7 @@ using Goose.API.Utils.Validators;
 using Goose.Domain.DTOs;
 using Goose.Domain.DTOs.Issues;
 using Goose.Domain.Models.Projects;
-using Goose.Domain.Models.Tickets;
+using Goose.Domain.Models.Issues;
 using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
 
@@ -115,43 +115,34 @@ namespace Goose.API.Services.Issues
 
         public async Task<IssueDTO> Update(IssueDTO issueDto, ObjectId id)
         {
-            var previousIssue = await _issueRepo.GetAsync(id);
-            ObjectId? previousStateId = null;
-            var stateChanged = false;
-
-            if (previousIssue != null) {
-                previousStateId = previousIssue.StateId;
-                
-                if (previousStateId != issueDto.State.Id)
-                {
-                    stateChanged = true;
-                }
-            }
-
-            var issue = issueDto.IntoIssue(previousIssue);
-
-            if (stateChanged)
-            {
-                var previousState = await _stateService.GetState(issueDto.Project.Id, previousStateId.Value);
-                var currentState = await _stateService.GetState(issue.ProjectId, issue.StateId);
-
-                issue.ConversationItems.Add(new IssueConversation()
-                {
-                    Id = ObjectId.GenerateNewId(),
-                    CreatorUserId = null,
-                    Type = IssueConversation.StateChangeType,
-                    Data = $"Status von {previousState.Name} zu {currentState.Name} geändert.",
-                });
-            }
-
+            var issue = await GetUpdatedIssue(await _issueRepo.GetAsync(id), issueDto);
             await _issueRepo.UpdateAsync(issue);
             return await Get(id);
         }
 
         private async Task<Issue> GetUpdatedIssue(Issue old, IssueDTO updated)
         {
-            if (updated.State != null)
-                old.StateId = updated.State.Id;
+            if (updated.State != null) {
+                var oldStateId = old.StateId;
+                var newStateId = updated.State.Id;
+                
+                if (oldStateId != newStateId)
+                {
+                    // State wird aktualisiert
+                    old.StateId = newStateId;
+
+                    var oldState = await _stateService.GetState(old.ProjectId, oldStateId);
+                    var newState = await _stateService.GetState(old.ProjectId, newStateId);
+
+                    old.ConversationItems.Add(new IssueConversation()
+                    {
+                        Id = ObjectId.GenerateNewId(),
+                        CreatorUserId = null,
+                        Type = IssueConversation.StateChangeType,
+                        Data = $"Status von {oldState.Name} zu {newState.Name} geändert.",
+                    });
+                }
+            }
             old.IssueDetail = await GetUpdatedIssueDetail(old, updated.IssueDetail);
             return old;
         }

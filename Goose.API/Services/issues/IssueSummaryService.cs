@@ -3,7 +3,7 @@ using Goose.API.Services.Issues;
 using Goose.API.Utils;
 using Goose.API.Utils.Exceptions;
 using Goose.Domain.Models.Projects;
-using Goose.Domain.Models.Tickets;
+using Goose.Domain.Models.Issues;
 using System;
 using System.Collections.Generic;
 using System.Linq;

@@ -1,7 +1,7 @@
 ﻿using Goose.API;
 using Goose.API.Repositories;
 using Goose.Domain.Models.Auth;
-using Goose.Domain.Models.Tickets;
+using Goose.Domain.Models.Issues;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;

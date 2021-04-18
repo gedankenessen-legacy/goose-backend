@@ -7,7 +7,7 @@ using Goose.API;
 using Goose.Domain.DTOs;
 using Goose.Domain.DTOs.Issues;
 using Goose.Domain.Models.Companies;
-using Goose.Domain.Models.Tickets;
+using Goose.Domain.Models.Issues;
 using Microsoft.AspNetCore.Mvc.Testing;
 using MongoDB.Bson;
 using NUnit.Framework;

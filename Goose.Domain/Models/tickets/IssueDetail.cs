@@ -2,9 +2,9 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using static Goose.Domain.Models.Tickets.Issue;
+using static Goose.Domain.Models.Issues.Issue;
 
-namespace Goose.Domain.Models.Tickets
+namespace Goose.Domain.Models.Issues
 {
     public class IssueDetail
     {

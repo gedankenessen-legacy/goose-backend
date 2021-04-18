@@ -1,4 +1,4 @@
-﻿using Goose.Domain.Models.Tickets;
+﻿using Goose.Domain.Models.Issues;
 using MongoDB.Bson;
 using System;
 using System.Collections.Generic;

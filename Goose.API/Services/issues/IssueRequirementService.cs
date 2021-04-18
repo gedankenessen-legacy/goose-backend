@@ -6,7 +6,7 @@ using AutoMapper.Mappers;
 using Goose.API.Repositories;
 using Goose.API.Utils.Exceptions;
 using Goose.Domain.DTOs.Issues;
-using Goose.Domain.Models.Tickets;
+using Goose.Domain.Models.Issues;
 using MongoDB.Bson;
 
 namespace Goose.API.Services.Issues

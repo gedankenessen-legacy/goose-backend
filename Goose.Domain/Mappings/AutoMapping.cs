@@ -1,9 +1,8 @@
 ﻿using AutoMapper;
 using Goose.Domain.DTOs;
 using Goose.Domain.DTOs.Issues;
-using Goose.Domain.Models.identity;
-using Goose.Domain.Models.tickets;
-using Goose.Domain.DTOs.tickets;
+using Goose.Domain.Models.Identity;
+using Goose.Domain.Models.Issues;
 using System;
 using System.Collections.Generic;
 using System.Text;
