@@ -60,35 +60,38 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         [Test]
         public async Task PostConversation()
         {
+            var user = await TestHelper.Instance.GetUser();
+
             var newItem = new IssueConversationDTO()
             {
+                Creator = new Domain.DTOs.UserDTO(user),
                 Type = IssueConversation.MessageType,
                 Data = "TestConversation",
             };
 
-            var issue = await TestHelper.Instance.GetIssueAsync(_issueRepository);
+            var issue = await TestHelper.Instance.GetIssueAsync();
             var uri = $"/api/issues/{issue.Id}/conversations/";
 
             var response = await _client.PostAsync(uri, newItem.ToStringContent());
             Assert.IsTrue(response.IsSuccessStatusCode);
 
-            issue = await TestHelper.Instance.GetIssueAsync(_issueRepository);
-            Assert.IsTrue(issue.ConversationItems.Last().Data == "TestConversation");
+            issue = await TestHelper.Instance.GetIssueAsync();
+            var newConversationItem = issue.ConversationItems.Last();
+            Assert.AreEqual(newConversationItem.Type, IssueConversation.MessageType);
+            Assert.AreEqual(newConversationItem.Data, "TestConversation");
         }
 
         private async Task Clear()
         {
-            await TestHelper.Instance.ClearCompany(_companyRepository, _userRepository);
-            await TestHelper.Instance.ClearProject(_projectRepository);
-            await TestHelper.Instance.ClearIssue(_issueRepository);
+            await TestHelper.Instance.ClearAll();
         }
 
         private async Task Generate()
         {
             signInObject = await TestHelper.Instance.GenerateCompany(_client);
             _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signInObject.Token);
-            await TestHelper.Instance.GenerateProject(_client, _companyRepository);
-            await TestHelper.Instance.GenerateIssue(_client, _companyRepository, _projectRepository, _userRepository);
+            await TestHelper.Instance.GenerateProject(_client);
+            await TestHelper.Instance.GenerateIssue(_client);
         }
     }
 }
