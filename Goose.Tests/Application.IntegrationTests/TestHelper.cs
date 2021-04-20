@@ -100,7 +100,7 @@ namespace Goose.Tests.Application.IntegrationTests
                 IssueDetail = new IssueDetail
                 {
                     Name = TicketName,
-                    Type = null,
+                    Type = Issue.TypeFeature,
                     StartDate = default,
                     EndDate = default,
                     ExpectedTime = 0,
@@ -115,7 +115,9 @@ namespace Goose.Tests.Application.IntegrationTests
                     RelevantDocuments = null
                 }
             };
-            await client.PostAsync(uri, issue.ToStringContent());
+            var res = await client.PostAsync(uri, issue.ToStringContent());
+            var dto = await res.Content.ReadAsStringAsync();
+            return;
         }
 
         private async Task<IList<StateDTO>> GetStateList(HttpClient client, string projectId)
