@@ -86,7 +86,7 @@ namespace Goose.Tests.Application.IntegrationTests
             var company = (await companyRepository.FilterByAsync(x => x.Name.Equals(FirmenName))).FirstOrDefault();
             var project = (await projectRepository.FilterByAsync(x => x.ProjectDetail.Name.Equals(ProjektName))).FirstOrDefault();
 
-            var propertyUser = company.Users.FirstOrDefault(x => x != null);
+            var propertyUser = company.Users.FirstOrDefault();
             var user = (await userRepository.FilterByAsync(x => x.Id.Equals(propertyUser.UserId))).FirstOrDefault();
 
             var uri = $"api/projects/{project.Id}/issues/";
@@ -100,7 +100,7 @@ namespace Goose.Tests.Application.IntegrationTests
                 IssueDetail = new IssueDetail
                 {
                     Name = TicketName,
-                    Type = null,
+                    Type = Issue.TypeFeature,
                     StartDate = default,
                     EndDate = default,
                     ExpectedTime = 0,
@@ -115,7 +115,7 @@ namespace Goose.Tests.Application.IntegrationTests
                     RelevantDocuments = null
                 }
             };
-            await client.PostAsync(uri, issue.ToStringContent());
+            var postResult = await client.PostAsync(uri, issue.ToStringContent());
         }
 
         private async Task<IList<StateDTO>> GetStateList(HttpClient client, string projectId)
@@ -128,6 +128,12 @@ namespace Goose.Tests.Application.IntegrationTests
         public async Task<StateDTO> GetStateByName(HttpClient client, string projectId, string name)
         {
             return (await GetStateList(client, projectId)).FirstOrDefault(x => x.Name.Equals(name));
+        }
+
+        public async Task<Issue> GetIssueAsync(IIssueRepository issueRepository)
+        {
+            var issues = await issueRepository.FilterByAsync(x => x.IssueDetail.Name == TestHelper.TicketName);
+            return issues.FirstOrDefault();
         }
     }
 }

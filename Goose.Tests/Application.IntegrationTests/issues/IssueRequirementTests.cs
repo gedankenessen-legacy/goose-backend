@@ -50,7 +50,6 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         {
             await Clear();
             await Generate();
-            
         }
 
         [Test]
