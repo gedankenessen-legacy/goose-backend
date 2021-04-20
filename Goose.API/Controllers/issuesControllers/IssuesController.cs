@@ -22,7 +22,7 @@ namespace Goose.API.Controllers.IssuesControllers
             _issueDetailedService = issueDetailedService;
         }
 
-        //api/issues/
+        //api/projects/{projectId}/issues/
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -37,7 +37,7 @@ namespace Goose.API.Controllers.IssuesControllers
             return Ok(await res);
         }
 
-        //api/issues/{id}
+        //api/projects/{projectId}/issues/{id}
         [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -52,7 +52,7 @@ namespace Goose.API.Controllers.IssuesControllers
             return res == null ? NotFound() : Ok(res);
         }
 
-        //api/issues
+        //api/projects/{projectId}/issues
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -66,7 +66,7 @@ namespace Goose.API.Controllers.IssuesControllers
             return CreatedAtAction(nameof(Get), new {projectId, id = res.Id}, res);
         }
 
-        //api/issues/{id}
+        //api/projects/{projectId}/issues/{id}
         [HttpPut("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -76,7 +76,7 @@ namespace Goose.API.Controllers.IssuesControllers
             return NoContent();
         }
 
-        //api/issues/{id}  
+        //api/projects/{projectId}/issues/{id}  
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
