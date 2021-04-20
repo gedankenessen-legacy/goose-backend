@@ -36,7 +36,7 @@ namespace Goose.API.Controllers.IssuesControllers
             [FromBody] IssueRequirement requirement)
         {
             var res = await _issueService.CreateAsync(issueId.ToObjectId(), requirement);
-            return CreatedAtAction(nameof(Get), new {id = res.Id}, res);
+            return CreatedAtAction(nameof(Get), new {issueId, id = res.Id}, res);
         }
 
         [HttpPut("{id}")]
