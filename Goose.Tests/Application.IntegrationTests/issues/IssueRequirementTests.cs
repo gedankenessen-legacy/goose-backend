@@ -24,12 +24,6 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             _client = factory.CreateClient();
         }
 
-        [OneTimeTearDown]
-        public async Task OneTimeTearDown()
-        {
-            await Clear();
-        }
-
         [SetUp]
         public async Task Setup()
         {
