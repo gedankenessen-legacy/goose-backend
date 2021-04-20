@@ -1,5 +1,6 @@
 ﻿using Goose.API;
 using Goose.API.Repositories;
+using Goose.API.Services.Issues;
 using Goose.Domain.DTOs;
 using Goose.Domain.DTOs.Issues;
 using Goose.Domain.Models.Auth;
@@ -22,12 +23,18 @@ namespace Goose.Tests.Application.IntegrationTests.issues
     class IssueConversationTests
     {
         private HttpClient _client;
+        private IIssueRequirementService _issueRequirementService;
 
         [OneTimeSetUp]
-        public void OneTimeSetup()
+        public void OneTimeSetUp()
         {
             var factory = new WebApplicationFactory<Startup>();
             _client = factory.CreateClient();
+
+            var scopeFactory = factory.Server.Services.GetService<IServiceScopeFactory>();
+
+            using var scope = scopeFactory.CreateScope();
+            _issueRequirementService = scope.ServiceProvider.GetService<IIssueRequirementService>();
         }
 
         [SetUp]
@@ -178,26 +185,71 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         }
 
         [Test]
-        public async Task SummaryConversation()
+        public async Task SummaryAcceptedConversation()
         {
             var user = await TestHelper.Instance.GetUser();
-            var project = await TestHelper.Instance.GetProject();
 
             var issue = await TestHelper.Instance.GetIssueAsync();
-            var uri = $"/api/projects/{project.Id}/issues/{issue.Id}";
+            IssueRequirement issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen" };
+            await _issueRequirementService.CreateAsync(issue.Id, issueRequirement);
 
-            var newState = await TestHelper.Instance.GetStateByName(_client, issue.ProjectId, State.NegotiationState);
-            var userDTO = new UserDTO(user);
-            var issueDTO = new IssueDTO(issue, newState, new ProjectDTO(project), userDTO, userDTO);
-
-            var response = await _client.PutAsync(uri, issueDTO.ToStringContent());
+            // Create a summary
+            var uri = $"/api/issues/{issue.Id}/summaries";
+            var response = await _client.PostAsync(uri, null);
             Assert.IsTrue(response.IsSuccessStatusCode);
 
+            // Test if the SummaryCreated Conversation Item is there
             issue = await TestHelper.Instance.GetIssueAsync();
             var latestConversationItem = issue.ConversationItems.Last();
             Assert.AreEqual(latestConversationItem.CreatorUserId, user.Id);
-            Assert.AreEqual(latestConversationItem.Type, IssueConversation.StateChangeType);
-            Assert.AreNotEqual(latestConversationItem.Data, "");
+            Assert.AreEqual(latestConversationItem.Type, IssueConversation.SummaryCreatedType);
+            Assert.AreEqual(latestConversationItem.RequirementIds.Single(), issueRequirement.Id);
+
+            // Accept the summary
+            uri = $"/api/issues/{issue.Id}/summaries?accept=true";
+            response = await _client.PutAsync(uri, null);
+            Assert.IsTrue(response.IsSuccessStatusCode);
+
+            // Test if the SummaryDeclined Conversation Item is there
+            issue = await TestHelper.Instance.GetIssueAsync();
+            latestConversationItem = issue.ConversationItems.Last();
+            Assert.AreEqual(latestConversationItem.CreatorUserId, user.Id);
+            Assert.AreEqual(latestConversationItem.Type, IssueConversation.SummaryAcceptedType);
+            Assert.AreEqual(latestConversationItem.RequirementIds.Single(), issueRequirement.Id);
+        }
+
+        [Test]
+        public async Task DeclineSummaryConversion()
+        {
+            var user = await TestHelper.Instance.GetUser();
+
+            var issue = await TestHelper.Instance.GetIssueAsync();
+            IssueRequirement issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen" };
+            issueRequirement = await _issueRequirementService.CreateAsync(issue.Id, issueRequirement);
+
+            // Create a summary
+            var uri = $"/api/issues/{issue.Id}/summaries";
+            var response = await _client.PostAsync(uri, null);
+            Assert.IsTrue(response.IsSuccessStatusCode);
+
+            // Test if the SummaryCreated Conversation Item is there
+            issue = await TestHelper.Instance.GetIssueAsync();
+            var latestConversationItem = issue.ConversationItems.Last();
+            Assert.AreEqual(latestConversationItem.CreatorUserId, user.Id);
+            Assert.AreEqual(latestConversationItem.Type, IssueConversation.SummaryCreatedType);
+            Assert.AreEqual(latestConversationItem.RequirementIds.Single(), issueRequirement.Id);
+
+            // Decline the summary
+            uri = $"/api/issues/{issue.Id}/summaries?accept=false";
+            response = await _client.PutAsync(uri, null);
+            Assert.IsTrue(response.IsSuccessStatusCode);
+
+            // Test if the SummaryDeclined Conversation Item is there
+            issue = await TestHelper.Instance.GetIssueAsync();
+            latestConversationItem = issue.ConversationItems.Last();
+            Assert.AreEqual(latestConversationItem.CreatorUserId, user.Id);
+            Assert.AreEqual(latestConversationItem.Type, IssueConversation.SummaryDeclinedType);
+            Assert.AreEqual(latestConversationItem.RequirementIds.Single(), issueRequirement.Id);
         }
     }
 }
