@@ -19,42 +19,26 @@ namespace Goose.Tests.Application.IntegrationTests.issues
     class IssueSummaryTests
     {
         private HttpClient _client;
-        private WebApplicationFactory<Startup> _factory;
-        private ICompanyRepository _companyRepository;
-        private IUserRepository _userRepository;
-        private IIssueRepository _issueRepository;
-        private IProjectRepository _projectRepository;
         private IIssueRequirementService _issueRequirementService;
         private SignInResponse signInObject;
 
         [OneTimeSetUp]
         public void OneTimeSetUp()
         {
-            _factory = new WebApplicationFactory<Startup>();
-            _client = _factory.CreateClient();
-            var scopeFactory = _factory.Server.Services.GetService<IServiceScopeFactory>();
-
-            using (var scope = scopeFactory.CreateScope())
-            {
-                _companyRepository = scope.ServiceProvider.GetService<ICompanyRepository>();
-                _userRepository = scope.ServiceProvider.GetService<IUserRepository>();
-                _projectRepository = scope.ServiceProvider.GetService<IProjectRepository>();
-                _issueRepository = scope.ServiceProvider.GetService<IIssueRepository>();
-                _issueRequirementService = scope.ServiceProvider.GetService<IIssueRequirementService>();
-            }
-        }
-
-        [OneTimeTearDown]
-        public async Task OneTimeTearDown()
-        {
-            await Clear();
+            var factory = new WebApplicationFactory<Startup>();
+            _client = factory.CreateClient();
         }
 
         [SetUp]
         public async Task Setup()
         {
-            await Clear();
-            await Generate();
+            await TestHelper.Instance.GenerateAll(_client);
+        }
+
+        [TearDown]
+        public async Task TearDown()
+        {
+            await TestHelper.Instance.ClearAll();
         }
 
         [Test]
@@ -114,7 +98,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             issue = await TestHelper.Instance.GetIssueAsync();
             Assert.IsTrue(issue.IssueDetail.RequirementsAccepted);
 
-            var state = await TestHelper.Instance.GetStateByName(_client, issue.ProjectId.ToString(), State.WaitingState);
+            var state = await TestHelper.Instance.GetStateByName(_client, issue.ProjectId, State.WaitingState);
             Assert.AreEqual(state.Id, issue.StateId);
 
             issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen2" };
@@ -190,22 +174,12 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             issue = await TestHelper.Instance.GetIssueAsync();
             Assert.IsTrue(issue.IssueDetail.RequirementsAccepted);
 
-            var state = await TestHelper.Instance.GetStateByName(_client, issue.ProjectId.ToString(), State.WaitingState);
+            var state = await TestHelper.Instance.GetStateByName(_client, issue.ProjectId, State.WaitingState);
             Assert.AreEqual(state.Id, issue.StateId);
 
             uri = $"/api/issues/{issue.Id}/summaries?accept=false";
             responce = await _client.PutAsync(uri, new object().ToStringContent()); 
             Assert.IsFalse(responce.IsSuccessStatusCode);
-        }
-
-        private async Task Clear()
-        {
-            await TestHelper.Instance.ClearAll();
-        }
-
-        private async Task Generate()
-        {
-            await TestHelper.Instance.GenerateAll(_client);
         }
     }
 }

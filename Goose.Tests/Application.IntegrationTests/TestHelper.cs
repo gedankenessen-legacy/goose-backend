@@ -138,7 +138,7 @@ namespace Goose.Tests.Application.IntegrationTests
                 Author = new UserDTO(user),
                 Client = new UserDTO(user),
                 Project = new ProjectDTO(project),
-                State = await GetStateByName(httpClient, project.Id.ToString(), State.NegotiationState),
+                State = await GetStateByName(httpClient, project.Id, State.NegotiationState),
                 IssueDetail = new IssueDetail
                 {
                     Name = TicketName,
@@ -181,14 +181,14 @@ namespace Goose.Tests.Application.IntegrationTests
 
 
         #region Getting
-        private async Task<IList<StateDTO>> GetStateList(HttpClient client, string projectId)
+        private async Task<IList<StateDTO>> GetStateList(HttpClient client, ObjectId projectId)
         {
             var uri = $"api/projects/{projectId}/states";
             var responce = await client.GetAsync(uri);
             return await responce.Content.Parse<IList<StateDTO>>();
         }
 
-        public async Task<StateDTO> GetStateByName(HttpClient client, string projectId, string name)
+        public async Task<StateDTO> GetStateByName(HttpClient client, ObjectId projectId, string name)
         {
             return (await GetStateList(client, projectId)).FirstOrDefault(x => x.Name.Equals(name));
         }
