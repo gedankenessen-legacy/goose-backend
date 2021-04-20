@@ -25,7 +25,6 @@ namespace Goose.Domain.Models.Issues
         public const string PredecessorAddedType = "Vorgänger hinzugefügt";
         public const string PredecessorRemovedType = "Vorgänger entfernt";
         public const string ChildIssueAddedType = "Unterticket hinzugefügt";
-        // TODO brauchen wir das?
         public const string ChildIssueRemovedType = "Unterticket entfernt";
     }
 }
