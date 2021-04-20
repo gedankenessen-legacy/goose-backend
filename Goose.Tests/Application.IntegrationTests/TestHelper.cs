@@ -15,13 +15,17 @@ using Goose.API;
 using Microsoft.Extensions.DependencyInjection;
 using Goose.Domain.Models.Identity;
 using System.Net.Http.Headers;
+using MongoDB.Bson;
 
 namespace Goose.Tests.Application.IntegrationTests
 {
+    /// Dieser Typ wird verwendet, um mehrere Testdocumente zu speichern
+    using TestDocuments = Dictionary<int, ObjectId>;
+
     //Implemented as Singelton
     public sealed class TestHelper
     {
-        private static readonly TestHelper instance = new TestHelper();
+        private static readonly TestHelper _instance = new TestHelper();
         private const string FirmenName = "GooseTestFirma";
         private const string ProjektName = "GooseTestProject";
         private const string TicketName = "GooseTestIssue";
@@ -32,15 +36,17 @@ namespace Goose.Tests.Application.IntegrationTests
         {
         }
 
-        private ICompanyRepository _companyRepository;
-        private IUserRepository _userRepository;
-        private IIssueRepository _issueRepository;
-        private IProjectRepository _projectRepository;
+        private readonly ICompanyRepository _companyRepository;
+        private readonly IUserRepository _userRepository;
+        private readonly IIssueRepository _issueRepository;
+        private readonly IProjectRepository _projectRepository;
+
+        // Hier werden alle TestIssues gespeichert, die sich in der DB befinden.
+        private readonly TestDocuments _testIssues = new();
 
         private TestHelper()
         {
             var factory = new WebApplicationFactory<Startup>();
-            var client = factory.CreateClient();
             var scopeFactory = factory.Server.Services.GetService<IServiceScopeFactory>();
 
             using (var scope = scopeFactory.CreateScope())
@@ -56,10 +62,11 @@ namespace Goose.Tests.Application.IntegrationTests
         {
             get
             {
-                return instance;
+                return _instance;
             }
         }
 
+        #region Clearing
         public async Task ClearCompany()
         {
             var company = (await _companyRepository.FilterByAsync(x => x.Name.Equals(FirmenName))).FirstOrDefault();
@@ -81,9 +88,12 @@ namespace Goose.Tests.Application.IntegrationTests
 
         public async Task ClearIssue()
         {
-            var issue = (await _issueRepository.FilterByAsync(x => x.IssueDetail.Name.Equals(TicketName))).FirstOrDefault();
-            if (issue is not null)
-                await _issueRepository.DeleteAsync(issue.Id);
+            foreach (var issueId in _testIssues.Values)
+            {
+                await _issueRepository.DeleteAsync(issueId);
+            }
+
+            _testIssues.Clear();
         }
 
         public async Task ClearAll()
@@ -92,7 +102,9 @@ namespace Goose.Tests.Application.IntegrationTests
             await ClearProject();
             await ClearCompany();
         }
+        #endregion
 
+        #region Generating
         public async Task<SignInResponse> GenerateCompany(HttpClient client)
         {
             var uri = "/api/auth/signUp";
@@ -109,8 +121,13 @@ namespace Goose.Tests.Application.IntegrationTests
             await client.PostAsync(uri, newProject.ToStringContent());
         }
 
-        public async Task GenerateIssue(HttpClient client)
+        public async Task GenerateIssue(HttpClient httpClient, int index = 0)
         {
+            if (_testIssues.ContainsKey(index))
+            {
+                throw new Exception("Index existiert bereits");
+            }
+
             var project = await GetProject();
             var user = await GetUser();
 
@@ -121,7 +138,7 @@ namespace Goose.Tests.Application.IntegrationTests
                 Author = new UserDTO(user),
                 Client = new UserDTO(user),
                 Project = new ProjectDTO(project),
-                State = await GetStateByName(client, project.Id.ToString(), State.NegotiationState),
+                State = await GetStateByName(httpClient, project.Id.ToString(), State.NegotiationState),
                 IssueDetail = new IssueDetail
                 {
                     Name = TicketName,
@@ -140,7 +157,10 @@ namespace Goose.Tests.Application.IntegrationTests
                     RelevantDocuments = null
                 }
             };
-            await client.PostAsync(uri, issue.ToStringContent());
+            var postResult = await httpClient.PostAsync(uri, issue.ToStringContent());
+            var result = await postResult.Content.Parse<IssueDTO>();
+
+            _testIssues[index] = result.Id;
         }
 
         /// <summary>
@@ -157,7 +177,10 @@ namespace Goose.Tests.Application.IntegrationTests
             await GenerateProject(client);
             await GenerateIssue(client);
         }
+        #endregion
 
+
+        #region Getting
         private async Task<IList<StateDTO>> GetStateList(HttpClient client, string projectId)
         {
             var uri = $"api/projects/{projectId}/states";
@@ -172,19 +195,20 @@ namespace Goose.Tests.Application.IntegrationTests
 
         public async Task<Domain.Models.Companies.Company> GetCompany()
         {
-            var companies = await _companyRepository.FilterByAsync(x => x.Name.Equals(FirmenName));
+            var companies = await _companyRepository.FilterByAsync(x => x.Name == FirmenName);
             return companies.FirstOrDefault();
         }
 
         public async Task<Project> GetProject()
         {
-            var projects = await _projectRepository.FilterByAsync(x => x.ProjectDetail.Name.Equals(ProjektName));
+            var projects = await _projectRepository.FilterByAsync(x => x.ProjectDetail.Name == ProjektName);
             return projects.FirstOrDefault();
         }
 
-        public async Task<Issue> GetIssueAsync()
+        public async Task<Issue> GetIssueAsync(int issueIndex = 0)
         {
-            var issues = await _issueRepository.FilterByAsync(x => x.IssueDetail.Name == TestHelper.TicketName);
+            var issueId = _testIssues[issueIndex];
+            var issues = await _issueRepository.FilterByAsync(x => x.Id == issueId);
             return issues.FirstOrDefault();
         }
 
@@ -196,5 +220,6 @@ namespace Goose.Tests.Application.IntegrationTests
             var users = await _userRepository.FilterByAsync(x => x.Id.Equals(propertyUser.UserId));
             return users.FirstOrDefault();
         }
+        #endregion
     }
 }
