@@ -20,10 +20,12 @@ namespace Goose.Domain.DTOs
             Id = state.Id;
             Name = state.Name;
             Phase = state.Phase;
+            UserGenerated = state.UserGenerated;
         }
 
         public ObjectId Id { get; set; }
         public string Name { get; set; }
         public string Phase { get; set; }
+        public bool UserGenerated { get; set; }
     }
 }
