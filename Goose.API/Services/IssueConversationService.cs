@@ -1,11 +1,14 @@
 ﻿using Goose.API.Repositories;
 using Goose.API.Services.Issues;
+using Goose.API.Utils.Authentication;
 using Goose.API.Utils.Exceptions;
 using Goose.API.Utils.Validators;
 using Goose.Domain.DTOs.Issues;
+using Goose.Domain.Models.Identity;
 using Goose.Domain.Models.Issues;
 using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -25,12 +28,24 @@ namespace Goose.API.Services
         private readonly IIssueRepository _issueRepository;
         private readonly IIssueService _issueService;
         private readonly IUserService _userService;
+        private readonly IProjectRepository _projectRepository;
+        private readonly IRoleRepository _roleRepository;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public IssueConversationService(IIssueRepository issueRepository, IIssueService issueService, IUserService userService)
+        public IssueConversationService(
+            IIssueRepository issueRepository,
+            IIssueService issueService,
+            IUserService userService,
+            IProjectRepository projectRepository,
+            IRoleRepository roleRepository,
+            IHttpContextAccessor httpContextAccessor)
         {
             _issueRepository = issueRepository;
             _issueService = issueService;
             _userService = userService;
+            _projectRepository = projectRepository;
+            _roleRepository = roleRepository;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         /// <summary>
@@ -41,6 +56,7 @@ namespace Goose.API.Services
         public async Task<IList<IssueConversationDTO>> GetConversationsFromIssueAsync(string issueId)
         {
             var issue = await _issueRepository.GetIssueByIdAsync(issueId);
+            await AssertUserCanReadConversation(issue.ProjectId);
             var conversationItems = issue.ConversationItems;
 
             // if property is null, set default value => empty array of conversations which do not be saved to the database.
@@ -77,8 +93,9 @@ namespace Goose.API.Services
             // check if the parsed objectId is not the 000...000 default objectId.
             ObjectId conversationOid = Validators.ValidateObjectId(conversationId, "Cannot parse conversation string id to a valid object id.");
 
-
             var issue = await _issueRepository.GetIssueByIdAsync(issueId);
+            await AssertUserCanReadConversation(issue.ProjectId);
+
             var conversationItems = issue.ConversationItems;
 
             if (conversationItems is null)
@@ -101,6 +118,7 @@ namespace Goose.API.Services
         public async Task<IssueConversationDTO> CreateNewIssueConversationAsync(string issueId, IssueConversationDTO conversationItem)
         {
             var issue = await _issueRepository.GetIssueByIdAsync(issueId);
+            await AssertUserCanWriteConversation(issue.ProjectId);
 
             await _issueService.AssertNotArchived(issue);
 
@@ -153,6 +171,9 @@ namespace Goose.API.Services
         {
             ObjectId conversationItemOid = Validators.ValidateObjectId(conversationItemId, "Provided conversation id is no valid ObjectId.");
 
+            var issue = await _issueRepository.GetIssueByIdAsync(issueId);
+            await AssertUserCanWriteConversation(issue.ProjectId);
+
             if (conversationItemOid.Equals(conversationItem.Id) is false)
                 throw new HttpStatusException(StatusCodes.Status400BadRequest, "Id missmatch.");
 
@@ -166,6 +187,51 @@ namespace Goose.API.Services
             };
 
             await _issueRepository.CreateOrUpdateConversationItemAsync(issueId, issueConversationModel);
+        }
+
+        private async Task AssertUserCanWriteConversation(ObjectId projectId)
+        {
+#if AUTHORISATION
+            var project = await _projectRepository.GetAsync(projectId);
+            var userId = _httpContextAccessor.HttpContext.User.GetUserId();
+
+            var propertyUser = project.ProjectUsers.SingleOrDefault(x => x.UserId == userId);
+
+            if (propertyUser == null || roles.RoleIds.Count == 0)
+            {
+                throw new HttpStatusException(StatusCodes.Status403Forbidden, "You are not a member of the project");
+            }
+
+            foreach (var roleId in propertyUser.RoleIds)
+            {
+                var role = await _roleRepository.GetAsync(roleId);
+
+                if (role.Name != Role.ReadonlyEmployeeRole)
+                {
+                    // Ok: everything except readonly will be accepted
+                    return;
+                }
+            }
+
+            throw new HttpStatusException(StatusCodes.Status403Forbidden, "You need more than readonly rights to comment on the issue")
+#endif
+        }
+
+        private async Task AssertUserCanReadConversation(ObjectId projectId)
+        {
+#if AUTHORISATION
+            var project = await _projectRepository.GetAsync(projectId);
+            var userId = _httpContextAccessor.HttpContext.User.GetUserId();
+
+            var propertyUser = project.ProjectUsers.SingleOrDefault(x => x.UserId == userId);
+            
+            if (propertyUser == null || propertyUser.RoleIds.Count == 0)
+            {
+                throw new HttpStatusException(StatusCodes.Status403Forbidden, "You are not a member of the project");
+            }
+
+            // Ok: User has at least one role, and all roles can read conversation items
+#endif
         }
     }
 }
