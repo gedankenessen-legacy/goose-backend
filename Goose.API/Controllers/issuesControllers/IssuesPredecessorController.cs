@@ -4,6 +4,7 @@ using Goose.API.Services.Issues;
 using Goose.API.Utils;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using MongoDB.Bson;
 
 namespace Goose.API.Controllers.IssuesControllers
 {
@@ -21,22 +22,18 @@ namespace Goose.API.Controllers.IssuesControllers
         [HttpPut("{predecessorId}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult> SetPredecessor([FromRoute] string projectId,
-            [FromRoute] string issueId, [FromRoute] string predecessorId)
+        public async Task<ActionResult> SetPredecessor([FromRoute] ObjectId issueId, [FromRoute] ObjectId predecessorId)
         {
-            await _issueService.SetPredecessor(projectId.ToObjectId(), issueId.ToObjectId(),
-                predecessorId.ToObjectId());
+            await _issueService.SetPredecessor(issueId, predecessorId);
             return NoContent();
         }
 
         [HttpDelete("{predecessorId}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult> RemovePredecessor([FromRoute] string projectId,
-            [FromRoute] string issueId, [FromRoute] string predecessorId)
+        public async Task<ActionResult> RemovePredecessor([FromRoute] ObjectId issueId, [FromRoute] ObjectId predecessorId)
         {
-            await _issueService.RemovePredecessor(projectId.ToObjectId(), issueId.ToObjectId(),
-                predecessorId.ToObjectId());
+            await _issueService.RemovePredecessor(issueId, predecessorId);
             return NoContent();
         }
     }

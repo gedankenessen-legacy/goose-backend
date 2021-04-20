@@ -191,12 +191,18 @@ namespace Goose.API.Services.Issues
         public async Task SetParent(ObjectId issueId, ObjectId parentId)
         {
             var issue = await _issueRepo.GetAsync(issueId);
+            var parent = await _issueRepo.GetAsync(parentId);
+
+            if (issue.ProjectId != parent.ProjectId)
+            {
+                throw new HttpStatusException(StatusCodes.Status400BadRequest, "Issues müssen im selben Projekt sein");
+            }
+
             issue.ParentIssueId = parentId;
             await _issueRepo.UpdateAsync(issue);
 
             // ConversationItem im Oberticket hinzufügen
-            var parent = await _issueRepo.GetAsync(parentId);
-            issue.ConversationItems.Add(new IssueConversation()
+            parent.ConversationItems.Add(new IssueConversation()
             {
                 Id = ObjectId.GenerateNewId(),
                 CreatorUserId = _httpContextAccessor.HttpContext.User.GetUserId(),
@@ -217,7 +223,7 @@ namespace Goose.API.Services.Issues
             {
                 // ConversationItem im Oberticket hinzufügen
                 var parent = await _issueRepo.GetAsync(parentId);
-                issue.ConversationItems.Add(new IssueConversation()
+                parent.ConversationItems.Add(new IssueConversation()
                 {
                     Id = ObjectId.GenerateNewId(),
                     CreatorUserId = _httpContextAccessor.HttpContext.User.GetUserId(),

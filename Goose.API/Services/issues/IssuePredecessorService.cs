@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Goose.API.Repositories;
 using Goose.API.Utils.Authentication;
+using Goose.API.Utils.Exceptions;
 using Goose.Domain.Models.Issues;
 using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
@@ -10,8 +11,8 @@ namespace Goose.API.Services.Issues
 {
     public interface IIssuePredecessorService
     {
-        public Task SetPredecessor(ObjectId projectId, ObjectId successorId, ObjectId predecessorId);
-        public Task RemovePredecessor(ObjectId projectId, ObjectId successorId, ObjectId predecessorId);
+        public Task SetPredecessor(ObjectId successorId, ObjectId predecessorId);
+        public Task RemovePredecessor(ObjectId successorId, ObjectId predecessorId);
     }
 
     public class IssuePredecessorService : IIssuePredecessorService
@@ -29,10 +30,15 @@ namespace Goose.API.Services.Issues
             _httpContextAccessor = httpContextAccessor;
         }
 
-        public async Task SetPredecessor(ObjectId projectId, ObjectId successorId, ObjectId predecessorId)
+        public async Task SetPredecessor(ObjectId successorId, ObjectId predecessorId)
         {
-            var successor = await _issueRepo.GetOfProjectAsync(projectId, successorId);
-            var predecessor = await _issueRepo.GetOfProjectAsync(projectId, predecessorId);
+            var successor = await _issueRepo.GetAsync(successorId);
+            var predecessor = await _issueRepo.GetAsync(predecessorId);
+
+            if (successor.ProjectId != predecessor.ProjectId)
+            {
+                throw new HttpStatusException(StatusCodes.Status400BadRequest, "Issues müssen im selben Projekt sein");
+            }
 
             //TODO checken ob es eine dealock gäbe
             successor.PredecessorIssueIds.Add(predecessorId);
@@ -49,10 +55,11 @@ namespace Goose.API.Services.Issues
             await Task.WhenAll(_issueRepo.UpdateAsync(successor), _issueRepo.UpdateAsync(predecessor));
         }
 
-        public async Task RemovePredecessor(ObjectId projectId, ObjectId successorId, ObjectId predecessorId)
+        public async Task RemovePredecessor(ObjectId successorId, ObjectId predecessorId)
         {
-            var successor = await _issueRepo.GetOfProjectAsync(projectId, successorId);
-            var predecessor = await _issueRepo.GetOfProjectAsync(projectId, predecessorId);
+            var successor = await _issueRepo.GetAsync(successorId);
+            var predecessor = await _issueRepo.GetAsync(predecessorId);
+
             if (successor.PredecessorIssueIds.Remove(predecessorId) ||
                 predecessor.SuccessorIssueIds.Remove(successorId))
             {
