@@ -20,13 +20,17 @@ namespace Goose.Tests.Application.IntegrationTests.issues
     {
         private HttpClient _client;
         private IIssueRequirementService _issueRequirementService;
-        private SignInResponse signInObject;
 
         [OneTimeSetUp]
         public void OneTimeSetUp()
         {
             var factory = new WebApplicationFactory<Startup>();
             _client = factory.CreateClient();
+
+            var scopeFactory = factory.Server.Services.GetService<IServiceScopeFactory>();
+
+            using var scope = scopeFactory.CreateScope();
+            _issueRequirementService = scope.ServiceProvider.GetService<IIssueRequirementService>();
         }
 
         [SetUp]

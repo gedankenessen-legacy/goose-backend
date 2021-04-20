@@ -49,13 +49,11 @@ namespace Goose.Tests.Application.IntegrationTests
             var factory = new WebApplicationFactory<Startup>();
             var scopeFactory = factory.Server.Services.GetService<IServiceScopeFactory>();
 
-            using (var scope = scopeFactory.CreateScope())
-            {
-                _companyRepository = scope.ServiceProvider.GetService<ICompanyRepository>();
-                _userRepository = scope.ServiceProvider.GetService<IUserRepository>();
-                _projectRepository = scope.ServiceProvider.GetService<IProjectRepository>();
-                _issueRepository = scope.ServiceProvider.GetService<IIssueRepository>();
-            }
+            using var scope = scopeFactory.CreateScope();
+            _companyRepository = scope.ServiceProvider.GetService<ICompanyRepository>();
+            _userRepository = scope.ServiceProvider.GetService<IUserRepository>();
+            _projectRepository = scope.ServiceProvider.GetService<IProjectRepository>();
+            _issueRepository = scope.ServiceProvider.GetService<IIssueRepository>();
         }
 
         public static TestHelper Instance
