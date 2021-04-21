@@ -73,7 +73,7 @@ namespace Goose.Tests.Application.IntegrationTests
             return await response.Content.Parse<SignInResponse>();
         }
 
-        public async Task<SignInResponse> GenerateCustomerForCompany(HttpClient client, ICompanyRepository companyRepository, PropertyUserLoginDTO login)
+        public async Task<SignInResponse> GenerateUserForCompany(HttpClient client, ICompanyRepository companyRepository, PropertyUserLoginDTO login)
         {
             // NOTE: Customer gets cleaned up in `ClearCompany(...)`
             var company = (await companyRepository.FilterByAsync(x => x.Name.Equals(FirmenName))).FirstOrDefault();
@@ -81,7 +81,7 @@ namespace Goose.Tests.Application.IntegrationTests
             var response = await client.PostAsync(uri, login.ToStringContent());
             return await response.Content.Parse<SignInResponse>();
         }
-        
+
         public async Task<SignInResponse> SignIn(HttpClient client, SignInRequest signInRequest)
         {
             var uri = "/api/auth/signIn";
