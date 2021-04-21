@@ -17,7 +17,7 @@ namespace Goose.API.Authorization.Handlers
         protected override Task HandleRequirementAsync(AuthorizationHandlerContext context, RoleRequirement requirement, T resource)
         {
             ObjectId userId = context.User.GetUserId();
-            ObjectId requiredRoleId = (ObjectId)requirement.RoleId;
+            ObjectId requiredRoleId = requirement.Role.Id;
             IList<PropertyUser> propertyUsers = resource.Users;
 
             PropertyUser reqestedUser = propertyUsers?.FirstOrDefault(pu => pu.UserId.Equals(userId));

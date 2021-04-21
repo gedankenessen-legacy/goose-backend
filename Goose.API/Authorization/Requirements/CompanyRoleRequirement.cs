@@ -10,8 +10,7 @@ namespace Goose.API.Authorization.Requirements
 {
     public class CompanyRoleRequirement : RoleRequirement
     {
-        public CompanyRoleRequirement(string roleName) : base (roleName) {}
-        public CompanyRoleRequirement(string roleName, ObjectId roleId) : base (roleName, roleId) { }
+        public CompanyRoleRequirement(Role companyRole) : base(companyRole) { }
     }
 
     /// <summary>
@@ -19,8 +18,7 @@ namespace Goose.API.Authorization.Requirements
     /// </summary>
     public static class CompanyRolesRequirement
     {
-        public readonly static CompanyRoleRequirement CompanyOwner = new(Role.CompanyRole.Name, Role.CompanyRole.Id);
-        public readonly static CompanyRoleRequirement CompanyCustomer = new(Role.CustomerRole.Name, Role.CustomerRole.Id);
-        public readonly static CompanyRoleRequirement CompanyEmployee = new(Role.EmployeeRole.Name, Role.EmployeeRole.Id);
+        public readonly static CompanyRoleRequirement CompanyOwner = new(Role.CompanyRole);
+        public readonly static CompanyRoleRequirement CompanyCustomer = new(Role.CustomerRole);
     }
 }
