@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Goose.API.Repositories;
 using Goose.API.Utils.Authentication;
 using Goose.API.Utils.Exceptions;
+using Goose.Domain.DTOs.Issues;
 using Goose.Domain.Models.Issues;
 using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
@@ -13,8 +14,8 @@ namespace Goose.API.Services.Issues
     public interface IIssuePredecessorService
     {
         public Task<IList<IssueDTO>> GetAll(ObjectId issueId);
-        public Task SetPredecessor(ObjectId projectId, ObjectId successorId, ObjectId predecessorId);
-        public Task RemovePredecessor(ObjectId projectId, ObjectId successorId, ObjectId predecessorId);
+        public Task SetPredecessor(ObjectId successorId, ObjectId predecessorId);
+        public Task RemovePredecessor(ObjectId successorId, ObjectId predecessorId);
     }
 
     public class IssuePredecessorService : IIssuePredecessorService
