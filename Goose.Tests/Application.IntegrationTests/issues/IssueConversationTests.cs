@@ -203,7 +203,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             var latestConversationItem = issue.ConversationItems.Last();
             Assert.AreEqual(latestConversationItem.CreatorUserId, user.Id);
             Assert.AreEqual(latestConversationItem.Type, IssueConversation.SummaryCreatedType);
-            Assert.AreEqual(latestConversationItem.RequirementIds.Single(), issueRequirement.Id);
+            Assert.AreEqual(latestConversationItem.Requirements.Single(), issueRequirement.Requirement);
 
             // Accept the summary
             uri = $"/api/issues/{issue.Id}/summaries?accept=true";
@@ -215,7 +215,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             latestConversationItem = issue.ConversationItems.Last();
             Assert.AreEqual(latestConversationItem.CreatorUserId, user.Id);
             Assert.AreEqual(latestConversationItem.Type, IssueConversation.SummaryAcceptedType);
-            Assert.AreEqual(latestConversationItem.RequirementIds.Single(), issueRequirement.Id);
+            Assert.AreEqual(latestConversationItem.Requirements.Single(), issueRequirement.Requirement);
         }
 
         [Test]
@@ -237,7 +237,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             var latestConversationItem = issue.ConversationItems.Last();
             Assert.AreEqual(latestConversationItem.CreatorUserId, user.Id);
             Assert.AreEqual(latestConversationItem.Type, IssueConversation.SummaryCreatedType);
-            Assert.AreEqual(latestConversationItem.RequirementIds.Single(), issueRequirement.Id);
+            Assert.AreEqual(latestConversationItem.Requirements.Single(), issueRequirement.Requirement);
 
             // Decline the summary
             uri = $"/api/issues/{issue.Id}/summaries?accept=false";
@@ -249,7 +249,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             latestConversationItem = issue.ConversationItems.Last();
             Assert.AreEqual(latestConversationItem.CreatorUserId, user.Id);
             Assert.AreEqual(latestConversationItem.Type, IssueConversation.SummaryDeclinedType);
-            Assert.AreEqual(latestConversationItem.RequirementIds.Single(), issueRequirement.Id);
+            Assert.AreEqual(latestConversationItem.Requirements.Single(), issueRequirement.Requirement);
         }
     }
 }

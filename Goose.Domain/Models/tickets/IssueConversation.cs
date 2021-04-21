@@ -13,7 +13,8 @@ namespace Goose.Domain.Models.Issues
         public ObjectId? CreatorUserId { get; set; }
         public string Type { get; set; }
         public string Data { get; set; }
-        public IList<ObjectId> RequirementIds { get; set; }
+        public IList<string> Requirements { get; set; }
+
         public DateTime CreatedAt { get => Id.CreationTime; }
 
 

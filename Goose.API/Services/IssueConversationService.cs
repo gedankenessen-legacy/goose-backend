@@ -77,9 +77,7 @@ namespace Goose.API.Services
         {
             var creator = await _userService.GetUser(ic.CreatorUserId.Value);
 
-            var requirements = await Task.WhenAll(ic.RequirementIds.Select(async reqOid => await _issueRepository.GetRequirementByIdAsync(issueId, reqOid)).ToList());
-
-            return new IssueConversationDTO(ic, creator, requirements);
+            return new IssueConversationDTO(ic, creator);
         }
 
         /// <summary>
@@ -135,7 +133,7 @@ namespace Goose.API.Services
                 Id = ObjectId.GenerateNewId(),
                 CreatorUserId = conversationItem.Creator.Id,
                 Data = conversationItem.Data,
-                RequirementIds = SelectRequirementsObjectIdsFromDto(conversationItem),
+                Requirements = new List<string>(),
                 Type = conversationItem.Type
             };
 
@@ -146,19 +144,6 @@ namespace Goose.API.Services
             await _issueRepository.UpdateAsync(issue);
 
             return await MapIssueConversationDTOAsync(issue.Id, newConversation);
-        }
-
-        /// <summary>
-        /// This Method returns a list of ObjectIds from the Requirments.Id inside of the provided conversationItem.
-        /// </summary>
-        /// <param name="conversationItem">The conversation which contains the requirements.</param>
-        /// <returns>A list of ObjectIds from the requierments.</returns>
-        private IList<ObjectId> SelectRequirementsObjectIdsFromDto(IssueConversationDTO conversationItem)
-        {
-            if (conversationItem.Requirements is null)
-                return new List<ObjectId>();
-
-            return conversationItem.Requirements.Select(req => req.Id).ToList();
         }
 
         /// <summary>
@@ -182,8 +167,10 @@ namespace Goose.API.Services
                 Id = conversationItem.Id,
                 CreatorUserId = Validators.ValidateObjectId(conversationItem.Creator?.Id.ToString(), "The conversation item is missing a valid userId."),
                 Data = conversationItem.Data,
-                RequirementIds = SelectRequirementsObjectIdsFromDto(conversationItem),
-                Type = conversationItem.Type
+                // Conversation from the outside  is always a message and
+                // can therefore not contain requirements
+                Requirements = null,
+                Type = IssueConversation.MessageType,
             };
 
             await _issueRepository.CreateOrUpdateConversationItemAsync(issueId, issueConversationModel);

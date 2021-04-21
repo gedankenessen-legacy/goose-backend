@@ -70,7 +70,7 @@ namespace Goose.API.Services.issues
                 CreatorUserId = _httpContextAccessor.HttpContext.User.GetUserId(),
                 Type = IssueConversation.SummaryAcceptedType,
                 Data = "",
-                RequirementIds = issue.IssueDetail.Requirements.Select(x => x.Id).ToList(),
+                Requirements = issue.IssueDetail.Requirements.Select(x => x.Requirement).ToList(),
             });
             await _issueRepository.UpdateAsync(issue);
         }
@@ -95,7 +95,7 @@ namespace Goose.API.Services.issues
                 CreatorUserId = _httpContextAccessor.HttpContext.User.GetUserId(),
                 Type = IssueConversation.SummaryCreatedType,
                 Data = "",
-                RequirementIds = issue.IssueDetail.Requirements.Select(x => x.Id).ToList(),
+                Requirements = issue.IssueDetail.Requirements.Select(x => x.Requirement).ToList(),
             });
             await _issueRepository.UpdateAsync(issue);
 
@@ -122,7 +122,7 @@ namespace Goose.API.Services.issues
                 CreatorUserId = _httpContextAccessor.HttpContext.User.GetUserId(),
                 Type = IssueConversation.SummaryDeclinedType,
                 Data = "",
-                RequirementIds = issue.IssueDetail.Requirements.Select(x => x.Id).ToList(),
+                Requirements = issue.IssueDetail.Requirements.Select(x => x.Requirement).ToList(),
             });
             await _issueRepository.UpdateAsync(issue);
         }
