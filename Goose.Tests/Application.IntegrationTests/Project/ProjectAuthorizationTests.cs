@@ -1,10 +1,8 @@
 ﻿using Goose.API;
 using Goose.API.Repositories;
-using Goose.API.Utils;
 using Goose.Domain.DTOs;
 using Goose.Domain.Models.Auth;
 using Goose.Domain.Models.Identity;
-using Goose.Domain.Models.Projects;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -75,9 +73,34 @@ namespace Goose.Tests.Application.IntegrationTests.Project
         {
             _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", companyOwnerSignIn.Token);
 
-            var uri = $"api/projects/{createdProject.Id}/users/{companyClientSignIn.User.Id}";
+            var response = await AssignUserToProjectAsync($"api/projects/{createdProject.Id}/users/{companyClientSignIn.User.Id}");
 
-            var newCustomer = new PropertyUserDTO()
+            Assert.IsTrue(response.IsSuccessStatusCode, "Company owner was not be able to create a customer for a project!");
+        }
+
+        [Test]
+        public async Task EmployeeCreatesOwnState()
+        {
+            Assert.IsTrue(false);
+        }
+
+        [Test]
+        public async Task EmployeeEditsOwnState()
+        {
+            Assert.IsTrue(false);
+        }
+
+        [Test]
+        public async Task EmployeeRemovesOwnState()
+        {
+            Assert.IsTrue(false);
+        }
+
+        private async Task<HttpResponseMessage> QueryState
+
+        private async Task<HttpResponseMessage> AssignUserToProjectAsync(string uri, PropertyUserDTO? propertyUser = null)
+        {
+            propertyUser ??= new PropertyUserDTO()
             {
                 User = companyClientSignIn.User,
                 Roles = new List<RoleDTO>() {
@@ -85,9 +108,7 @@ namespace Goose.Tests.Application.IntegrationTests.Project
                 }
             };
 
-            var response = await _client.PutAsync(uri, newCustomer.ToStringContent());
-
-            Assert.IsTrue(response.IsSuccessStatusCode, "Company owner was not be able to create a customer for a project!");
+            return await _client.PutAsync(uri, propertyUser.ToStringContent());
         }
 
         private async Task Clear()
