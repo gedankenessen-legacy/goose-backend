@@ -25,7 +25,6 @@ using System.Reflection;
 using System.Text;
 using Goose.API.Utils.Validators;
 using Goose.API.Services.issues;
-using Goose.API.Authorization.Handlers.Project;
 
 namespace Goose.API
 {
