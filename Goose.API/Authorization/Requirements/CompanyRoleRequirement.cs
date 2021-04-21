@@ -8,23 +8,9 @@ using System.Threading.Tasks;
 
 namespace Goose.API.Authorization.Requirements
 {
-    /// <summary>
-    /// To achive the requirment, the user needs to have the defined role (<see cref="RoleName"/> and <see cref="RoleId"/>)
-    /// </summary>
-    public class CompanyRoleRequirement : IAuthorizationRequirement
+    public class CompanyRoleRequirement : RoleRequirement
     {
-        public string RoleName { get; set; }
-        public ObjectId? RoleId { get; set; } //? With static role ids we could save multiple database calls (also easier code). On a real world we could once the app is started cache the roles in memory and modify on CRUD but for p2 it is overkill.
-
-        public CompanyRoleRequirement(string roleName)
-        {
-            RoleName = roleName;
-        }
-
-        public CompanyRoleRequirement(string roleName, ObjectId roleId) : this(roleName)
-        {
-            RoleId = roleId;
-        }
+        public CompanyRoleRequirement(Role companyRole) : base(companyRole) { }
     }
 
     /// <summary>
@@ -32,8 +18,7 @@ namespace Goose.API.Authorization.Requirements
     /// </summary>
     public static class CompanyRolesRequirement
     {
-        public readonly static CompanyRoleRequirement CompanyOwner = new(Role.CompanyRole.Name, Role.CompanyRole.Id);
-        public readonly static CompanyRoleRequirement CompanyCustomer = new(Role.CustomerRole.Name, Role.CustomerRole.Id);
-        public readonly static CompanyRoleRequirement CompanyEmployee = new(Role.EmployeeRole.Name, Role.EmployeeRole.Id);
+        public readonly static CompanyRoleRequirement CompanyOwner = new(Role.CompanyRole);
+        public readonly static CompanyRoleRequirement CompanyCustomer = new(Role.CustomerRole);
     }
 }

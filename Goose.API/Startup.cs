@@ -25,7 +25,6 @@ using System.Reflection;
 using System.Text;
 using Goose.API.Utils.Validators;
 using Goose.API.Services.issues;
-using Goose.API.Authorization.Handlers.Project;
 
 namespace Goose.API
 {
@@ -130,7 +129,7 @@ namespace Goose.API
         private void ConfigureAuthorization(IServiceCollection services)
         {
             services.AddScoped<IAuthorizationHandler, CompanyRoleHandler>();
-            services.AddScoped<IAuthorizationHandler, ProjectHasClientHandler>();
+            services.AddScoped<IAuthorizationHandler, ProjectRoleHandler>();
         }
 
         /// <summary>
