@@ -154,6 +154,7 @@ namespace Goose.API
             
             services.AddSingleton<IDbContext, DbContext>();
             services.AddScoped<IAuthorizationHandler, CompanyRoleHandler>();
+            services.AddScoped<IAuthorizationHandler, ProjectRoleHandler>();
 
             services.AddScoped<IIssueRepository, IssueRepository>();
             services.AddScoped<IUserRepository, UserRepository>();

@@ -8,4 +8,9 @@ namespace Goose.Domain.Models
         public ObjectId UserId { get; set; }
         public IList<ObjectId> RoleIds { get; set; }
     }
+
+    public interface IPropertyUsers
+    {
+        public IList<PropertyUser> Users { get; set; }
+    }
 }

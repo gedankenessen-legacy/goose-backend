@@ -42,7 +42,7 @@ namespace Goose.API.Services
                 return null;
             }
 
-            var projectUser = project.ProjectUsers.SingleOrDefault(x => x.UserId == userId);
+            var projectUser = project.Users.SingleOrDefault(x => x.UserId == userId);
             
             if (projectUser == null)
             {
@@ -71,7 +71,7 @@ namespace Goose.API.Services
                 throw new HttpStatusException(404, "Ungültige ProjectId");
             }
 
-            var userIds = from projectUser in project.ProjectUsers
+            var userIds = from projectUser in project.Users
                           select projectUser.UserId;
             var users = await _userRepository.GetAsync(userIds);
 
@@ -89,7 +89,7 @@ namespace Goose.API.Services
                 return result.ToList();
             }
             
-            var userDTOs = from projectUser in project.ProjectUsers
+            var userDTOs = from projectUser in project.Users
                            join user in users on projectUser.UserId equals user.Id
                            select new PropertyUserDTO()
                            {
@@ -130,7 +130,7 @@ namespace Goose.API.Services
                 // Nutzer soll die Projektleiterrolle bekommen, in jedem Projekt
                 // darf es aber nur einen ProjektLeiter geben
 
-                var existingProjectLeader = from projectUser in existingProject.ProjectUsers
+                var existingProjectLeader = from projectUser in existingProject.Users
                                             where projectUser.RoleIds.Contains(projectLeaderRole.Id)
                                             select projectUser;
 
@@ -140,7 +140,7 @@ namespace Goose.API.Services
                 }
             }
 
-            existingProject.ProjectUsers.ReplaceOrInsert(x => x.UserId == userId, newProjectUser);
+            existingProject.Users.ReplaceOrInsert(x => x.UserId == userId, newProjectUser);
 
             await _projectRepository.UpdateAsync(existingProject);
         }
@@ -154,7 +154,7 @@ namespace Goose.API.Services
                 throw new HttpStatusException(404, "Invalid projectId");
             }
 
-            var success = existingProject.ProjectUsers.Remove(x => x.UserId == userId);
+            var success = existingProject.Users.Remove(x => x.UserId == userId);
 
             if (!success)
             {
