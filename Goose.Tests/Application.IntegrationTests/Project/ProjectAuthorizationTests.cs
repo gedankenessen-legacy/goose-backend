@@ -154,7 +154,7 @@ namespace Goose.Tests.Application.IntegrationTests.Project
         }
 
         #endregion
-
+        
         private async Task<HttpResponseMessage> AssignUserToProjectAsync(string uri, PropertyUserDTO? propertyUser = null)
         {
             propertyUser ??= new PropertyUserDTO()
