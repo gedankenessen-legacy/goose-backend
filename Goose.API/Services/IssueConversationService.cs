@@ -1,4 +1,6 @@
-﻿using Goose.API.Repositories;
+﻿using Goose.API.Authorization;
+using Goose.API.Authorization.Requirements;
+using Goose.API.Repositories;
 using Goose.API.Services.Issues;
 using Goose.API.Utils.Authentication;
 using Goose.API.Utils.Exceptions;
@@ -6,6 +8,7 @@ using Goose.API.Utils.Validators;
 using Goose.Domain.DTOs.Issues;
 using Goose.Domain.Models.Identity;
 using Goose.Domain.Models.Issues;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
 using System;
@@ -30,6 +33,7 @@ namespace Goose.API.Services
         private readonly IUserService _userService;
         private readonly IProjectRepository _projectRepository;
         private readonly IRoleRepository _roleRepository;
+        private readonly IAuthorizationService _authorizationService;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
         public IssueConversationService(
@@ -38,6 +42,7 @@ namespace Goose.API.Services
             IUserService userService,
             IProjectRepository projectRepository,
             IRoleRepository roleRepository,
+            IAuthorizationService authorizationService,
             IHttpContextAccessor httpContextAccessor)
         {
             _issueRepository = issueRepository;
@@ -45,6 +50,7 @@ namespace Goose.API.Services
             _userService = userService;
             _projectRepository = projectRepository;
             _roleRepository = roleRepository;
+            _authorizationService = authorizationService;
             _httpContextAccessor = httpContextAccessor;
         }
 
@@ -178,47 +184,39 @@ namespace Goose.API.Services
 
         private async Task AssertUserCanWriteConversation(ObjectId projectId)
         {
-#if AUTHORISATION
+            #if AUTHORISATION
             var project = await _projectRepository.GetAsync(projectId);
-            var userId = _httpContextAccessor.HttpContext.User.GetUserId();
 
-            var propertyUser = project.ProjectUsers.SingleOrDefault(x => x.UserId == userId);
-
-            if (propertyUser == null || roles.RoleIds.Count == 0)
+            Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
             {
-                throw new HttpStatusException(StatusCodes.Status403Forbidden, "You are not a member of the project");
-            }
+                { ProjectRolesRequirement.EmployeeRequirement, "You need to be the employee with write-rights in this project, in order to write a conversation." },
+                { ProjectRolesRequirement.LeaderRequirement, "You need to be the leader in this project, in order to write a conversation." },
+                { ProjectRolesRequirement.CustomerRequirement, "You need to be the customer of this project, in order to write a conversation." }
+            };
 
-            foreach (var roleId in propertyUser.RoleIds)
-            {
-                var role = await _roleRepository.GetAsync(roleId);
-
-                if (role.Name != Role.ReadonlyEmployeeRole)
-                {
-                    // Ok: everything except readonly will be accepted
-                    return;
-                }
-            }
-
-            throw new HttpStatusException(StatusCodes.Status403Forbidden, "You need more than readonly rights to comment on the issue")
-#endif
+            // validate requirements with the appropriate handlers.
+            var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, project, requirementsWithErrors.Keys);
+            authorizationResult.ThrowErrorForFailedRequirements(requirementsWithErrors);
+            #endif
         }
 
         private async Task AssertUserCanReadConversation(ObjectId projectId)
         {
-#if AUTHORISATION
+            #if AUTHORISATION
             var project = await _projectRepository.GetAsync(projectId);
-            var userId = _httpContextAccessor.HttpContext.User.GetUserId();
 
-            var propertyUser = project.ProjectUsers.SingleOrDefault(x => x.UserId == userId);
-            
-            if (propertyUser == null || propertyUser.RoleIds.Count == 0)
+            Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
             {
-                throw new HttpStatusException(StatusCodes.Status403Forbidden, "You are not a member of the project");
-            }
+                { ProjectRolesRequirement.ReadonlyEmployeeRequirement, "You need to be the employee with read-rights in this project, in order to write a conversation." },
+                { ProjectRolesRequirement.EmployeeRequirement, "You need to be the employee with write-rights in this project, in order to write a conversation." },
+                { ProjectRolesRequirement.LeaderRequirement, "You need to be the leader in this project, in order to write a conversation." },
+                { ProjectRolesRequirement.CustomerRequirement, "You need to be the customer of this project, in order to write a conversation." }
+            };
 
-            // Ok: User has at least one role, and all roles can read conversation items
-#endif
+            // validate requirements with the appropriate handlers.
+            var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, project, requirementsWithErrors.Keys);
+            authorizationResult.ThrowErrorForFailedRequirements(requirementsWithErrors);
+            #endif
         }
     }
 }
