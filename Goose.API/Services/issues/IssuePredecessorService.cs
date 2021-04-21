@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Goose.API.Repositories;
 using Goose.API.Utils.Authentication;
@@ -11,8 +12,9 @@ namespace Goose.API.Services.Issues
 {
     public interface IIssuePredecessorService
     {
-        public Task SetPredecessor(ObjectId successorId, ObjectId predecessorId);
-        public Task RemovePredecessor(ObjectId successorId, ObjectId predecessorId);
+        public Task<IList<IssueDTO>> GetAll(ObjectId issueId);
+        public Task SetPredecessor(ObjectId projectId, ObjectId successorId, ObjectId predecessorId);
+        public Task RemovePredecessor(ObjectId projectId, ObjectId successorId, ObjectId predecessorId);
     }
 
     public class IssuePredecessorService : IIssuePredecessorService
@@ -21,13 +23,21 @@ namespace Goose.API.Services.Issues
 
         //TODO wie bekommt man am besten alle issues in einem vorgänger baum? phil fragen?
         private readonly IIssueRepository _issueRepo;
+        private readonly IIssueService _issueService;
 
         private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public IssuePredecessorService(IIssueRepository issueRepo, IHttpContextAccessor httpContextAccessor)
+        public IssuePredecessorService(IIssueRepository issueRepo, IIssueService issueService, IHttpContextAccessor httpContextAccessor)
         {
             _issueRepo = issueRepo;
             _httpContextAccessor = httpContextAccessor;
+            _issueService = issueService;
+        }
+
+        public async Task<IList<IssueDTO>> GetAll(ObjectId issueId)
+        {
+            var issue = await _issueRepo.GetAsync(issueId);
+            return await Task.WhenAll(issue.PredecessorIssueIds.Select(it => _issueService.Get(it)));
         }
 
         public async Task SetPredecessor(ObjectId successorId, ObjectId predecessorId)
