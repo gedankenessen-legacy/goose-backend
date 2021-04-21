@@ -4,6 +4,7 @@ using Goose.API.Services.Issues;
 using Goose.Domain.DTOs;
 using Goose.Domain.DTOs.Issues;
 using Goose.Domain.Models.Auth;
+using Goose.Domain.Models.Identity;
 using Goose.Domain.Models.Issues;
 using Goose.Domain.Models.Projects;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -52,11 +53,12 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         [Test]
         public async Task PostConversation()
         {
+            await TestHelper.Instance.AddUserToProject(_client, Role.ProjectLeaderRole);
+
             var user = await TestHelper.Instance.GetUser();
 
             var newItem = new IssueConversationDTO()
             {
-                Creator = new Domain.DTOs.UserDTO(user),
                 Type = IssueConversation.MessageType,
                 Data = "TestConversation",
             };
@@ -77,11 +79,8 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         [Test]
         public async Task PostConversationWrongType()
         {
-            var user = await TestHelper.Instance.GetUser();
-
             var newItem = new IssueConversationDTO()
             {
-                Creator = new Domain.DTOs.UserDTO(user),
                 Type = IssueConversation.StateChangeType,
                 Data = "TestConversation",
             };

@@ -39,6 +39,7 @@ namespace Goose.Tests.Application.IntegrationTests
         private readonly ICompanyRepository _companyRepository;
         private readonly IUserRepository _userRepository;
         private readonly IIssueRepository _issueRepository;
+        private readonly IRoleRepository _roleRepository;
         private readonly IProjectRepository _projectRepository;
 
         // Hier werden alle TestIssues gespeichert, die sich in der DB befinden.
@@ -53,6 +54,7 @@ namespace Goose.Tests.Application.IntegrationTests
             _companyRepository = scope.ServiceProvider.GetService<ICompanyRepository>();
             _userRepository = scope.ServiceProvider.GetService<IUserRepository>();
             _projectRepository = scope.ServiceProvider.GetService<IProjectRepository>();
+            _roleRepository = scope.ServiceProvider.GetService<IRoleRepository>();
             _issueRepository = scope.ServiceProvider.GetService<IIssueRepository>();
         }
 
@@ -117,6 +119,24 @@ namespace Goose.Tests.Application.IntegrationTests
             var uri = $"api/companies/{company.Id}/projects";
             var newProject = new ProjectDTO() { Name = ProjektName };
             await client.PostAsync(uri, newProject.ToStringContent());
+        }
+
+        public async Task AddUserToProject(HttpClient client, string roleName)
+        {
+            // add user to company
+            var user = await GetUser();
+            var project = await GetProject();
+            var role = (await _roleRepository.FilterByAsync(x => x.Name == roleName)).Single();
+            var uri = $"api/projects/{project.Id}/users/{user.Id}";
+            var addRequest = new PropertyUserDTO()
+            {
+                User = new UserDTO(user),
+                Roles = new List<RoleDTO>()
+                {
+                    new RoleDTO(role),
+                }
+            };
+            await client.PutAsync(uri, addRequest.ToStringContent());
         }
 
         public async Task GenerateIssue(HttpClient httpClient, int index = 0)

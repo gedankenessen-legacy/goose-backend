@@ -137,7 +137,7 @@ namespace Goose.API.Services
             IssueConversation newConversation = new IssueConversation()
             {
                 Id = ObjectId.GenerateNewId(),
-                CreatorUserId = conversationItem.Creator.Id,
+                CreatorUserId = _httpContextAccessor.HttpContext.User.GetUserId(),
                 Data = conversationItem.Data,
                 Requirements = new List<string>(),
                 Type = conversationItem.Type
@@ -196,7 +196,7 @@ namespace Goose.API.Services
 
             // validate requirements with the appropriate handlers.
             var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, project, requirementsWithErrors.Keys);
-            authorizationResult.ThrowErrorForFailedRequirements(requirementsWithErrors);
+            authorizationResult.ThrowErrorIfAllFailed(requirementsWithErrors);
             #endif
         }
 
@@ -215,7 +215,7 @@ namespace Goose.API.Services
 
             // validate requirements with the appropriate handlers.
             var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, project, requirementsWithErrors.Keys);
-            authorizationResult.ThrowErrorForFailedRequirements(requirementsWithErrors);
+            authorizationResult.ThrowErrorIfAllFailed(requirementsWithErrors);
             #endif
         }
     }

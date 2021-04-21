@@ -136,7 +136,7 @@ namespace Goose.API.Services
 
                 if (existingProjectLeader.Any())
                 {
-                    throw new HttpStatusException(403, "Cannot make to users a project Leader");
+                    throw new HttpStatusException(403, "Cannot make two users a project Leader");
                 }
             }
 

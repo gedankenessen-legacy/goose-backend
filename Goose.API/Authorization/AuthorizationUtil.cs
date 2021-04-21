@@ -27,5 +27,39 @@ namespace Goose.API.Authorization
                 throw new HttpStatusException(StatusCodes.Status403Forbidden, "You are missing one or more requirements, in order to process this request.");
             }
         }
+
+        public static void ThrowErrorIfAllFailed(this AuthorizationResult authorizationResult, Dictionary<IAuthorizationRequirement, string> errorMap)
+        {
+            if (authorizationResult.Succeeded)
+            {
+                // All requirements succeded, no need to check every single one
+                return;
+            }
+
+            if (authorizationResult.Failure.FailedRequirements.Count() < errorMap.Count)
+            {
+                // Not all Requirements have failed
+                return;
+            }
+
+            var errorMsg = "";
+
+            foreach(var failedRequirement in authorizationResult.Failure.FailedRequirements)
+            {
+                if (errorMap.TryGetValue(failedRequirement, out string errorMessage))
+                {
+                    errorMsg += errorMsg;
+                }
+                else
+                {
+                    // Fallback msg
+                    errorMsg = "You are missing a requirements, in order to process this request.";
+                }
+
+                errorMsg += '\n';
+            }
+
+            throw new HttpStatusException(StatusCodes.Status403Forbidden, errorMsg);
+        }
     }
 }
