@@ -1,7 +1,7 @@
 ﻿#nullable enable
 using System.Collections.Generic;
-using Goose.Domain.DTOs.Tickets;
-using Goose.Domain.Models.Tickets;
+using Goose.Domain.DTOs.Issues;
+using Goose.Domain.Models.Issues;
 using MongoDB.Bson;
 
 namespace Goose.Domain.DTOs.Issues

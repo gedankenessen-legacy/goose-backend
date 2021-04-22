@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using Goose.Domain.Models.Tickets;
+using Goose.Domain.Models.Issues;
 using MongoDB.Bson;
 
 namespace Goose.Domain.DTOs.Issues

@@ -3,11 +3,14 @@ using Goose.API.Services.Issues;
 using Goose.API.Utils;
 using Goose.API.Utils.Exceptions;
 using Goose.Domain.Models.Projects;
-using Goose.Domain.Models.Tickets;
+using Goose.Domain.Models.Issues;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using MongoDB.Bson;
+using Microsoft.AspNetCore.Http;
+using Goose.API.Utils.Authentication;
 
 namespace Goose.API.Services.issues
 {
@@ -24,12 +27,18 @@ namespace Goose.API.Services.issues
         private readonly IIssueRepository _issueRepository;
         private readonly IIssueRequirementService _issueRequirementService;
         private readonly IStateService _stateService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public IssueSummaryService(IIssueRepository issueRepository, IIssueRequirementService issueRequirementService, IStateService stateService)
+        public IssueSummaryService(
+            IIssueRepository issueRepository,
+            IIssueRequirementService issueRequirementService,
+            IStateService stateService,
+            IHttpContextAccessor httpContextAccessor)
         {
             _issueRepository = issueRepository;
             _issueRequirementService = issueRequirementService;
             _stateService = stateService;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task AcceptSummary(string issueId)
@@ -55,6 +64,14 @@ namespace Goose.API.Services.issues
 
             issue.IssueDetail.RequirementsAccepted = true;
             issue.StateId = state.Id;
+            issue.ConversationItems.Add(new IssueConversation()
+            {
+                Id = ObjectId.GenerateNewId(),
+                CreatorUserId = _httpContextAccessor.HttpContext.User.GetUserId(),
+                Type = IssueConversation.SummaryAcceptedType,
+                Data = "",
+                Requirements = issue.IssueDetail.Requirements.Select(x => x.Requirement).ToList(),
+            });
             await _issueRepository.UpdateAsync(issue);
         }
 
@@ -72,6 +89,14 @@ namespace Goose.API.Services.issues
                 throw new HttpStatusException(400, "Um eine Zusammenfassung erstellen zu können muss mindestens eine Anforderung oder eine geschätze Zeit vorhanden sein");
 
             issue.IssueDetail.RequirementsSummaryCreated = true;
+            issue.ConversationItems.Add(new IssueConversation()
+            {
+                Id = ObjectId.GenerateNewId(),
+                CreatorUserId = _httpContextAccessor.HttpContext.User.GetUserId(),
+                Type = IssueConversation.SummaryCreatedType,
+                Data = "",
+                Requirements = issue.IssueDetail.Requirements.Select(x => x.Requirement).ToList(),
+            });
             await _issueRepository.UpdateAsync(issue);
 
             return await _issueRequirementService.GetAllOfIssueAsync(issueId.ToObjectId());
@@ -91,6 +116,14 @@ namespace Goose.API.Services.issues
                 throw new HttpStatusException(400, "Die Zusammenfassung wurde schon angenommen und kann nicht abgelehnt werden");
 
             issue.IssueDetail.RequirementsSummaryCreated = false;
+            issue.ConversationItems.Add(new IssueConversation()
+            {
+                Id = ObjectId.GenerateNewId(),
+                CreatorUserId = _httpContextAccessor.HttpContext.User.GetUserId(),
+                Type = IssueConversation.SummaryDeclinedType,
+                Data = "",
+                Requirements = issue.IssueDetail.Requirements.Select(x => x.Requirement).ToList(),
+            });
             await _issueRepository.UpdateAsync(issue);
         }
 

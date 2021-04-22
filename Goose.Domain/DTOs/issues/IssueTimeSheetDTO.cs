@@ -1,6 +1,6 @@
 ﻿using System;
 using Goose.Domain.Models.Identity;
-using Goose.Domain.Models.Tickets;
+using Goose.Domain.Models.Issues;
 using MongoDB.Bson;
 
 namespace Goose.Domain.DTOs.Issues

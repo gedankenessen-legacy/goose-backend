@@ -3,7 +3,7 @@ using Goose.API.Repositories;
 using Goose.API.Services.Issues;
 using Goose.Domain.Models.Auth;
 using Goose.Domain.Models.Projects;
-using Goose.Domain.Models.Tickets;
+using Goose.Domain.Models.Issues;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -19,48 +19,36 @@ namespace Goose.Tests.Application.IntegrationTests.issues
     class IssueSummaryTests
     {
         private HttpClient _client;
-        private WebApplicationFactory<Startup> _factory;
-        private ICompanyRepository _companyRepository;
-        private IUserRepository _userRepository;
-        private IIssueRepository _issueRepository;
-        private IProjectRepository _projectRepository;
         private IIssueRequirementService _issueRequirementService;
-        private SignInResponse signInObject;
 
         [OneTimeSetUp]
         public void OneTimeSetUp()
         {
-            _factory = new WebApplicationFactory<Startup>();
-            _client = _factory.CreateClient();
-            var scopeFactory = _factory.Server.Services.GetService<IServiceScopeFactory>();
+            var factory = new WebApplicationFactory<Startup>();
+            _client = factory.CreateClient();
 
-            using (var scope = scopeFactory.CreateScope())
-            {
-                _companyRepository = scope.ServiceProvider.GetService<ICompanyRepository>();
-                _userRepository = scope.ServiceProvider.GetService<IUserRepository>();
-                _projectRepository = scope.ServiceProvider.GetService<IProjectRepository>();
-                _issueRepository = scope.ServiceProvider.GetService<IIssueRepository>();
-                _issueRequirementService = scope.ServiceProvider.GetService<IIssueRequirementService>();
-            }
-        }
+            var scopeFactory = factory.Server.Services.GetService<IServiceScopeFactory>();
 
-        [OneTimeTearDown]
-        public async Task OneTimeTearDown()
-        {
-            await Clear();
+            using var scope = scopeFactory.CreateScope();
+            _issueRequirementService = scope.ServiceProvider.GetService<IIssueRequirementService>();
         }
 
         [SetUp]
         public async Task Setup()
         {
-            await Clear();
-            await Generate();
+            await TestHelper.Instance.GenerateAll(_client);
+        }
+
+        [TearDown]
+        public async Task TearDown()
+        {
+            await TestHelper.Instance.ClearAll();
         }
 
         [Test]
         public async Task CreateSummary()
         {
-            var issue = (await _issueRepository.FilterByAsync(x => x.IssueDetail.Name.Equals(TestHelper.TicketName))).FirstOrDefault();
+            var issue = await TestHelper.Instance.GetIssueAsync();
             IssueRequirement issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen" };
             await _issueRequirementService.CreateAsync(issue.Id, issueRequirement);
 
@@ -85,7 +73,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         [Test]
         public async Task CreateSummaryFalse()
         {
-            var issue = (await _issueRepository.FilterByAsync(x => x.IssueDetail.Name.Equals(TestHelper.TicketName))).FirstOrDefault();
+            var issue = await TestHelper.Instance.GetIssueAsync();
 
             var uri = $"/api/issues/{issue.Id}/summaries";
             var responce = await _client.PostAsync(uri, new object().ToStringContent());
@@ -99,7 +87,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         [Test]
         public async Task AcceptSummary()
         {
-            var issue = (await _issueRepository.FilterByAsync(x => x.IssueDetail.Name.Equals(TestHelper.TicketName))).FirstOrDefault();
+            var issue = await TestHelper.Instance.GetIssueAsync();
             IssueRequirement issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen" };
             await _issueRequirementService.CreateAsync(issue.Id, issueRequirement);
 
@@ -111,10 +99,10 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             responce = await _client.PutAsync(uri, new object().ToStringContent());
             Assert.IsTrue(responce.IsSuccessStatusCode);
 
-            issue = (await _issueRepository.FilterByAsync(x => x.IssueDetail.Name.Equals(TestHelper.TicketName))).FirstOrDefault();
+            issue = await TestHelper.Instance.GetIssueAsync();
             Assert.IsTrue(issue.IssueDetail.RequirementsAccepted);
 
-            var state = await TestHelper.Instance.GetStateByName(_client, issue.ProjectId.ToString(), State.WaitingState);
+            var state = await TestHelper.Instance.GetStateByName(_client, issue.ProjectId, State.WaitingState);
             Assert.AreEqual(state.Id, issue.StateId);
 
             issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen2" };
@@ -126,7 +114,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         [Test]
         public async Task AcceptSummaryFalse()
         {
-            var issue = (await _issueRepository.FilterByAsync(x => x.IssueDetail.Name.Equals(TestHelper.TicketName))).FirstOrDefault();
+            var issue = await TestHelper.Instance.GetIssueAsync();
             var uri = $"/api/issues/{issue.Id}/summaries?accept=true";
             var responce = await _client.PutAsync(uri, new object().ToStringContent());
             Assert.IsFalse(responce.IsSuccessStatusCode);
@@ -135,7 +123,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         [Test]
         public async Task DeclineSummary()
         {
-            var issue = (await _issueRepository.FilterByAsync(x => x.IssueDetail.Name.Equals(TestHelper.TicketName))).FirstOrDefault();
+            var issue = await TestHelper.Instance.GetIssueAsync();
             IssueRequirement issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen" };
             await _issueRequirementService.CreateAsync(issue.Id, issueRequirement);
 
@@ -147,7 +135,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             responce = await _client.PutAsync(uri, new object().ToStringContent());
             Assert.IsTrue(responce.IsSuccessStatusCode);
 
-            issue = (await _issueRepository.FilterByAsync(x => x.IssueDetail.Name.Equals(TestHelper.TicketName))).FirstOrDefault();
+            issue = await TestHelper.Instance.GetIssueAsync();
             Assert.IsFalse(issue.IssueDetail.RequirementsAccepted);
             Assert.IsFalse(issue.IssueDetail.RequirementsSummaryCreated);
 
@@ -160,8 +148,8 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         [Test]
         public async Task DeclineSummaryFalse()
         {
-            var issue = (await _issueRepository.FilterByAsync(x => x.IssueDetail.Name.Equals(TestHelper.TicketName))).FirstOrDefault();
-           
+            var issue = await TestHelper.Instance.GetIssueAsync();
+
             var uri = $"/api/issues/{issue.Id}/summaries?accept=false";
             var responce = await _client.PutAsync(uri, new object().ToStringContent());
             Assert.IsFalse(responce.IsSuccessStatusCode);
@@ -175,7 +163,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         [Test]
         public async Task DeclineSummaryFalse2()
         {
-            var issue = (await _issueRepository.FilterByAsync(x => x.IssueDetail.Name.Equals(TestHelper.TicketName))).FirstOrDefault();
+            var issue = await TestHelper.Instance.GetIssueAsync();
             IssueRequirement issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen" };
             await _issueRequirementService.CreateAsync(issue.Id, issueRequirement);
 
@@ -187,30 +175,15 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             responce = await _client.PutAsync(uri, new object().ToStringContent());
             Assert.IsTrue(responce.IsSuccessStatusCode);
 
-            issue = (await _issueRepository.FilterByAsync(x => x.IssueDetail.Name.Equals(TestHelper.TicketName))).FirstOrDefault();
+            issue = await TestHelper.Instance.GetIssueAsync();
             Assert.IsTrue(issue.IssueDetail.RequirementsAccepted);
 
-            var state = await TestHelper.Instance.GetStateByName(_client, issue.ProjectId.ToString(), State.WaitingState);
+            var state = await TestHelper.Instance.GetStateByName(_client, issue.ProjectId, State.WaitingState);
             Assert.AreEqual(state.Id, issue.StateId);
 
             uri = $"/api/issues/{issue.Id}/summaries?accept=false";
             responce = await _client.PutAsync(uri, new object().ToStringContent()); 
             Assert.IsFalse(responce.IsSuccessStatusCode);
-        }
-
-        private async Task Clear()
-        {
-            await TestHelper.Instance.ClearCompany(_companyRepository, _userRepository);
-            await TestHelper.Instance.ClearProject(_projectRepository);
-            await TestHelper.Instance.ClearIssue(_issueRepository);
-        }
-
-        private async Task Generate()
-        {
-            signInObject = await TestHelper.Instance.GenerateCompany(_client);
-            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signInObject.Token);
-            await TestHelper.Instance.GenerateProject(_client, _companyRepository);
-            await TestHelper.Instance.GenerateIssue(_client, _companyRepository, _projectRepository, _userRepository);
         }
     }
 }

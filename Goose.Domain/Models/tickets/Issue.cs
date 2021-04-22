@@ -4,7 +4,7 @@ using Goose.Domain.Models.Identity;
 using Goose.Domain.Models.Projects;
 using MongoDB.Bson;
 
-namespace Goose.Domain.Models.Tickets
+namespace Goose.Domain.Models.Issues
 {
     public class Issue : Document
     {

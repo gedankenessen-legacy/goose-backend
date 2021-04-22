@@ -7,9 +7,10 @@ using Goose.API.Utils.Validators;
 using Goose.Domain.DTOs;
 using Goose.Domain.DTOs.Issues;
 using Goose.Domain.Models.Projects;
-using Goose.Domain.Models.Tickets;
+using Goose.Domain.Models.Issues;
 using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
+using Goose.API.Utils.Authentication;
 
 namespace Goose.API.Services.Issues
 {
@@ -25,6 +26,8 @@ namespace Goose.API.Services.Issues
         public Task<IssueDTO?> GetParent(ObjectId issueId);
         public Task SetParent(ObjectId issueId, ObjectId parentId);
         public Task RemoveParent(ObjectId issueId);
+
+        public Task AssertNotArchived(Issue issue);
     }
 
     public class IssueService : IIssueService
@@ -36,14 +39,22 @@ namespace Goose.API.Services.Issues
         private readonly IIssueRepository _issueRepo;
         private readonly IIssueRequestValidator _issueValidator;
 
-        public IssueService(IIssueRepository issueRepo, IStateService stateService,
-            IProjectRepository projectRepository, IUserRepository userRepository, IIssueRequestValidator issueValidator)
+        private readonly IHttpContextAccessor _httpContextAccessor;
+
+        public IssueService(
+            IIssueRepository issueRepo,
+            IStateService stateService,
+            IProjectRepository projectRepository,
+            IUserRepository userRepository,
+            IIssueRequestValidator issueValidator,
+            IHttpContextAccessor httpContextAccessor)
         {
             _issueRepo = issueRepo;
             _stateService = stateService;
             _projectRepository = projectRepository;
             _userRepository = userRepository;
             _issueValidator = issueValidator;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<IList<IssueDTO>> GetAll()
@@ -120,8 +131,27 @@ namespace Goose.API.Services.Issues
 
         private async Task<Issue> GetUpdatedIssue(Issue old, IssueDTO updated)
         {
-            if (updated.State != null)
-                old.StateId = updated.State.Id;
+            if (updated.State != null) {
+                var oldStateId = old.StateId;
+                var newStateId = updated.State.Id;
+                
+                if (oldStateId != newStateId)
+                {
+                    // State wird aktualisiert
+                    old.StateId = newStateId;
+
+                    var oldState = await _stateService.GetState(old.ProjectId, oldStateId);
+                    var newState = await _stateService.GetState(old.ProjectId, newStateId);
+
+                    old.ConversationItems.Add(new IssueConversation()
+                    {
+                        Id = ObjectId.GenerateNewId(),
+                        CreatorUserId = _httpContextAccessor.HttpContext.User.GetUserId(),
+                        Type = IssueConversation.StateChangeType,
+                        Data = $"Status von {oldState.Name} zu {newState.Name} geändert.",
+                    });
+                }
+            }
             old.IssueDetail = await GetUpdatedIssueDetail(old, updated.IssueDetail);
             return old;
         }
@@ -161,15 +191,47 @@ namespace Goose.API.Services.Issues
         public async Task SetParent(ObjectId issueId, ObjectId parentId)
         {
             var issue = await _issueRepo.GetAsync(issueId);
+            var parent = await _issueRepo.GetAsync(parentId);
+
+            if (issue.ProjectId != parent.ProjectId)
+            {
+                throw new HttpStatusException(StatusCodes.Status400BadRequest, "Issues müssen im selben Projekt sein");
+            }
+
             issue.ParentIssueId = parentId;
             await _issueRepo.UpdateAsync(issue);
+
+            // ConversationItem im Oberticket hinzufügen
+            parent.ConversationItems.Add(new IssueConversation()
+            {
+                Id = ObjectId.GenerateNewId(),
+                CreatorUserId = _httpContextAccessor.HttpContext.User.GetUserId(),
+                Type = IssueConversation.ChildIssueAddedType,
+                Data = $"{issueId}",
+            });
+            await _issueRepo.UpdateAsync(parent);
         }
 
         public async Task RemoveParent(ObjectId issueId)
         {
             var issue = await _issueRepo.GetAsync(issueId);
+            var mightBeParentId = issue.ParentIssueId;
             issue.ParentIssueId = null;
             await _issueRepo.UpdateAsync(issue);
+
+            if (mightBeParentId is ObjectId parentId)
+            {
+                // ConversationItem im Oberticket hinzufügen
+                var parent = await _issueRepo.GetAsync(parentId);
+                parent.ConversationItems.Add(new IssueConversation()
+                {
+                    Id = ObjectId.GenerateNewId(),
+                    CreatorUserId = _httpContextAccessor.HttpContext.User.GetUserId(),
+                    Type = IssueConversation.ChildIssueRemovedType,
+                    Data = $"{issueId}",
+                });
+                await _issueRepo.UpdateAsync(parent);
+            }
         }
 
 
@@ -193,6 +255,23 @@ namespace Goose.API.Services.Issues
             return new IssueDTO(issue, await state, await project != null ? new ProjectDTO(await project) : null,
                 await client != null ? new UserDTO(await client) : null,
                 await author != null ? new UserDTO(await author) : null);
+        }
+
+        /// <summary>
+        /// This method checks that the issue is not archived. If it is, it throws a
+        /// HttpStatusException with 403 - Forbidden
+        /// </summary>
+        /// <param name="issue"></param>
+        /// <returns></returns>
+        public async Task AssertNotArchived(Issue issue)
+        {
+            var project = await _projectRepository.GetAsync(issue.ProjectId);
+            var archivedState = project.States.Single(s => s.UserGenerated == false && s.Name == State.ArchivedState);
+
+            if (issue.StateId == archivedState.Id)
+            {
+                throw new HttpStatusException(403, "Issue is archived.");
+            }
         }
     }
 }

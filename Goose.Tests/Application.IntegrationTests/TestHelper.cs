@@ -3,23 +3,32 @@ using Goose.Domain.DTOs;
 using Goose.Domain.DTOs.Issues;
 using Goose.Domain.Models.Auth;
 using Goose.Domain.Models.Projects;
-using Goose.Domain.Models.Tickets;
+using Goose.Domain.Models.Issues;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Goose.API;
+using Microsoft.Extensions.DependencyInjection;
+using Goose.Domain.Models.Identity;
+using System.Net.Http.Headers;
+using MongoDB.Bson;
 
 namespace Goose.Tests.Application.IntegrationTests
 {
+    /// Dieser Typ wird verwendet, um mehrere Testdocumente zu speichern
+    using TestDocuments = Dictionary<int, ObjectId>;
+
     //Implemented as Singelton
     public sealed class TestHelper
     {
-        private static readonly TestHelper instance = new TestHelper();
-        public const string FirmenName = "GooseTestFirma";
-        public const string ProjektName = "GooseTestProject";
-        public const string TicketName = "GooseTestIssue";
+        private static readonly TestHelper _instance = new TestHelper();
+        private const string FirmenName = "GooseTestFirma";
+        private const string ProjektName = "GooseTestProject";
+        private const string TicketName = "GooseTestIssue";
 
         // Explicit static constructor to tell C# compiler
         // not to mark type as beforefieldinit
@@ -27,44 +36,75 @@ namespace Goose.Tests.Application.IntegrationTests
         {
         }
 
+        private readonly ICompanyRepository _companyRepository;
+        private readonly IUserRepository _userRepository;
+        private readonly IIssueRepository _issueRepository;
+        private readonly IRoleRepository _roleRepository;
+        private readonly IProjectRepository _projectRepository;
+
+        // Hier werden alle TestIssues gespeichert, die sich in der DB befinden.
+        private readonly TestDocuments _testIssues = new();
+
         private TestHelper()
         {
+            var factory = new WebApplicationFactory<Startup>();
+            var scopeFactory = factory.Server.Services.GetService<IServiceScopeFactory>();
+
+            using var scope = scopeFactory.CreateScope();
+            _companyRepository = scope.ServiceProvider.GetService<ICompanyRepository>();
+            _userRepository = scope.ServiceProvider.GetService<IUserRepository>();
+            _projectRepository = scope.ServiceProvider.GetService<IProjectRepository>();
+            _roleRepository = scope.ServiceProvider.GetService<IRoleRepository>();
+            _issueRepository = scope.ServiceProvider.GetService<IIssueRepository>();
         }
 
         public static TestHelper Instance
         {
             get
             {
-                return instance;
+                return _instance;
             }
         }
 
-        public async Task ClearCompany(ICompanyRepository companyRepository, IUserRepository userRepository)
+        #region Clearing
+        public async Task ClearCompany()
         {
-            var company = (await companyRepository.FilterByAsync(x => x.Name.Equals(FirmenName))).FirstOrDefault();
+            var company = (await _companyRepository.FilterByAsync(x => x.Name.Equals(FirmenName))).FirstOrDefault();
 
             if (company is not null)
             {
                 foreach (var user in company.Users)
-                    await userRepository.DeleteAsync(user.UserId);
-                await companyRepository.DeleteAsync(company.Id);
+                    await _userRepository.DeleteAsync(user.UserId);
+                await _companyRepository.DeleteAsync(company.Id);
             }
         }
 
-        public async Task ClearProject(IProjectRepository projectRepository)
+        public async Task ClearProject()
         {
-            var project = (await projectRepository.FilterByAsync(x => x.ProjectDetail.Name.Equals(ProjektName))).FirstOrDefault();
+            var project = (await _projectRepository.FilterByAsync(x => x.ProjectDetail.Name.Equals(ProjektName))).FirstOrDefault();
             if (project is not null)
-                await projectRepository.DeleteAsync(project.Id);
+                await _projectRepository.DeleteAsync(project.Id);
         }
 
-        public async Task ClearIssue(IIssueRepository issueRepository)
+        public async Task ClearIssue()
         {
-            var issue = (await issueRepository.FilterByAsync(x => x.IssueDetail.Name.Equals(TicketName))).FirstOrDefault();
-            if (issue is not null)
-                await issueRepository.DeleteAsync(issue.Id);
+            foreach (var issueId in _testIssues.Values)
+            {
+                await _issueRepository.DeleteAsync(issueId);
+            }
+
+            _testIssues.Clear();
         }
 
+        public async Task ClearAll()
+        {
+            await ClearIssue();
+            await ClearProject();
+            await ClearCompany();
+        }
+        #endregion
+
+        #region Generating
         public async Task<SignInResponse> GenerateCompany(HttpClient client)
         {
             var uri = "/api/auth/signUp";
@@ -73,21 +113,41 @@ namespace Goose.Tests.Application.IntegrationTests
             return await response.Content.Parse<SignInResponse>();
         }
 
-        public async Task GenerateProject(HttpClient client, ICompanyRepository companyRepository)
+        public async Task GenerateProject(HttpClient client)
         {
-            var company = (await companyRepository.FilterByAsync(x => x.Name.Equals(FirmenName))).FirstOrDefault();
+            var company = (await _companyRepository.FilterByAsync(x => x.Name.Equals(FirmenName))).FirstOrDefault();
             var uri = $"api/companies/{company.Id}/projects";
             var newProject = new ProjectDTO() { Name = ProjektName };
             await client.PostAsync(uri, newProject.ToStringContent());
         }
 
-        public async Task GenerateIssue(HttpClient client, ICompanyRepository companyRepository, IProjectRepository projectRepository, IUserRepository userRepository)
+        public async Task AddUserToProject(HttpClient client, string roleName)
         {
-            var company = (await companyRepository.FilterByAsync(x => x.Name.Equals(FirmenName))).FirstOrDefault();
-            var project = (await projectRepository.FilterByAsync(x => x.ProjectDetail.Name.Equals(ProjektName))).FirstOrDefault();
+            // add user to company
+            var user = await GetUser();
+            var project = await GetProject();
+            var role = (await _roleRepository.FilterByAsync(x => x.Name == roleName)).Single();
+            var uri = $"api/projects/{project.Id}/users/{user.Id}";
+            var addRequest = new PropertyUserDTO()
+            {
+                User = new UserDTO(user),
+                Roles = new List<RoleDTO>()
+                {
+                    new RoleDTO(role),
+                }
+            };
+            await client.PutAsync(uri, addRequest.ToStringContent());
+        }
 
-            var propertyUser = company.Users.FirstOrDefault(x => x != null);
-            var user = (await userRepository.FilterByAsync(x => x.Id.Equals(propertyUser.UserId))).FirstOrDefault();
+        public async Task GenerateIssue(HttpClient httpClient, int index = 0)
+        {
+            if (_testIssues.ContainsKey(index))
+            {
+                throw new Exception("Index existiert bereits");
+            }
+
+            var project = await GetProject();
+            var user = await GetUser();
 
             var uri = $"api/projects/{project.Id}/issues/";
 
@@ -96,7 +156,7 @@ namespace Goose.Tests.Application.IntegrationTests
                 Author = new UserDTO(user),
                 Client = new UserDTO(user),
                 Project = new ProjectDTO(project),
-                State = await GetStateByName(client, project.Id.ToString(), State.NegotiationState),
+                State = await GetStateByName(httpClient, project.Id, State.NegotiationState),
                 IssueDetail = new IssueDetail
                 {
                     Name = TicketName,
@@ -115,21 +175,69 @@ namespace Goose.Tests.Application.IntegrationTests
                     RelevantDocuments = null
                 }
             };
-            var res = await client.PostAsync(uri, issue.ToStringContent());
-            var dto = await res.Content.ReadAsStringAsync();
-            return;
+            var postResult = await httpClient.PostAsync(uri, issue.ToStringContent());
+            var result = await postResult.Content.Parse<IssueDTO>();
+
+            _testIssues[index] = result.Id;
         }
 
-        private async Task<IList<StateDTO>> GetStateList(HttpClient client, string projectId)
+        /// <summary>
+        /// Generates a Test Company, User, Project and Issue.
+        /// These objects can be retrieved from the DB via the Get???() methods.
+        /// It also adds an authorisation header to the provided client.
+        /// </summary>
+        /// <param name="client"></param>
+        /// <returns></returns>
+        public async Task GenerateAll(HttpClient client)
+        {
+            var signInResult = await GenerateCompany(client);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signInResult.Token);
+            await GenerateProject(client);
+            await GenerateIssue(client);
+        }
+        #endregion
+
+
+        #region Getting
+        private async Task<IList<StateDTO>> GetStateList(HttpClient client, ObjectId projectId)
         {
             var uri = $"api/projects/{projectId}/states";
             var responce = await client.GetAsync(uri);
             return await responce.Content.Parse<IList<StateDTO>>();
         }
 
-        public async Task<StateDTO> GetStateByName(HttpClient client, string projectId, string name)
+        public async Task<StateDTO> GetStateByName(HttpClient client, ObjectId projectId, string name)
         {
             return (await GetStateList(client, projectId)).FirstOrDefault(x => x.Name.Equals(name));
         }
+
+        public async Task<Domain.Models.Companies.Company> GetCompany()
+        {
+            var companies = await _companyRepository.FilterByAsync(x => x.Name == FirmenName);
+            return companies.FirstOrDefault();
+        }
+
+        public async Task<Project> GetProject()
+        {
+            var projects = await _projectRepository.FilterByAsync(x => x.ProjectDetail.Name == ProjektName);
+            return projects.FirstOrDefault();
+        }
+
+        public async Task<Issue> GetIssueAsync(int issueIndex = 0)
+        {
+            var issueId = _testIssues[issueIndex];
+            var issues = await _issueRepository.FilterByAsync(x => x.Id == issueId);
+            return issues.FirstOrDefault();
+        }
+
+        public async Task<User> GetUser()
+        {
+            var company = await GetCompany();
+            var propertyUser = company.Users.First();
+
+            var users = await _userRepository.FilterByAsync(x => x.Id.Equals(propertyUser.UserId));
+            return users.FirstOrDefault();
+        }
+        #endregion
     }
 }

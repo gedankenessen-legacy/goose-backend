@@ -1,5 +1,5 @@
 ﻿using Goose.API.Services.issues;
-using Goose.Domain.Models.Tickets;
+using Goose.Domain.Models.Issues;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;

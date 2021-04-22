@@ -30,22 +30,18 @@ namespace Goose.API.Controllers.IssuesControllers
         [HttpPut("{predecessorId}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult> SetPredecessor([FromRoute] ObjectId projectId,
-            [FromRoute] ObjectId issueId, [FromRoute] ObjectId predecessorId)
+        public async Task<ActionResult> SetPredecessor([FromRoute] ObjectId issueId, [FromRoute] ObjectId predecessorId)
         {
-            await _issueService.SetPredecessor(projectId, issueId,
-                predecessorId);
+            await _issueService.SetPredecessor(issueId, predecessorId);
             return NoContent();
         }
 
         [HttpDelete("{predecessorId}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult> RemovePredecessor([FromRoute] ObjectId projectId,
-            [FromRoute] ObjectId issueId, [FromRoute] ObjectId predecessorId)
+        public async Task<ActionResult> RemovePredecessor([FromRoute] ObjectId issueId, [FromRoute] ObjectId predecessorId)
         {
-            await _issueService.RemovePredecessor(projectId, issueId,
-                predecessorId);
+            await _issueService.RemovePredecessor(issueId, predecessorId);
             return NoContent();
         }
     }
