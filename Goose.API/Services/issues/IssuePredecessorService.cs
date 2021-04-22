@@ -60,7 +60,8 @@ namespace Goose.API.Services.Issues
                 Id = ObjectId.GenerateNewId(),
                 CreatorUserId = _httpContextAccessor.HttpContext.User.GetUserId(),
                 Type = IssueConversation.PredecessorAddedType,
-                Data = $"{predecessorId}",
+                Data = null,
+                OtherTicketId = predecessorId,
             });
 
             await Task.WhenAll(_issueRepo.UpdateAsync(successor), _issueRepo.UpdateAsync(predecessor));
@@ -79,7 +80,8 @@ namespace Goose.API.Services.Issues
                     Id = ObjectId.GenerateNewId(),
                     CreatorUserId = _httpContextAccessor.HttpContext.User.GetUserId(),
                     Type = IssueConversation.PredecessorRemovedType,
-                    Data = $"{predecessorId}",
+                    Data = null,
+                    OtherTicketId = predecessorId,
                 });
 
                 await Task.WhenAll(_issueRepo.UpdateAsync(successor), _issueRepo.UpdateAsync(predecessor));
