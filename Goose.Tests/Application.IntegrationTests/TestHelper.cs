@@ -139,7 +139,7 @@ namespace Goose.Tests.Application.IntegrationTests
             await client.PutAsync(uri, addRequest.ToStringContent());
         }
 
-        public async Task GenerateIssue(HttpClient httpClient, int index = 0)
+        public async Task GenerateIssue(HttpClient httpClient, int index = 0, string IssueName = TicketName, bool visibility = false)
         {
             if (_testIssues.ContainsKey(index))
             {
@@ -159,7 +159,7 @@ namespace Goose.Tests.Application.IntegrationTests
                 State = await GetStateByName(httpClient, project.Id, State.NegotiationState),
                 IssueDetail = new IssueDetail
                 {
-                    Name = TicketName,
+                    Name = IssueName,
                     Type = Issue.TypeFeature,
                     StartDate = default,
                     EndDate = default,
@@ -171,7 +171,7 @@ namespace Goose.Tests.Application.IntegrationTests
                     RequirementsSummaryCreated = false,
                     RequirementsNeeded = false,
                     Priority = 0,
-                    Visibility = false,
+                    Visibility = visibility,
                     RelevantDocuments = null
                 }
             };
@@ -193,6 +193,7 @@ namespace Goose.Tests.Application.IntegrationTests
             var signInResult = await GenerateCompany(client);
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signInResult.Token);
             await GenerateProject(client);
+            await AddUserToProject(client, Role.ProjectLeaderRole);
             await GenerateIssue(client);
         }
         #endregion

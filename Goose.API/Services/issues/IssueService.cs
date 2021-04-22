@@ -11,6 +11,9 @@ using Goose.Domain.Models.Issues;
 using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
 using Goose.API.Utils.Authentication;
+using Microsoft.AspNetCore.Authorization;
+using Goose.API.Authorization.Requirements;
+using Goose.API.Authorization;
 
 namespace Goose.API.Services.Issues
 {
@@ -28,6 +31,7 @@ namespace Goose.API.Services.Issues
         public Task RemoveParent(ObjectId issueId);
 
         public Task AssertNotArchived(Issue issue);
+        Task<bool> UserCanSeeInternTicket(ObjectId projectId);
     }
 
     public class IssueService : IIssueService
@@ -40,6 +44,7 @@ namespace Goose.API.Services.Issues
         private readonly IIssueRequestValidator _issueValidator;
 
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IAuthorizationService _authorizationService;
 
         public IssueService(
             IIssueRepository issueRepo,
@@ -47,7 +52,8 @@ namespace Goose.API.Services.Issues
             IProjectRepository projectRepository,
             IUserRepository userRepository,
             IIssueRequestValidator issueValidator,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            IAuthorizationService authorizationService)
         {
             _issueRepo = issueRepo;
             _stateService = stateService;
@@ -55,6 +61,7 @@ namespace Goose.API.Services.Issues
             _userRepository = userRepository;
             _issueValidator = issueValidator;
             _httpContextAccessor = httpContextAccessor;
+            _authorizationService = authorizationService;
         }
 
         public async Task<IList<IssueDTO>> GetAll()
@@ -83,8 +90,8 @@ namespace Goose.API.Services.Issues
             if (!await _issueValidator.HasExistingProjectId(issueDto.Project.Id))
                 throw new HttpStatusException(StatusCodes.Status400BadRequest,
                     $"Cannot create an Issue. Project with id [{issueDto.Project.Id}] does not exist");
-            //TODO nur mitarbeiter können tickets erstellen
 
+            await UserCanCreateOrUpdateIssue(issueDto.Project.Id);
 
             var issue = await CreateValidIssue(issueDto);
             await _issueRepo.CreateAsync(issue);
@@ -124,8 +131,16 @@ namespace Goose.API.Services.Issues
 
         public async Task<IssueDTO> Update(IssueDTO issueDto, ObjectId id)
         {
-            var issue = await GetUpdatedIssue(await _issueRepo.GetAsync(id), issueDto);
-            await _issueRepo.UpdateAsync(issue);
+            var issue = await _issueRepo.GetAsync(id);
+
+            if(issue is null)
+                throw new HttpStatusException(StatusCodes.Status400BadRequest, $"Das angeforderte Ticket mit der id {id} konnte nicht gefunden werden");
+
+            await UserCanCreateOrUpdateIssue(issue.ProjectId);
+
+            var issueToUpdate = await GetUpdatedIssue(await _issueRepo.GetAsync(id), issueDto);
+
+            await _issueRepo.UpdateAsync(issueToUpdate);
             return await Get(id);
         }
 
@@ -137,6 +152,7 @@ namespace Goose.API.Services.Issues
                 
                 if (oldStateId != newStateId)
                 {
+                    await UserCanChangeStatus(old.ProjectId);
                     // State wird aktualisiert
                     old.StateId = newStateId;
 
@@ -272,6 +288,52 @@ namespace Goose.API.Services.Issues
             {
                 throw new HttpStatusException(403, "Issue is archived.");
             }
+        }
+
+        public async Task<bool> UserCanSeeInternTicket(ObjectId projectId)
+        {
+            var project = await _projectRepository.GetAsync(projectId);
+            IList<IAuthorizationRequirement> requirements = new List<IAuthorizationRequirement>()
+            {
+                ProjectRolesRequirement.EmployeeRequirement,
+                ProjectRolesRequirement.LeaderRequirement,
+                ProjectRolesRequirement.ReadonlyEmployeeRequirement
+            };
+            
+
+            // validate requirements with the appropriate handlers.
+            var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, project, requirements);
+
+            return authorizationResult.Failure.FailedRequirements.Count() < requirements.Count;
+        }
+
+        private async Task UserCanChangeStatus(ObjectId projectId)
+        {
+            var project = await _projectRepository.GetAsync(projectId);
+            Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
+            {
+                { ProjectRolesRequirement.EmployeeRequirement, "You need to be the employee with write-rights in this project, in order to change the state" },
+                { ProjectRolesRequirement.LeaderRequirement, "You need to be the leader in this project, in order to change the state." },                
+            };
+
+            // validate requirements with the appropriate handlers.
+            var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, project, requirementsWithErrors.Keys);
+            authorizationResult.ThrowErrorIfAllFailed(requirementsWithErrors);
+        }
+
+        private async Task UserCanCreateOrUpdateIssue(ObjectId projectId)
+        {
+            var project = await _projectRepository.GetAsync(projectId);
+            Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
+            {
+                { ProjectRolesRequirement.EmployeeRequirement, "You need to be the employee with write-rights in this project, in order to create or update a issue." },
+                { ProjectRolesRequirement.LeaderRequirement, "You need to be the leader in this project, in order to create or update a issue." },
+                { ProjectRolesRequirement.CustomerRequirement, "You need to be a customer in this project, in order to create or update a issue." },
+            };
+
+            // validate requirements with the appropriate handlers.
+            var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, project, requirementsWithErrors.Keys);
+            authorizationResult.ThrowErrorIfAllFailed(requirementsWithErrors);
         }
     }
 }
