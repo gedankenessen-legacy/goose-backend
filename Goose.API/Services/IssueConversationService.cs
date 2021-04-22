@@ -1,10 +1,17 @@
-﻿using Goose.API.Repositories;
+﻿using Goose.API.Authorization;
+using Goose.API.Authorization.Requirements;
+using Goose.API.Repositories;
+using Goose.API.Services.Issues;
+using Goose.API.Utils.Authentication;
 using Goose.API.Utils.Exceptions;
 using Goose.API.Utils.Validators;
-using Goose.Domain.DTOs.Tickets;
-using Goose.Domain.Models.Tickets;
+using Goose.Domain.DTOs.Issues;
+using Goose.Domain.Models.Identity;
+using Goose.Domain.Models.Issues;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -22,12 +29,29 @@ namespace Goose.API.Services
     public class IssueConversationService : IIssueConversationService
     {
         private readonly IIssueRepository _issueRepository;
+        private readonly IIssueService _issueService;
         private readonly IUserService _userService;
+        private readonly IProjectRepository _projectRepository;
+        private readonly IRoleRepository _roleRepository;
+        private readonly IAuthorizationService _authorizationService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public IssueConversationService(IIssueRepository issueRepository, IUserService userService)
+        public IssueConversationService(
+            IIssueRepository issueRepository,
+            IIssueService issueService,
+            IUserService userService,
+            IProjectRepository projectRepository,
+            IRoleRepository roleRepository,
+            IAuthorizationService authorizationService,
+            IHttpContextAccessor httpContextAccessor)
         {
             _issueRepository = issueRepository;
+            _issueService = issueService;
             _userService = userService;
+            _projectRepository = projectRepository;
+            _roleRepository = roleRepository;
+            _authorizationService = authorizationService;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         /// <summary>
@@ -38,6 +62,7 @@ namespace Goose.API.Services
         public async Task<IList<IssueConversationDTO>> GetConversationsFromIssueAsync(string issueId)
         {
             var issue = await _issueRepository.GetIssueByIdAsync(issueId);
+            await AssertUserCanReadConversation(issue.ProjectId);
             var conversationItems = issue.ConversationItems;
 
             // if property is null, set default value => empty array of conversations which do not be saved to the database.
@@ -56,11 +81,9 @@ namespace Goose.API.Services
 
         private async Task<IssueConversationDTO> MapIssueConversationDTOAsync(ObjectId issueId, IssueConversation ic)
         {
-            var creator = await _userService.GetUser(ic.CreatorUserId);
+            var creator = await _userService.GetUser(ic.CreatorUserId.Value);
 
-            var requirements = await Task.WhenAll(ic.RequirementIds.Select(async reqOid => await _issueRepository.GetRequirementByIdAsync(issueId, reqOid)).ToList());
-
-            return new IssueConversationDTO(ic, creator, requirements);
+            return new IssueConversationDTO(ic, creator);
         }
 
         /// <summary>
@@ -74,8 +97,9 @@ namespace Goose.API.Services
             // check if the parsed objectId is not the 000...000 default objectId.
             ObjectId conversationOid = Validators.ValidateObjectId(conversationId, "Cannot parse conversation string id to a valid object id.");
 
-
             var issue = await _issueRepository.GetIssueByIdAsync(issueId);
+            await AssertUserCanReadConversation(issue.ProjectId);
+
             var conversationItems = issue.ConversationItems;
 
             if (conversationItems is null)
@@ -98,6 +122,10 @@ namespace Goose.API.Services
         public async Task<IssueConversationDTO> CreateNewIssueConversationAsync(string issueId, IssueConversationDTO conversationItem)
         {
             var issue = await _issueRepository.GetIssueByIdAsync(issueId);
+            await AssertUserCanWriteConversation(issue.ProjectId);
+
+            await _issueService.AssertNotArchived(issue);
+
             var conversationItems = issue.ConversationItems;
 
             // if ConversationItems are null = empty, create a new list, which will gets appended.
@@ -109,9 +137,9 @@ namespace Goose.API.Services
             IssueConversation newConversation = new IssueConversation()
             {
                 Id = ObjectId.GenerateNewId(),
-                CreatorUserId = conversationItem.Creator.Id,
+                CreatorUserId = _httpContextAccessor.HttpContext.User.GetUserId(),
                 Data = conversationItem.Data,
-                RequirementIds = SelectRequirementsObjectIdsFromDto(conversationItem),
+                Requirements = new List<string>(),
                 Type = conversationItem.Type
             };
 
@@ -125,19 +153,6 @@ namespace Goose.API.Services
         }
 
         /// <summary>
-        /// This Method returns a list of ObjectIds from the Requirments.Id inside of the provided conversationItem.
-        /// </summary>
-        /// <param name="conversationItem">The conversation which contains the requirements.</param>
-        /// <returns>A list of ObjectIds from the requierments.</returns>
-        private IList<ObjectId> SelectRequirementsObjectIdsFromDto(IssueConversationDTO conversationItem)
-        {
-            if (conversationItem.Requirements is null)
-                return new List<ObjectId>();
-
-            return conversationItem.Requirements.Select(req => req.Id).ToList();
-        }
-
-        /// <summary>
         /// Creates or replaces the provided conversation item, based on the id.
         /// </summary>
         /// <param name="issueId">The issue on which the operation will be executed at.</param>
@@ -147,6 +162,9 @@ namespace Goose.API.Services
         {
             ObjectId conversationItemOid = Validators.ValidateObjectId(conversationItemId, "Provided conversation id is no valid ObjectId.");
 
+            var issue = await _issueRepository.GetIssueByIdAsync(issueId);
+            await AssertUserCanWriteConversation(issue.ProjectId);
+
             if (conversationItemOid.Equals(conversationItem.Id) is false)
                 throw new HttpStatusException(StatusCodes.Status400BadRequest, "Id missmatch.");
 
@@ -155,11 +173,50 @@ namespace Goose.API.Services
                 Id = conversationItem.Id,
                 CreatorUserId = Validators.ValidateObjectId(conversationItem.Creator?.Id.ToString(), "The conversation item is missing a valid userId."),
                 Data = conversationItem.Data,
-                RequirementIds = SelectRequirementsObjectIdsFromDto(conversationItem),
-                Type = conversationItem.Type
+                // Conversation from the outside  is always a message and
+                // can therefore not contain requirements
+                Requirements = null,
+                Type = IssueConversation.MessageType,
             };
 
             await _issueRepository.CreateOrUpdateConversationItemAsync(issueId, issueConversationModel);
+        }
+
+        private async Task AssertUserCanWriteConversation(ObjectId projectId)
+        {
+            #if AUTHORISATION
+            var project = await _projectRepository.GetAsync(projectId);
+
+            Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
+            {
+                { ProjectRolesRequirement.EmployeeRequirement, "You need to be the employee with write-rights in this project, in order to write a conversation." },
+                { ProjectRolesRequirement.LeaderRequirement, "You need to be the leader in this project, in order to write a conversation." },
+                { ProjectRolesRequirement.CustomerRequirement, "You need to be the customer of this project, in order to write a conversation." }
+            };
+
+            // validate requirements with the appropriate handlers.
+            var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, project, requirementsWithErrors.Keys);
+            authorizationResult.ThrowErrorIfAllFailed(requirementsWithErrors);
+            #endif
+        }
+
+        private async Task AssertUserCanReadConversation(ObjectId projectId)
+        {
+            #if AUTHORISATION
+            var project = await _projectRepository.GetAsync(projectId);
+
+            Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
+            {
+                { ProjectRolesRequirement.ReadonlyEmployeeRequirement, "You need to be the employee with read-rights in this project, in order to write a conversation." },
+                { ProjectRolesRequirement.EmployeeRequirement, "You need to be the employee with write-rights in this project, in order to write a conversation." },
+                { ProjectRolesRequirement.LeaderRequirement, "You need to be the leader in this project, in order to write a conversation." },
+                { ProjectRolesRequirement.CustomerRequirement, "You need to be the customer of this project, in order to write a conversation." }
+            };
+
+            // validate requirements with the appropriate handlers.
+            var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, project, requirementsWithErrors.Keys);
+            authorizationResult.ThrowErrorIfAllFailed(requirementsWithErrors);
+            #endif
         }
     }
 }

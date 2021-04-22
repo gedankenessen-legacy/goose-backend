@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using Goose.Domain.Models.Tickets;
+using Goose.Domain.Models.Issues;
 using MongoDB.Bson;
 
 namespace Goose.Domain.DTOs.Issues
@@ -24,40 +24,10 @@ namespace Goose.Domain.DTOs.Issues
         {
         }
 
-        public Issue ToIssue()
-        {
-            return new Issue
-            {
-                Id = Id,
-                StateId = State.Id,
-                ProjectId = Project.Id,
-                ClientId = Client.Id,
-                AuthorId = Author.Id,
-                IssueDetail = IssueDetail,
-                ConversationItems = new List<IssueConversation>(),
-                TimeSheets = new List<TimeSheet>(),
-                AssignedUserIds = new List<ObjectId>(),
-                ParentIssueId = null,
-                PredecessorIssueIds = new List<ObjectId>(),
-                SuccessorIssueIds = new List<ObjectId>()
-            };
-        }
-
-        public Issue IntoIssue(Issue issue)
-        {
-            issue.AuthorId = Author.Id;
-            issue.ClientId = Client.Id;
-            issue.StateId = State.Id;
-            issue.IssueDetail = IssueDetail;
-            issue.ProjectId = Project.Id;
-            return issue;
-        }
-
-
         public ObjectId Id { get; set; }
         public DateTime CreatedAt => Id.CreationTime;
 
-        [Required] public StateDTO State { get; set; }
+        public StateDTO? State { get; set; }
         [Required] public ProjectDTO Project { get; set; }
         [Required] public UserDTO Client { get; set; }
         [Required] public UserDTO Author { get; set; }

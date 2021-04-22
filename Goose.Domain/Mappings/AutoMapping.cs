@@ -2,8 +2,7 @@
 using Goose.Domain.DTOs;
 using Goose.Domain.DTOs.Issues;
 using Goose.Domain.Models.Identity;
-using Goose.Domain.Models.Tickets;
-using Goose.Domain.DTOs.Tickets;
+using Goose.Domain.Models.Issues;
 using System;
 using System.Collections.Generic;
 using System.Text;

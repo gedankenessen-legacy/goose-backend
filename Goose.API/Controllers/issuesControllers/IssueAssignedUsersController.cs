@@ -6,6 +6,7 @@ using Goose.API.Utils;
 using Goose.Domain.DTOs;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using MongoDB.Bson;
 
 namespace Goose.API.Controllers.IssuesControllers
 {
@@ -23,18 +24,18 @@ namespace Goose.API.Controllers.IssuesControllers
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<IList<UserDTO>>> GetAll([FromRoute] string issueId)
+        public async Task<ActionResult<IList<UserDTO>>> GetAll([FromRoute] ObjectId issueId)
         {
-            return Ok(await _issueService.GetAllOfIssueAsync(issueId.ToObjectId()));
+            return Ok(await _issueService.GetAllOfIssueAsync(issueId));
         }
 
         [HttpGet("{userId}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<IList<UserDTO>>> Get([FromRoute] string issueId, [FromRoute] string userId)
+        public async Task<ActionResult<IList<UserDTO>>> Get([FromRoute] ObjectId issueId, [FromRoute] ObjectId userId)
         {
-            var user = _issueService.GetAssignedUserOfIssueAsync(issueId.ToObjectId(), userId.ToObjectId());
+            var user = _issueService.GetAssignedUserOfIssueAsync(issueId, userId);
             if (user == null) return NotFound();
             return Ok(await user);
         }
@@ -42,18 +43,18 @@ namespace Goose.API.Controllers.IssuesControllers
         [HttpPut("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult> Put([FromRoute] string issueId, [FromRoute] string id)
+        public async Task<ActionResult> Put([FromRoute] ObjectId issueId, [FromRoute] ObjectId id)
         {
-            await _issueService.AssignUserAsync(issueId.ToObjectId(), id.ToObjectId());
+            await _issueService.AssignUserAsync(issueId, id);
             return NoContent();
         }
 
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult> Delete([FromRoute] string issueId, [FromRoute] string id)
+        public async Task<ActionResult> Delete([FromRoute] ObjectId issueId, [FromRoute] ObjectId id)
         {
-            await _issueService.UnassignUserAsync(issueId.ToObjectId(), id.ToObjectId());
+            await _issueService.UnassignUserAsync(issueId, id);
             return NoContent();
         }
     }

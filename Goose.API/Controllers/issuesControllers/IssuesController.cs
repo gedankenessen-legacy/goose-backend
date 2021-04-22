@@ -6,6 +6,7 @@ using Goose.Domain.DTOs.Issues;
 using Goose.API.Utils;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using MongoDB.Bson;
 
 namespace Goose.API.Controllers.IssuesControllers
 {
@@ -22,67 +23,67 @@ namespace Goose.API.Controllers.IssuesControllers
             _issueDetailedService = issueDetailedService;
         }
 
-        //api/issues/
+        //api/projects/{projectId}/issues/
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<IList<IssueDTODetailed>>> GetAll([FromRoute] string projectId,
+        public async Task<ActionResult<IList<IssueDTODetailed>>> GetAll([FromRoute] ObjectId projectId,
             [FromQuery] bool getAssignedUsers = false, [FromQuery] bool getConversations = false,
             [FromQuery] bool getTimeSheets = false, [FromQuery] bool getParent = false,
             [FromQuery] bool getPredecessors = false, [FromQuery] bool getSuccessors = false,
             [FromQuery] bool getAll = false)
         {
-            var res = _issueDetailedService.GetAllOfProject(projectId.ToObjectId(), getAssignedUsers, getConversations,
+            var res = _issueDetailedService.GetAllOfProject(projectId, getAssignedUsers, getConversations,
                 getTimeSheets, getParent, getPredecessors, getSuccessors, getAll);
             return Ok(await res);
         }
 
-        //api/issues/{id}
+        //api/projects/{projectId}/issues/{id}
         [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<IssueDTODetailed>> Get([FromRoute] string projectId, [FromRoute] string id,
+        public async Task<ActionResult<IssueDTODetailed>> Get([FromRoute] ObjectId projectId, [FromRoute] ObjectId id,
             [FromQuery] bool getAssignedUsers = false, [FromQuery] bool getConversations = false,
             [FromQuery] bool getTimeSheets = false, [FromQuery] bool getParent = false,
             [FromQuery] bool getPredecessors = false, [FromQuery] bool getSuccessors = false,
             [FromQuery] bool getAll = false)
         {
-            var res = await _issueDetailedService.Get(projectId.ToObjectId(), id.ToObjectId(), getAssignedUsers,
+            var res = await _issueDetailedService.Get(projectId, id, getAssignedUsers,
                 getConversations, getTimeSheets, getParent, getPredecessors, getSuccessors, getAll);
             return res == null ? NotFound() : Ok(res);
         }
 
-        //api/issues
+        //api/projects/{projectId}/issues
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult> Post([FromRoute] string projectId, [FromBody] IssueDTO dto)
+        public async Task<ActionResult> Post([FromRoute] ObjectId projectId, [FromBody] IssueDTO dto)
         {
-            if (dto.Project.Id != default && dto.Project.Id != projectId.ToObjectId())
-                throw new Exception($"Project id must be the same in url ({projectId}) and body ({dto.Project.Id}) or not defined in body");
-            dto.Project.Id = projectId.ToObjectId();
+            if (dto.Project.Id != default && dto.Project.Id != projectId)
+                throw new Exception("Project id must be the same in url and body or not defined in body");
+            dto.Project.Id = projectId;
 
             var res = await _issueService.Create(dto);
             return CreatedAtAction(nameof(Get), new {projectId, id = res.Id}, res);
         }
 
-        //api/issues/{id}
+        //api/projects/{projectId}/issues/{id}
         [HttpPut("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult> Put([FromBody] IssueDTO issueRequest, [FromRoute] string id)
+        public async Task<ActionResult> Put([FromBody] IssueDTO issueRequest, [FromRoute] ObjectId id)
         {
-            await _issueService.Update(issueRequest, id.ToObjectId());
+            await _issueService.Update(issueRequest, id);
             return NoContent();
         }
 
-        //api/issues/{id}  
+        //api/projects/{projectId}/issues/{id}  
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult> Delete([FromRoute] string id)
+        public async Task<ActionResult> Delete([FromRoute] ObjectId id)
         {
-            if (await _issueService.Delete(id.ToObjectId()))
+            if (await _issueService.Delete(id))
                 return NoContent();
             return BadRequest();
         }

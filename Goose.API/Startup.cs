@@ -24,6 +24,7 @@ using System.IO;
 using System.Reflection;
 using System.Text;
 using Goose.API.Utils.Validators;
+using Goose.API.Services.issues;
 
 namespace Goose.API
 {
@@ -153,6 +154,7 @@ namespace Goose.API
             
             services.AddSingleton<IDbContext, DbContext>();
             services.AddScoped<IAuthorizationHandler, CompanyRoleHandler>();
+            services.AddScoped<IAuthorizationHandler, ProjectRoleHandler>();
 
             services.AddScoped<IIssueRepository, IssueRepository>();
             services.AddScoped<IUserRepository, UserRepository>();
@@ -167,6 +169,7 @@ namespace Goose.API
             services.AddScoped<IIssueRequirementService, IssueRequirementService>();
             services.AddScoped<IIssueRequestValidator, IssueRequestValidator>();
             services.AddScoped<IIssuePredecessorService, IssuePredecessorService>();
+            services.AddScoped<IIssuePredecessorService, IssuePredecessorService>();
             services.AddScoped<IIssueTimeSheetService, IssueTimeSheetService>(); 
             services.AddScoped<IUserService, UserService>();     
             services.AddScoped<IRoleService, RoleService>();    
@@ -176,7 +179,7 @@ namespace Goose.API
             services.AddScoped<ICompanyService, CompanyService>();
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<ICompanyUserService, CompanyUserService>();
-            
+            services.AddScoped<IIssueSummaryService, IssueSummaryService>();
 
             services.AddHttpContextAccessor();
         }

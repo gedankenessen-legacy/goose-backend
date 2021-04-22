@@ -3,7 +3,7 @@ using Goose.Domain.Models.Identity;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace Goose.Domain.Models.Tickets
+namespace Goose.Domain.Models.Issues
 {
     public class TimeSheet
     {

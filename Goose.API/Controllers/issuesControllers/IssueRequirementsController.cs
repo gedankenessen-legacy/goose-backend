@@ -2,9 +2,10 @@
 using System.Threading.Tasks;
 using Goose.API.Services.Issues;
 using Goose.Domain.DTOs.Issues;
-using Goose.Domain.Models.Tickets;
+using Goose.Domain.Models.Issues;
 using Goose.API.Utils;
 using Microsoft.AspNetCore.Mvc;
+using MongoDB.Bson;
 
 namespace Goose.API.Controllers.IssuesControllers
 {
