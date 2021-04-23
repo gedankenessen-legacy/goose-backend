@@ -216,10 +216,17 @@ namespace Goose.Tests.Application.IntegrationTests.issues
 
             // Test if the SummaryDeclined Conversation Item is there
             issue = await TestHelper.Instance.GetIssueAsync();
-            latestConversationItem = issue.ConversationItems.Last();
+            latestConversationItem = issue.ConversationItems[issue.ConversationItems.Count -2];
+            Assert.IsTrue(latestConversationItem is not null);
             Assert.AreEqual(latestConversationItem.CreatorUserId, user.Id);
             Assert.AreEqual(latestConversationItem.Type, IssueConversation.SummaryAcceptedType);
             Assert.AreEqual(latestConversationItem.Requirements.Single(), issueRequirement.Requirement);
+
+            latestConversationItem = issue.ConversationItems[issue.ConversationItems.Count - 1];
+            Assert.IsTrue(latestConversationItem is not null);
+            Assert.AreEqual(latestConversationItem.CreatorUserId, user.Id);
+            Assert.AreEqual(latestConversationItem.Type, IssueConversation.StateChangeType);
+            Assert.AreEqual(latestConversationItem.Data, $"Status von {State.NegotiationState} zu {State.WaitingState} geändert.");
         }
 
         [Test]
