@@ -42,7 +42,7 @@ namespace Goose.Tests.Application.IntegrationTests
 
         public override bool CanConvert(Type objectType)
         {
-            return typeof(ObjectId).IsAssignableFrom(objectType);
+            return typeof(ObjectId?).IsAssignableFrom(objectType);
         }
     }
 }

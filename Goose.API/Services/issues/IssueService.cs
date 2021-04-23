@@ -207,7 +207,8 @@ namespace Goose.API.Services.Issues
                 Id = ObjectId.GenerateNewId(),
                 CreatorUserId = _httpContextAccessor.HttpContext.User.GetUserId(),
                 Type = IssueConversation.ChildIssueAddedType,
-                Data = $"{issueId}",
+                Data = null,
+                OtherTicketId = issueId,
             });
             await _issueRepo.UpdateAsync(parent);
         }
@@ -228,7 +229,8 @@ namespace Goose.API.Services.Issues
                     Id = ObjectId.GenerateNewId(),
                     CreatorUserId = _httpContextAccessor.HttpContext.User.GetUserId(),
                     Type = IssueConversation.ChildIssueRemovedType,
-                    Data = $"{issueId}",
+                    Data = null,
+                    OtherTicketId = issueId,
                 });
                 await _issueRepo.UpdateAsync(parent);
             }
