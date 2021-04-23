@@ -230,6 +230,22 @@ namespace Goose.Tests.Application.IntegrationTests
             return issues.FirstOrDefault();
         }
 
+        /// <summary>
+        /// Retrieves an issue through the Rest-api. Useful for testing the api from end to end
+        /// </summary>
+        /// <param name="_client"></param>
+        /// <param name="issueIndex"></param>
+        /// <returns></returns>
+        public async Task<IssueDTODetailed> GetIssueThroughClientAsync(HttpClient _client, int issueIndex = 0)
+        {
+            var project = await GetProject();
+            var issueId = _testIssues[issueIndex];
+            var uri = $"api/projects/{project.Id}/issues/{issueId}?GetAll=true";
+
+            var result = await _client.GetAsync(uri);
+            return await result.Content.Parse<IssueDTODetailed>();
+        }
+
         public async Task<User> GetUser()
         {
             var company = await GetCompany();

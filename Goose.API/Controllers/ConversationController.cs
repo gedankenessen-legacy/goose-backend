@@ -5,6 +5,7 @@ using Goose.Domain.DTOs.Issues;
 using Goose.Domain.Models.Issues;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Goose.API.Controllers
@@ -24,7 +25,7 @@ namespace Goose.API.Controllers
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> Get([FromRoute] string issueId)
+        public async Task<ActionResult<IList<IssueConversationDTO>>> Get([FromRoute] string issueId)
         {
             var issueConversations = await _issueConversationService.GetConversationsFromIssueAsync(issueId);
             return Ok(issueConversations);
@@ -34,7 +35,7 @@ namespace Goose.API.Controllers
         [HttpGet("{id}", Name = nameof(GetById))]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> GetById([FromRoute] string issueId, string id)
+        public async Task<ActionResult<IssueConversationDTO>> GetById([FromRoute] string issueId, string id)
         {
             var issueConversation = await _issueConversationService.GetConversationFromIssueAsync(issueId, id);
             return Ok(issueConversation);

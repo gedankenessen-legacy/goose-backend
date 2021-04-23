@@ -4,15 +4,18 @@ using Goose.Domain.Models.Identity;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
+
 namespace Goose.Domain.Models.Issues
 {
     public class IssueConversation
     {
         [BsonId]
         public ObjectId Id { get; set; }
-        public ObjectId? CreatorUserId { get; set; }
+        public ObjectId CreatorUserId { get; set; }
         public string Type { get; set; }
         public string Data { get; set; }
+        // This field is used to store a reference to the added/removed predecessor/child
+        public ObjectId? OtherTicketId { get; set; }
         public IList<string> Requirements { get; set; }
 
         public DateTime CreatedAt { get => Id.CreationTime; }
