@@ -1,11 +1,9 @@
-﻿using Goose.API.Authorization.Requirements;
-using Goose.API.Utils.Exceptions;
+﻿using Goose.API.Utils.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace Goose.API.Authorization
 {
@@ -48,7 +46,7 @@ namespace Goose.API.Authorization
             {
                 if (errorMap.TryGetValue(failedRequirement, out string errorMessage))
                 {
-                    errorMsg += errorMsg;
+                    errorMsg += errorMessage;
                 }
                 else
                 {
