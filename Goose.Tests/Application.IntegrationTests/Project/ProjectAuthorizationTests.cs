@@ -1,8 +1,10 @@
 ﻿using Goose.API;
 using Goose.API.Repositories;
+using Goose.API.Utils;
 using Goose.Domain.DTOs;
 using Goose.Domain.Models.Auth;
 using Goose.Domain.Models.Identity;
+using Goose.Domain.Models.Projects;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -21,8 +23,6 @@ namespace Goose.Tests.Application.IntegrationTests.Project
         private WebApplicationFactory<Startup> _factory;
 
         private ICompanyRepository _companyRepository;
-        private IUserRepository _userRepository;
-        private IProjectRepository _projectRepository;
 
         private SignInResponse companyOwnerSignIn;
         private SignInResponse companyClientSignIn;
@@ -40,8 +40,6 @@ namespace Goose.Tests.Application.IntegrationTests.Project
             using (var scope = scopeFactory.CreateScope())
             {
                 _companyRepository = scope.ServiceProvider.GetService<ICompanyRepository>();
-                _userRepository = scope.ServiceProvider.GetService<IUserRepository>();
-                _projectRepository = scope.ServiceProvider.GetService<IProjectRepository>();
             }
         }
 
@@ -78,23 +76,83 @@ namespace Goose.Tests.Application.IntegrationTests.Project
             Assert.IsTrue(response.IsSuccessStatusCode, "Company owner was not be able to create a customer for a project!");
         }
 
-        [Test]
+        #endregion
+
+        #region T82
+
+        [Test, Order(1)]
         public async Task EmployeeCreatesOwnState()
         {
-            Assert.IsTrue(false);
+            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", companyEmployeeSignIn.Token);
+
+            var response = await CreateStateInProject("EmployeeCreatedState");
+
+            employeeState = await response.Content.Parse<StateDTO>();
+
+            Assert.IsTrue(response.IsSuccessStatusCode, "Employee was not able to create a custom state in his project!");
         }
 
-        [Test]
+        [Test, Order(2)]
         public async Task EmployeeEditsOwnState()
         {
-            Assert.IsTrue(false);
+            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", companyEmployeeSignIn.Token);
+
+            employeeState.Name = "edited";
+
+            var response = await EditStateInProject(employeeState);
+
+            response.EnsureSuccessStatusCode();
+
+            Assert.True(response.IsSuccessStatusCode, $"{response.StatusCode}: Employee was not able to edit a custom state in his project!");
         }
 
-        [Test]
+        [Test, Order(3)]
         public async Task EmployeeRemovesOwnState()
         {
-            Assert.IsTrue(false);
+            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", companyEmployeeSignIn.Token);
+
+            var response = await RemoveStateInProject(employeeState);
+
+            response.EnsureSuccessStatusCode();
+
+            Assert.True(response.IsSuccessStatusCode, $"{response.StatusCode}: Employee was not able to remove a custom state in his project!");
         }
+
+        [Test, Order(1)]
+        public async Task CustomerIsNotAllowedToCreatesOwnState()
+        {
+            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", companyClientSignIn.Token);
+
+            var response = await CreateStateInProject("ClientCreatedState");
+
+            var error = await response.Content.Parse<ErrorResponse>();
+
+            Assert.AreEqual(HttpStatusCode.Forbidden, response.StatusCode, "Customer was able to create a custom state for a project!\n" + error.Message);
+        }
+
+        [Test, Order(2)]
+        public async Task CustomerIsNotAllowedToEditsOwnState()
+        {
+            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", companyClientSignIn.Token);
+
+            employeeState.Name = "edited";
+
+            var response = await EditStateInProject(employeeState);
+
+            Assert.AreEqual(HttpStatusCode.Forbidden, response.StatusCode, "Customer was able to edit a custom state for a project!");
+        }
+
+        [Test, Order(3)]
+        public async Task CustomerIsNotAllowedToRemovesOwnState()
+        {
+            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", companyClientSignIn.Token);
+
+            var response = await RemoveStateInProject(employeeState);
+
+            Assert.AreEqual(HttpStatusCode.Forbidden, response.StatusCode, "Customer was able to remove a custom state for a project!");
+        }
+
+        #endregion
 
         private async Task<HttpResponseMessage> AssignUserToProjectAsync(string uri, PropertyUserDTO? propertyUser = null)
         {
@@ -107,6 +165,27 @@ namespace Goose.Tests.Application.IntegrationTests.Project
             };
 
             return await _client.PutAsync(uri, propertyUser.ToStringContent());
+        }
+
+        private async Task<HttpResponseMessage> CreateStateInProject(string stateName = "TestState", StateDTO newState = null)
+        {
+            newState ??= new StateDTO()
+            {
+                Name = stateName,
+                Phase = State.NegotiationPhase
+            };
+
+            return await _client.PostAsync($"api/projects/{createdProject.Id}/states", newState.ToStringContent());
+        }
+
+        private async Task<HttpResponseMessage> EditStateInProject(StateDTO stateEdited)
+        {
+            return await _client.PutAsync($"api/projects/{createdProject.Id}/states/{stateEdited.Id}", stateEdited.ToStringContent());
+        }
+
+        private async Task<HttpResponseMessage> RemoveStateInProject(StateDTO stateToDelete)
+        {
+            return await _client.DeleteAsync($"api/projects/{createdProject.Id}/states/{stateToDelete.Id}");
         }
 
         private async Task Clear()
