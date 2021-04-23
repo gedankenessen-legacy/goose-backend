@@ -129,7 +129,7 @@ namespace Goose.Tests.Application.IntegrationTests
             return await response.Content.Parse<SignInResponse>();
         }
 
-        public async Task GenerateProject(HttpClient client)
+        public async Task<ProjectDTO> GenerateProject(HttpClient client)
         {
             var company = (await _companyRepository.FilterByAsync(x => x.Name.Equals(FirmenName))).FirstOrDefault();
             var uri = $"api/companies/{company.Id}/projects";
@@ -234,7 +234,7 @@ namespace Goose.Tests.Application.IntegrationTests
             return companies.FirstOrDefault();
         }
 
-        public async Task<Project> GetProject()
+        public async Task<Domain.Models.Projects.Project> GetProject()
         {
             var projects = await _projectRepository.FilterByAsync(x => x.ProjectDetail.Name == ProjektName);
             return projects.FirstOrDefault();

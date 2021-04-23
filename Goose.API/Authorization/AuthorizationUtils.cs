@@ -48,7 +48,7 @@ namespace Goose.API.Authorization
             {
                 if (errorMap.TryGetValue(failedRequirement, out string errorMessage))
                 {
-                    errorMsg += errorMsg;
+                    errorMsg += errorMessage;
                 }
                 else
                 {

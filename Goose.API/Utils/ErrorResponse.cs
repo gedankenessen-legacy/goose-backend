@@ -15,8 +15,8 @@ namespace Goose.API.Utils
 
         public ErrorResponse(Exception ex, int status, string stackTrace = "")
         {
-            Type = ex.GetType().Name;
-            Message = ex.Message;
+            Type = ex?.GetType()?.Name ?? "Unknown";
+            Message = ex?.Message;
             Status = status;
             StackTrace = stackTrace;
         }
