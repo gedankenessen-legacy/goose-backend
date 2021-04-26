@@ -83,8 +83,6 @@ namespace Goose.API.Services.Issues
             if (!await _issueValidator.HasExistingProjectId(issueDto.Project.Id))
                 throw new HttpStatusException(StatusCodes.Status400BadRequest,
                     $"Cannot create an Issue. Project with id [{issueDto.Project.Id}] does not exist");
-            //TODO nur mitarbeiter können tickets erstellen
-
 
             var issue = await CreateValidIssue(issueDto);
             await _issueRepo.CreateAsync(issue);

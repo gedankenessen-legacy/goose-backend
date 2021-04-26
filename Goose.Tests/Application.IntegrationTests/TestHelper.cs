@@ -7,6 +7,7 @@ using Goose.Domain.Models.Issues;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -60,13 +61,11 @@ namespace Goose.Tests.Application.IntegrationTests
 
         public static TestHelper Instance
         {
-            get
-            {
-                return _instance;
-            }
+            get { return _instance; }
         }
 
         #region Clearing
+
         public async Task ClearCompany()
         {
             var company = (await _companyRepository.FilterByAsync(x => x.Name.Equals(FirmenName))).FirstOrDefault();
@@ -102,23 +101,26 @@ namespace Goose.Tests.Application.IntegrationTests
             await ClearProject();
             await ClearCompany();
         }
+
         #endregion
 
         #region Generating
+
         public async Task<SignInResponse> GenerateCompany(HttpClient client)
         {
             var uri = "/api/auth/signUp";
-            SignUpRequest signUpRequest = new SignUpRequest() { Firstname = "Goose", Lastname = "Project", CompanyName = FirmenName, Password = "Test12345" };
+            SignUpRequest signUpRequest = new SignUpRequest() {Firstname = "Goose", Lastname = "Project", CompanyName = FirmenName, Password = "Test12345"};
             var response = await client.PostAsync(uri, signUpRequest.ToStringContent());
             return await response.Content.Parse<SignInResponse>();
         }
 
-        public async Task GenerateProject(HttpClient client)
+        public async Task<ProjectDTO> GenerateProject(HttpClient client)
         {
             var company = (await _companyRepository.FilterByAsync(x => x.Name.Equals(FirmenName))).FirstOrDefault();
             var uri = $"api/companies/{company.Id}/projects";
-            var newProject = new ProjectDTO() { Name = ProjektName };
-            await client.PostAsync(uri, newProject.ToStringContent());
+            var newProject = new ProjectDTO() {Name = ProjektName};
+            var res = await client.PostAsync(uri, newProject.ToStringContent());
+            return await res.Parse<ProjectDTO>();
         }
 
         public async Task AddUserToProject(HttpClient client, string roleName)
@@ -139,17 +141,38 @@ namespace Goose.Tests.Application.IntegrationTests
             await client.PutAsync(uri, addRequest.ToStringContent());
         }
 
-        public async Task GenerateIssue(HttpClient httpClient, int index = 0)
+        public async Task<IssueDTO> GenerateIssue(HttpClient httpClient, int index = 0)
         {
             if (_testIssues.ContainsKey(index))
             {
                 throw new Exception("Index existiert bereits");
             }
 
+            return (await GenerateIssue(httpClient, await CreateDefaultIssue(httpClient))).Item2;
+        }
+
+        public async Task<Tuple<HttpResponseMessage, IssueDTO?>> GenerateIssue(HttpClient httpClient, IssueDTO issue)
+        {
             var project = await GetProject();
-            var user = await GetUser();
 
             var uri = $"api/projects/{project.Id}/issues/";
+            var res = await httpClient.PostAsync(uri, issue.ToStringContent());
+            Tuple<HttpResponseMessage, IssueDTO?> tuple;
+            if (res.StatusCode.Equals(HttpStatusCode.Created))
+            {
+                var dto = await res.Parse<IssueDTO>();
+                _testIssues[_testIssues.Count] = dto.Id;
+                tuple = new Tuple<HttpResponseMessage, IssueDTO?>(res, dto);
+            }
+            else tuple = new Tuple<HttpResponseMessage, IssueDTO?>(res, null);
+
+            return tuple;
+        }
+
+        public async Task<IssueDTO> CreateDefaultIssue(HttpClient httpClient)
+        {
+            var project = await GetProject();
+            var user = await GetUser();
 
             var issue = new IssueDTO
             {
@@ -175,10 +198,7 @@ namespace Goose.Tests.Application.IntegrationTests
                     RelevantDocuments = null
                 }
             };
-            var postResult = await httpClient.PostAsync(uri, issue.ToStringContent());
-            var result = await postResult.Content.Parse<IssueDTO>();
-
-            _testIssues[index] = result.Id;
+            return issue;
         }
 
         /// <summary>
@@ -190,15 +210,22 @@ namespace Goose.Tests.Application.IntegrationTests
         /// <returns></returns>
         public async Task GenerateAll(HttpClient client)
         {
-            var signInResult = await GenerateCompany(client);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signInResult.Token);
+            await Login(client);
             await GenerateProject(client);
             await GenerateIssue(client);
         }
+
         #endregion
+
+        public async Task Login(HttpClient client)
+        {
+            var signInResult = await GenerateCompany(client);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signInResult.Token);
+        }
 
 
         #region Getting
+
         private async Task<IList<StateDTO>> GetStateList(HttpClient client, ObjectId projectId)
         {
             var uri = $"api/projects/{projectId}/states";
@@ -238,6 +265,7 @@ namespace Goose.Tests.Application.IntegrationTests
             var users = await _userRepository.FilterByAsync(x => x.Id.Equals(propertyUser.UserId));
             return users.FirstOrDefault();
         }
+
         #endregion
     }
 }
