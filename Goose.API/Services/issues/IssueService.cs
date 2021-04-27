@@ -119,6 +119,8 @@ namespace Goose.API.Services.Issues
             //TODO more validation
             detail.Requirements = new List<IssueRequirement>();
             detail.RelevantDocuments = new List<string>();
+            detail.RequirementsSummaryCreated = false;
+            detail.RequirementsAccepted = false;
             return detail;
         }
 
