@@ -33,11 +33,10 @@ namespace Goose.API.Services.Issues
 
         private readonly IIssueRepository _issueRepository;
         private readonly IUserRepository _userRepository;
-        private readonly IIssueRequestValidator _issueValidator;
 
         public IssueDetailedService(IIssueConversationService conversationService,
             IIssueTimeSheetService timeSheetService, IIssueService issueService, IUserRepository userRepository,
-            IIssueRepository issueRepository, IProjectRepository projectRepository, IIssueRequestValidator issueValidator)
+            IIssueRepository issueRepository, IProjectRepository projectRepository)
         {
             _conversationService = conversationService;
             _timeSheetService = timeSheetService;
@@ -45,14 +44,13 @@ namespace Goose.API.Services.Issues
             _userRepository = userRepository;
             _issueRepository = issueRepository;
             _projectRepository = projectRepository;
-            _issueValidator = issueValidator;
         }
 
         public async Task<IList<IssueDTODetailed>> GetAllOfProject(ObjectId projectId, bool getAssignedUsers,
             bool getConversations,
             bool getTimeSheets, bool getParent, bool getPredecessors, bool getSuccessors, bool getAll)
         {
-            if (!await _issueValidator.HasExistingProjectId(projectId))
+            if (await _projectRepository.GetAsync(projectId) == null)
                 throw new HttpStatusException(StatusCodes.Status404NotFound, $"Project with id [{projectId}] does not exist");
 
             var issues = await _issueRepository.GetAllOfProjectAsync(projectId);
@@ -65,7 +63,7 @@ namespace Goose.API.Services.Issues
             bool getConversations,
             bool getTimeSheets, bool getParent, bool getPredecessors, bool getSuccessors, bool getAll)
         {
-            if (!await _issueValidator.HasExistingProjectId(projectId))
+            if (await _projectRepository.GetAsync(projectId) == null)
                 throw new HttpStatusException(StatusCodes.Status404NotFound, $"Project with id [{projectId}] does not exist");
 
             var issue = await _issueRepository.GetAsync(issueId);

@@ -39,7 +39,6 @@ namespace Goose.API.Services.Issues
         private readonly IUserRepository _userRepository;
 
         private readonly IIssueRepository _issueRepo;
-        private readonly IIssueRequestValidator _issueValidator;
 
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IAuthorizationService _authorizationService;
@@ -49,14 +48,12 @@ namespace Goose.API.Services.Issues
             IStateService stateService,
             IProjectRepository projectRepository,
             IUserRepository userRepository,
-            IIssueRequestValidator issueValidator,
             IHttpContextAccessor httpContextAccessor, IAuthorizationService authorizationService, ICompanyRepository companyRepository)
         {
             _issueRepo = issueRepo;
             _stateService = stateService;
             _projectRepository = projectRepository;
             _userRepository = userRepository;
-            _issueValidator = issueValidator;
             _httpContextAccessor = httpContextAccessor;
             _authorizationService = authorizationService;
             _companyRepository = companyRepository;
