@@ -114,13 +114,25 @@ namespace Goose.Tests.Application.IntegrationTests
             return await response.Content.Parse<SignInResponse>();
         }
 
-        public async Task<ProjectDTO> GenerateProject(HttpClient client)
+        public async Task<ProjectDTO> GenerateProject(HttpClient client, SignInResponse signIn)
         {
             var company = (await _companyRepository.FilterByAsync(x => x.Name.Equals(FirmenName))).FirstOrDefault();
             var uri = $"api/companies/{company.Id}/projects";
             var newProject = new ProjectDTO() {Name = ProjektName};
-            var res = await client.PostAsync(uri, newProject.ToStringContent());
-            return await res.Parse<ProjectDTO>();
+            var res = await (await client.PostAsync(uri, newProject.ToStringContent())).Parse<ProjectDTO>();
+
+            var roles = await (await client.GetAsync("api/roles")).Parse<List<RoleDTO>>();
+            
+            var projectUserUri = $"api/projects/{res.Id}/users/{signIn.User.Id}";
+            var projectUser = new PropertyUserDTO()
+            {
+                User = signIn.User,
+                Roles = new[] {roles.First(it => it.Name.Equals(Role.ProjectLeaderRole))}
+            };
+            await client.PutAsync(projectUserUri, projectUser.ToStringContent());
+            
+            
+            return res;
         }
 
         public async Task AddUserToProject(HttpClient client, string roleName)
@@ -210,17 +222,18 @@ namespace Goose.Tests.Application.IntegrationTests
         /// <returns></returns>
         public async Task GenerateAll(HttpClient client)
         {
-            await Login(client);
-            await GenerateProject(client);
+            var signIn = await Login(client);
+            await GenerateProject(client, signIn);
             await GenerateIssue(client);
         }
 
         #endregion
 
-        public async Task Login(HttpClient client)
+        public async Task<SignInResponse> Login(HttpClient client)
         {
             var signInResult = await GenerateCompany(client);
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signInResult.Token);
+            return signInResult;
         }
 
 

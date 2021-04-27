@@ -33,8 +33,8 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
         [SetUp]
         public async Task Setup()
         {
-            await _helper.Login(_client);
-            await _helper.GenerateProject(_client);
+            var signIn = await _helper.Login(_client);
+            await _helper.GenerateProject(_client, signIn);
         }
 
         [TearDown]
