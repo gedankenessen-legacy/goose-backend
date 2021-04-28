@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 namespace Goose.Tests.Application.IntegrationTests.Project
 {
     [TestFixture]
-    public class ProjectAuthorizationTests
+    public class IssueAuthorizationTests
     {
         private HttpClient _client;
         private WebApplicationFactory<Startup> _factory;
