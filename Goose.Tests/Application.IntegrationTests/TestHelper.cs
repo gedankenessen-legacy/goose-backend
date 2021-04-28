@@ -167,9 +167,9 @@ namespace Goose.Tests.Application.IntegrationTests
                     Progress = 0,
                     Description = null,
                     Requirements = null,
-                    RequirementsAccepted = false,
-                    RequirementsSummaryCreated = false,
-                    RequirementsNeeded = false,
+                    RequirementsAccepted = true,
+                    RequirementsSummaryCreated = true,
+                    RequirementsNeeded = true,
                     Priority = 0,
                     Visibility = false,
                     RelevantDocuments = null
