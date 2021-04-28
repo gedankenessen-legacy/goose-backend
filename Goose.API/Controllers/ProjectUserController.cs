@@ -53,15 +53,7 @@ namespace Goose.API.Controllers
         public async Task<ActionResult<ProjectDTO>> GetProjectUser([FromRoute] ObjectId projectId, ObjectId userId)
         {
             var projectUser = await _projectUserService.GetProjectUser(projectId, userId);
-
-            if (projectUser != null)
-            {
-                return Ok(projectUser);
-            }
-            else
-            {
-                return NotFound();
-            }
+            return Ok(projectUser);
         }
 
         // DELETE: api/projects/{projectId}/users/{userId}
