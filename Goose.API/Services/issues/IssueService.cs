@@ -131,10 +131,11 @@ namespace Goose.API.Services.Issues
 
         private async Task<Issue> GetUpdatedIssue(Issue old, IssueDTO updated)
         {
-            if (updated.State != null) {
+            if (updated.State != null)
+            {
                 var oldStateId = old.StateId;
                 var newStateId = updated.State.Id;
-                
+
                 if (oldStateId != newStateId)
                 {
                     // State wird aktualisiert
@@ -152,6 +153,7 @@ namespace Goose.API.Services.Issues
                     });
                 }
             }
+
             old.IssueDetail = await GetUpdatedIssueDetail(old, updated.IssueDetail);
             return old;
         }
@@ -172,6 +174,8 @@ namespace Goose.API.Services.Issues
                 details.StartDate = updated.StartDate;
                 details.EndDate = updated.EndDate;
             }
+
+            details.RelevantDocuments = updated.RelevantDocuments ?? details.RelevantDocuments;
 
             return old.IssueDetail;
         }
