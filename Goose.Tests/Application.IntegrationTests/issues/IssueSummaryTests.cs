@@ -13,7 +13,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 
-namespace Goose.Tests.Application.IntegrationTests.issues
+namespace Goose.Tests.Application.IntegrationTests.Issues
 {
     [TestFixture]
     [SingleThreaded]
