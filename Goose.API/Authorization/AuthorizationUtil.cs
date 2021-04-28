@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace Goose.API.Authorization
@@ -28,6 +29,11 @@ namespace Goose.API.Authorization
             }
         }
 
+        public static async Task<bool> HasAtLeastOneRequirement(this IAuthorizationService authorizationService, ClaimsPrincipal user, object resource, params IAuthorizationRequirement[] req)
+        {
+            var res = await authorizationService.AuthorizeAsync(user, resource, req);
+            return res.Failure!.FailedRequirements.Count() < req.Length;
+        }
         public static void ThrowErrorIfAllFailed(this AuthorizationResult authorizationResult, Dictionary<IAuthorizationRequirement, string> errorMap)
         {
             if (authorizationResult.Succeeded)
