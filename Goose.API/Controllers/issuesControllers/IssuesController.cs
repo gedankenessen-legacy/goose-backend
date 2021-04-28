@@ -24,6 +24,11 @@ namespace Goose.API.Controllers.IssuesControllers
         }
 
         //api/projects/{projectId}/issues/
+        /// <summary>
+        /// Use this Endpoint to get all Issues of a Project.
+        /// Leader, Employee and Read Only Employee see all Issues.
+        /// Customer only sees extern Issues
+        /// </summary>
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -39,6 +44,11 @@ namespace Goose.API.Controllers.IssuesControllers
         }
 
         //api/projects/{projectId}/issues/{id}
+        /// <summary>
+        /// Use this Endpoint to get all Issues of a Project.
+        /// Leader, Employee and Read Only Employee see all Issues.
+        /// Customer only sees extern Issues
+        /// </summary>
         [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -54,6 +64,10 @@ namespace Goose.API.Controllers.IssuesControllers
         }
 
         //api/projects/{projectId}/issues
+        /// <summary>
+        /// Use this Endpoint to update an Issues of a Project.
+        /// Only Leader, Employee and Customer can create Issues.
+        /// </summary>
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -68,6 +82,11 @@ namespace Goose.API.Controllers.IssuesControllers
         }
 
         //api/projects/{projectId}/issues/{id}
+        /// <summary>
+        /// Use this Endpoint to create an Issues of a Project.
+        /// Only Leader, Employee and Customer can update Issues.
+        /// Only Leader and Employee can update the State of an Issue
+        /// </summary>
         [HttpPut("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]

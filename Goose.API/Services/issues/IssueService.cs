@@ -138,7 +138,7 @@ namespace Goose.API.Services.Issues
 
             await UserCanCreateOrUpdateIssue(issue.ProjectId);
 
-            var issueToUpdate = await GetUpdatedIssue(await _issueRepo.GetAsync(id), issueDto);
+            var issueToUpdate = await GetUpdatedIssue(issue, issueDto);
 
             await _issueRepo.UpdateAsync(issueToUpdate);
             return await Get(id);

@@ -41,6 +41,10 @@ namespace Goose.API.Controllers
         }
 
         // POST api/issues/{issueId}/conversations
+        /// <summary>
+        /// Use this Endpoint to write a Message in an Issue.
+        /// Only Leader, Employee and Customer can write a Message.
+        /// </summary>
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -56,6 +60,10 @@ namespace Goose.API.Controllers
         }
 
         // PUT api/issues/{issueId}/conversations/{id}
+        /// <summary>
+        /// Use this Endpoint to update a Message in an Issue.
+        /// Only Leader, Employee and Customer can update a Message.
+        /// </summary>
         [HttpPut("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
