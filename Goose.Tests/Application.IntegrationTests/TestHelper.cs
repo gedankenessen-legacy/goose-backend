@@ -147,17 +147,17 @@ namespace Goose.Tests.Application.IntegrationTests
             return await response.Content.Parse<ProjectDTO>();
         }
 
-        public async Task AddUserToProject(HttpClient client, string roleName)
+        public async Task AddUserToProject(HttpClient client, Role role)
         {
             // add user to company
             var user = await GetUser();
-            await AddUserToProject(client, user, roleName);
+            await AddUserToProject(client, user, role.Name);
         }
 
-        public async Task AddUserToProject(HttpClient client, ObjectId id, string roleName)
+        public async Task AddUserToProject(HttpClient client, ObjectId id, Role role)
         {
             var user = await GetUserByUserId(id);
-            await AddUserToProject(client, user, roleName);
+            await AddUserToProject(client, user, role.Name);
         }
 
         public async Task AddUserToProject(HttpClient client, User user, string roleName)
@@ -176,7 +176,7 @@ namespace Goose.Tests.Application.IntegrationTests
             var respones = await client.PutAsync(uri, addRequest.ToStringContent());
         }
 
-        public async Task<ObjectId> GenerateUserAndSetToProject(HttpClient client, string role)
+        public async Task<ObjectId> GenerateUserAndSetToProject(HttpClient client, Role role)
         {
             //get Project
             var project = await GetProject();
@@ -190,7 +190,7 @@ namespace Goose.Tests.Application.IntegrationTests
                 Firstname = "MyGoose",
                 Lastname = "MyLastname",
                 Password = "Test12345",
-                Roles = new[] { roles.First(it => it.Name.Equals(role)) }
+                Roles = new[] { roles.First(it => it.Name.Equals(role.Name)) }
             });
 
             //Add User to Project with Role
@@ -278,7 +278,7 @@ namespace Goose.Tests.Application.IntegrationTests
             var signInResult = await GenerateCompany(client);
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signInResult.Token);
             await GenerateProject(client);
-            await AddUserToProject(client, Role.ProjectLeaderRole.Name);
+            await AddUserToProject(client, Role.ProjectLeaderRole);
             await GenerateIssue(client);
         }
         #endregion

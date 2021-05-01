@@ -16,7 +16,7 @@ using Goose.Domain.Models.Identity;
 using Goose.Domain.DTOs;
 using Goose.Domain.DTOs.Issues;
 
-namespace Goose.Tests.Application.IntegrationTests.issues
+namespace Goose.Tests.Application.IntegrationTests.Issues
 {
     [TestFixture]
     [SingleThreaded]

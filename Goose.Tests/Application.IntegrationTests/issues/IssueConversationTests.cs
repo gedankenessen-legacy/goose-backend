@@ -54,7 +54,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
         [Test]
         public async Task PostConversation()
         {
-            await TestHelper.Instance.AddUserToProject(_client, Role.ProjectLeaderRole.Name);
+            await TestHelper.Instance.AddUserToProject(_client, Role.ProjectLeaderRole);
 
             var user = await TestHelper.Instance.GetUser();
 
