@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 namespace Goose.API.Controllers
 {
     [Route("api/projects/{projectId}/users")]
+    [ApiController]
     public class ProjectUserController : ControllerBase
     {
         private readonly IProjectUserService _projectUserService;

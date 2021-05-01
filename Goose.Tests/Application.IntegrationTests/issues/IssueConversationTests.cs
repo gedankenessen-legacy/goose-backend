@@ -21,6 +21,7 @@ using System.Threading.Tasks;
 namespace Goose.Tests.Application.IntegrationTests.issues
 {
     [TestFixture]
+    [SingleThreaded]
     class IssueConversationTests
     {
         private HttpClient _client;
@@ -53,8 +54,6 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         [Test]
         public async Task PostConversation()
         {
-            await TestHelper.Instance.AddUserToProject(_client, Role.ProjectLeaderRole);
-
             var user = await TestHelper.Instance.GetUser();
 
             var newItem = new IssueConversationDTO()

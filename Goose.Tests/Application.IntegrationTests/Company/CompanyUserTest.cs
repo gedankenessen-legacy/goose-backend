@@ -15,6 +15,7 @@ using System.Threading.Tasks;
 namespace Goose.Tests.Application.IntegrationTests.Company
 {
     [TestFixture]
+    [SingleThreaded]
     public class CompanyUserTest
     {
         private HttpClient _client;
