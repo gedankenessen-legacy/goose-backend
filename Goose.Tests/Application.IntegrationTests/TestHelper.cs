@@ -154,10 +154,10 @@ namespace Goose.Tests.Application.IntegrationTests
             await AddUserToProject(client, user, role.Name);
         }
 
-        public async Task AddUserToProject(HttpClient client, ObjectId id, string roleName)
+        public async Task AddUserToProject(HttpClient client, ObjectId id, Role role)
         {
             var user = await GetUserByUserId(id);
-            await AddUserToProject(client, user, roleName);
+            await AddUserToProject(client, user, role.Name);
         }
 
         public async Task AddUserToProject(HttpClient client, User user, string roleName)
