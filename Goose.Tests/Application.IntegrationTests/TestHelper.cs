@@ -336,6 +336,7 @@ namespace Goose.Tests.Application.IntegrationTests
             var result = await _client.GetAsync(uri);
             return await result.Content.Parse<IssueDTODetailed>();
         }
+
         public async Task<IssueDTO> GetIssueDTOAsync(HttpClient client, int issueIndex = 0)
         {
             var issueId = _testIssues[issueIndex];
