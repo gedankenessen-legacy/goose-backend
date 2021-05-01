@@ -117,13 +117,18 @@ namespace Goose.API.Services
             var userId = _httpContextAccessor.HttpContext.User.GetUserId();
             var company = await _companyRepository.GetAsync(companyId);
 
-            var companyUser = company.Users.SingleOrDefault(x => x.UserId == userId);
+            if (company == null)
+            {
+                throw new HttpStatusException(StatusCodes.Status404NotFound, "Invalid CompanyId");
+            }
 
-            var companyRole = (await _companyRepository.FilterByAsync(x => x.Name == Role.CompanyRole)).Single();
-            if (companyRole == null)
+            var companyUser = company.Users.SingleOrDefault(x => x.UserId == userId);
+            if (companyUser == null)
             {
                 throw new HttpStatusException(StatusCodes.Status403Forbidden, "You are no member of this company.");
             }
+
+            var companyRole = (await _roleRepository.FilterByAsync(x => x.Name == Role.CompanyRole)).Single();
 
             var projects = await _projectRepository.FilterByAsync(x => x.CompanyId == companyId);
 
