@@ -1,20 +1,20 @@
-﻿using Goose.API.Repositories;
+﻿using Goose.API;
+using Goose.API.Repositories;
 using Goose.Domain.DTOs;
 using Goose.Domain.DTOs.Issues;
 using Goose.Domain.Models.Auth;
-using Goose.Domain.Models.Projects;
+using Goose.Domain.Models.Identity;
 using Goose.Domain.Models.Issues;
+using Goose.Domain.Models.Projects;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
+using MongoDB.Bson;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Goose.API;
-using Microsoft.Extensions.DependencyInjection;
-using Goose.Domain.Models.Identity;
 using System.Net.Http.Headers;
-using MongoDB.Bson;
 
 namespace Goose.Tests.Application.IntegrationTests
 {
@@ -283,7 +283,6 @@ namespace Goose.Tests.Application.IntegrationTests
         }
         #endregion
 
-
         #region Getting
         private async Task<IList<StateDTO>> GetStateList(HttpClient client, ObjectId projectId)
         {
@@ -337,6 +336,15 @@ namespace Goose.Tests.Application.IntegrationTests
             var result = await _client.GetAsync(uri);
             return await result.Content.Parse<IssueDTODetailed>();
         }
+        public async Task<IssueDTO> GetIssueDTOAsync(HttpClient client, int issueIndex = 0)
+        {
+            var issueId = _testIssues[issueIndex];
+            var project = await GetProject();
+            var uri = $"api/projects/{project.Id}/issues/{issueId}";
+
+            var getResult = await client.GetAsync(uri);
+            return await getResult.Content.Parse<IssueDTO>();
+        }
 
         public async Task<User> GetUser()
         {
@@ -351,6 +359,21 @@ namespace Goose.Tests.Application.IntegrationTests
         {
             var users = await _userRepository.FilterByAsync(x => x.Id.Equals(Id));
             return users.FirstOrDefault();
+        }
+
+        #endregion
+
+        #region Update
+
+        public async Task<IssueDTO> UpdateIssueAsync(HttpClient client, IssueDTO issue, int index = 0)
+        {
+            var project = await GetProject();
+
+            var uri = $"api/projects/{project.Id}/issues/{issue.Id}";
+
+            await client.PutAsync(uri, issue.ToStringContent());
+
+            return await GetIssueDTOAsync(client, index);
         }
 
         #endregion
