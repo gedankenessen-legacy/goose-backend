@@ -11,6 +11,8 @@ using MongoDB.Bson;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Goose.API.Utils.Authentication;
+using Goose.Domain.Models.Identity;
 
 namespace Goose.API.Services
 {
@@ -26,13 +28,20 @@ namespace Goose.API.Services
     {
         private readonly IProjectRepository _projectRepository;
         private readonly ICompanyRepository _companyRepository;
+        private readonly IRoleRepository _roleRepository;
         private readonly IAuthorizationService _authorizationService;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public ProjectService(IProjectRepository projectRepository, ICompanyRepository companyRepository, IAuthorizationService authorizationService, IHttpContextAccessor httpContextAccessor)
+        public ProjectService(
+            IProjectRepository projectRepository,
+            ICompanyRepository companyRepository,
+            IRoleRepository roleRepository,
+            IAuthorizationService authorizationService,
+            IHttpContextAccessor httpContextAccessor)
         {
             _projectRepository = projectRepository;
             _companyRepository = companyRepository;
+            _roleRepository = roleRepository;
             _authorizationService = authorizationService;
             _httpContextAccessor = httpContextAccessor;
         }
@@ -105,10 +114,38 @@ namespace Goose.API.Services
 
         public async Task<IList<ProjectDTO>> GetProjects(ObjectId companyId)
         {
+            var userId = _httpContextAccessor.HttpContext.User.GetUserId();
+            var company = await _companyRepository.GetAsync(companyId);
+
+            if (company == null)
+            {
+                throw new HttpStatusException(StatusCodes.Status404NotFound, "Invalid CompanyId");
+            }
+
+            var companyUser = company.Users.SingleOrDefault(x => x.UserId == userId);
+            if (companyUser == null)
+            {
+                throw new HttpStatusException(StatusCodes.Status403Forbidden, "You are no member of this company.");
+            }
+
+            var companyRole = (await _roleRepository.FilterByAsync(x => x.Name == Role.CompanyRole)).Single();
+
             var projects = await _projectRepository.FilterByAsync(x => x.CompanyId == companyId);
 
-            var projectDTOs = from project in projects
+            IEnumerable<ProjectDTO> projectDTOs;
+            if (companyUser.RoleIds.Any(x => x == companyRole.Id))
+            {
+                // Die Firma darf alle Projekt sehen
+                projectDTOs = from project in projects
                               select new ProjectDTO(project);
+            }
+            else
+            {
+                // Ansonsten (Mitarbeiter & Kunden) dürfen nur Projekte sehen, in denen sie auch eine Rolle haben
+                projectDTOs = from project in projects
+                              where project.Users.Any(x => x.UserId == userId)
+                              select new ProjectDTO(project);
+            }
 
             return projectDTOs.ToList();
         }

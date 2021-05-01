@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Goose.API.Utils;
 using Goose.API.Utils.Exceptions;
 using Goose.Domain.Models.Identity;
+using Microsoft.AspNetCore.Http;
 
 namespace Goose.API.Services
 {
@@ -39,15 +40,14 @@ namespace Goose.API.Services
             if (project == null)
             {
                 // ungültige projectId
-                return null;
+                throw new HttpStatusException(StatusCodes.Status404NotFound, "Project id does not exist");
             }
 
             var projectUser = project.Users.SingleOrDefault(x => x.UserId == userId);
-            
             if (projectUser == null)
             {
                 // user nicht Mitglied der Projects
-                return null;
+                throw new HttpStatusException(StatusCodes.Status403Forbidden, "User is not a member of this project");
             }
 
             var user = await _userRepository.GetAsync(userId);
