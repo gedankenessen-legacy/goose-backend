@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Http;
 using Goose.Domain.Models.Identity;
 using Microsoft.AspNetCore.Http.Features;
 using MongoDB.Bson;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Goose.API.Services.Issues
 {
@@ -56,9 +57,24 @@ namespace Goose.API.Services.Issues
                 throw new HttpStatusException(StatusCodes.Status404NotFound, $"Project with id [{projectId}] does not exist");
 
             var issues = await _issueRepository.GetAllOfProjectAsync(projectId);
-            var tasks = issues.Select(it => CreateDtoFromIssue(it, getAssignedUsers, getConversations,
-                getTimeSheets, getParent, getPredecessors, getSuccessors, getAll)).ToList();
-            return (await Task.WhenAll(tasks)).ToList();
+
+            if (await _issueService.UserCanSeeInternTicket(projectId))
+            {
+                var tasks = issues.Select(it => CreateDtoFromIssue(it, getAssignedUsers, getConversations,
+                    getTimeSheets, getParent, getPredecessors, getSuccessors, getAll)).ToList();
+                return (await Task.WhenAll(tasks)).ToList();
+            }
+
+            IList<Task<IssueDTODetailed>> issueTaskList = new List<Task<IssueDTODetailed>>();
+            foreach (var issue in issues)
+            {
+                if (!issue.IssueDetail.Visibility)
+                    continue;
+
+                issueTaskList.Add(CreateDtoFromIssue(issue, getAssignedUsers, getConversations,
+                    getTimeSheets, getParent, getPredecessors, getSuccessors, getAll));
+            }
+            return (await Task.WhenAll(issueTaskList)).ToList();
         }
 
         public async Task<IssueDTODetailed> Get(ObjectId projectId, ObjectId issueId, bool getAssignedUsers,
@@ -67,6 +83,9 @@ namespace Goose.API.Services.Issues
         {
             if (!await _issueValidator.HasExistingProjectId(projectId))
                 throw new HttpStatusException(StatusCodes.Status404NotFound, $"Project with id [{projectId}] does not exist");
+
+            if (!(await _issueService.UserCanSeeInternTicket(projectId)))
+                throw new HttpStatusException(StatusCodes.Status403Forbidden, $"Sie haben nicht die berechtigung dieses Ticket zu sehen");
 
             var issue = await _issueRepository.GetAsync(issueId);
             return await CreateDtoFromIssue(issue, getAssignedUsers, getConversations, getTimeSheets, getParent, getPredecessors, getSuccessors, getAll);
