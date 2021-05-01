@@ -377,5 +377,20 @@ namespace Goose.Tests.Application.IntegrationTests
         }
 
         #endregion
+
+        #region Update
+
+        public async Task<IssueDTO> UpdateIssueAsync(HttpClient client, IssueDTO issue, int index = 0)
+        {
+            var project = await GetProject();
+
+            var uri = $"api/projects/{project.Id}/issues/{issue.Id}";
+
+            await client.PutAsync(uri, issue.ToStringContent());
+
+            return await GetIssueDTOAsync(client, index);
+        }
+
+        #endregion
     }
 }
