@@ -153,12 +153,14 @@ namespace Goose.API.Services.Issues
 
                 if (oldStateId != newStateId)
                 {
-                    await UserCanChangeStatus(old.ProjectId);
-                    // State wird aktualisiert
-                    old.StateId = newStateId;
-
                     var oldState = await _stateService.GetState(old.ProjectId, oldStateId);
                     var newState = await _stateService.GetState(old.ProjectId, newStateId);
+
+                    // if changing the state to cancelled, we need to validate the user requirments.
+                    if (newState.Name.Equals(State.CancelledState))
+                        await UserCanDiscardIssue(old); 
+                    else
+                        await UserCanChangeStatus(old);
 
                     old.ConversationItems.Add(new IssueConversation()
                     {
@@ -211,6 +213,9 @@ namespace Goose.API.Services.Issues
         public async Task SetParent(ObjectId issueId, ObjectId parentId)
         {
             var issue = await _issueRepo.GetAsync(issueId);
+
+            await UserCanAddParent(issue);
+
             var parent = await _issueRepo.GetAsync(parentId);
 
             if (issue.ProjectId != parent.ProjectId)
@@ -255,7 +260,6 @@ namespace Goose.API.Services.Issues
                 await _issueRepo.UpdateAsync(parent);
             }
         }
-
 
         private async Task<StateDTO> GetState(ObjectId projectId, string stateName)
         {
@@ -313,18 +317,38 @@ namespace Goose.API.Services.Issues
             return authorizationResult.Failure.FailedRequirements.Count() < requirements.Count;
         }
 
-        private async Task UserCanChangeStatus(ObjectId projectId)
+        private async Task UserCanChangeStatus(Issue issue)
         {
-            var project = await _projectRepository.GetAsync(projectId);
             Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
             {
-                { ProjectRolesRequirement.EmployeeRequirement, "You need to be the employee with write-rights in this project, in order to change the state" },
-                { ProjectRolesRequirement.LeaderRequirement, "You need to be the leader in this project, in order to change the state." },                
+                { IssueOperationRequirments.EditState, "Your are not allowed to edit the state of the issue." }
             };
 
             // validate requirements with the appropriate handlers.
-            var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, project, requirementsWithErrors.Keys);
-            authorizationResult.ThrowErrorIfAllFailed(requirementsWithErrors);
+            var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, issue, requirementsWithErrors.Keys);
+            authorizationResult.ThrowErrorForFailedRequirements(requirementsWithErrors);
+        }
+
+        private async Task UserCanDiscardIssue(Issue issue)
+        {
+            Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
+            {
+                { IssueOperationRequirments.DiscardTicket, "Your are not allowed to discard the issue." }
+            };
+
+            var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, issue, requirementsWithErrors.Keys);
+            authorizationResult.ThrowErrorForFailedRequirements(requirementsWithErrors);
+        }
+
+        private async Task UserCanAddParent(Issue issue)
+        {
+            Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
+            {
+                { IssueOperationRequirments.AddSubTicket, "Your are not allowed to add a parent to this issue." }
+            };
+
+            var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, issue, requirementsWithErrors.Keys);
+            authorizationResult.ThrowErrorForFailedRequirements(requirementsWithErrors);
         }
 
         private async Task UserCanCreateOrUpdateIssue(ObjectId projectId)
