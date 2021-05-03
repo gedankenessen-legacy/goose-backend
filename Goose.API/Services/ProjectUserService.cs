@@ -10,6 +10,7 @@ using Goose.API.Utils;
 using Goose.API.Utils.Exceptions;
 using Goose.Domain.Models.Identity;
 using System.Threading;
+using Nito.AsyncEx;
 
 namespace Goose.API.Services
 {
@@ -26,7 +27,7 @@ namespace Goose.API.Services
         private readonly IProjectRepository _projectRepository;
         private readonly IUserRepository _userRepository;
         private readonly IRoleRepository _roleRepository;
-        private readonly ReaderWriterLockSlim _readerWriterLockSlim = new ReaderWriterLockSlim();
+        private readonly AsyncLock _mutex = new AsyncLock();
 
         public ProjectUserService(IProjectRepository projectRepository, IUserRepository userRepository, IRoleRepository roleRepository)
         {
@@ -130,9 +131,8 @@ namespace Goose.API.Services
                 throw new HttpStatusException(404, "Invalid projectId");
             }
 
-            try
+            using (await _mutex.LockAsync())
             {
-                _readerWriterLockSlim.EnterWriteLock();
                 var projectLeaderRole = (await _roleRepository.FilterByAsync(x => x.Name == Role.ProjectLeaderRole)).SingleOrDefault();
 
                 if (projectLeaderRole != null && roleIds.Contains(projectLeaderRole.Id))
@@ -152,13 +152,9 @@ namespace Goose.API.Services
 
                 existingProject.Users.Add(newProjectUser);
                 await _projectRepository.UpdateAsync(existingProject);
-            }
-            finally
-            {
-                _readerWriterLockSlim.ExitWriteLock();
+                return await GetProjectUsers(projectId);
             }
 
-            return await GetProjectUsers(projectId);
         }
 
         public async Task RemoveUserFromProject(ObjectId projectId, ObjectId userId)
