@@ -18,35 +18,6 @@ namespace Goose.Tests.Application.IntegrationTests.issues
     [Parallelizable(ParallelScope.All)]
     class IssueConversationTests
     {
-        private sealed class TestScope : IDisposable
-        {
-            public HttpClient client;
-            public WebApplicationFactory<Startup> _factory;
-            public SimpleTestHelper Helper;
-            public IIssueRequirementService _issueRequirementService;
-
-            public TestScope()
-            {
-                Task.Run(() =>
-                {
-                    _factory = new WebApplicationFactory<Startup>();
-                    client = _factory.CreateClient();
-
-                    Helper = new SimpleTestHelperBuilder(client).Build().Result;
-                    var scopeFactory = _factory.Server.Services.GetService<IServiceScopeFactory>();
-                    using var scope = scopeFactory.CreateScope();
-                    _issueRequirementService = scope.ServiceProvider.GetService<IIssueRequirementService>();
-                }).Wait();
-            }
-
-            public void Dispose()
-            {
-                client?.Dispose();
-                _factory?.Dispose();
-                Helper.Dispose();
-            }
-        }
-
         [Test]
         public async Task PostConversation()
         {
@@ -197,7 +168,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             {
                 var issue = scope.Helper.Issue;
                 IssueRequirement issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen"};
-                await scope._issueRequirementService.CreateAsync(issue.Id, issueRequirement);
+                await scope.Helper.Helper.IssueRequirementService.CreateAsync(issue.Id, issueRequirement);
 
                 // Create a summary
                 var uri = $"/api/issues/{issue.Id}/summaries";
@@ -241,7 +212,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
                 var issue = scope.Helper.Issue;
                 
                 IssueRequirement issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen"};
-                issueRequirement = await scope._issueRequirementService.CreateAsync(issue.Id, issueRequirement);
+                issueRequirement = await scope.Helper.Helper.IssueRequirementService.CreateAsync(issue.Id, issueRequirement);
 
                 // Create a summary
                 var uri = $"/api/issues/{issue.Id}/summaries";

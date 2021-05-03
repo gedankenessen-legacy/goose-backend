@@ -16,36 +16,6 @@ namespace Goose.Tests.Application.IntegrationTests.issues
     [Parallelizable(ParallelScope.All)]
     class IssueSummaryTests
     {
-        private sealed class TestScope : IDisposable
-        {
-            public HttpClient client;
-            public IIssueRequirementService _issueRequirementService;
-            public WebApplicationFactory<Startup> _factory;
-            public SimpleTestHelper Helper;
-
-            
-            public TestScope()
-            {
-                Task.Run(() =>
-                {
-                    _factory = new WebApplicationFactory<Startup>();
-                    client = _factory.CreateClient();
-                    Helper = new SimpleTestHelperBuilder(client).Build().Result;
-                    var scopeFactory = _factory.Server.Services.GetService<IServiceScopeFactory>();
-
-                    using var scope = scopeFactory.CreateScope();
-                    _issueRequirementService = scope.ServiceProvider.GetService<IIssueRequirementService>();
-                }).Wait();
-            }
-
-            public void Dispose()
-            {
-                client?.Dispose();
-                _factory?.Dispose();
-                Helper.Dispose();
-            }
-        }
-        
         [Test]
         public async Task CreateSummary()
         {
@@ -53,7 +23,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             {
                 var issue = scope.Helper.Issue;
                 IssueRequirement issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen" };
-                await scope._issueRequirementService.CreateAsync(issue.Id, issueRequirement);
+                await scope.Helper.Helper.IssueRequirementService.CreateAsync(issue.Id, issueRequirement);
 
                 var uri = $"/api/issues/{issue.Id}/summaries";
                 var response = await scope.client.PostAsync(uri, new object().ToStringContent());
@@ -98,7 +68,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             {
                 var issue = scope.Helper.Issue;
                 IssueRequirement issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen" };
-                await scope._issueRequirementService.CreateAsync(issue.Id, issueRequirement);
+                await scope.Helper.Helper.IssueRequirementService.CreateAsync(issue.Id, issueRequirement);
 
                 var uri = $"/api/issues/{issue.Id}/summaries";
                 var response = await scope.client.PostAsync(uri, new object().ToStringContent());
@@ -138,7 +108,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             using (var scope = new TestScope())
             {
                 IssueRequirement issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen" };
-                await scope._issueRequirementService.CreateAsync(scope.Helper.Issue.Id, issueRequirement);
+                await scope.Helper.Helper.IssueRequirementService.CreateAsync(scope.Helper.Issue.Id, issueRequirement);
 
                 var uri = $"/api/issues/{scope.Helper.Issue.Id}/summaries";
                 var responce = await scope.client.PostAsync(uri, new object().ToStringContent());
@@ -182,7 +152,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             using (var scope = new TestScope())
             {
                 IssueRequirement issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen" };
-                await scope._issueRequirementService.CreateAsync(scope.Helper.Issue.Id, issueRequirement);
+                await scope.Helper.Helper.IssueRequirementService.CreateAsync(scope.Helper.Issue.Id, issueRequirement);
 
                 var uri = $"/api/issues/{scope.Helper.Issue.Id}/summaries";
                 var responce = await scope.client.PostAsync(uri, new object().ToStringContent());

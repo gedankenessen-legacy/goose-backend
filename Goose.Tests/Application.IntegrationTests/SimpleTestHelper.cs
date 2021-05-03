@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
@@ -96,11 +97,11 @@ namespace Goose.Tests.Application.IntegrationTests
         }
     }
 
-    public class SimpleTestHelperBuilder
+    public class SimpleTestHelperBuilderBase
     {
-        private readonly HttpClient _client;
+        protected HttpClient _client;
 
-        private SignUpRequest _signUpRequest = new SignUpRequest
+        protected SignUpRequest _signUpRequest = new SignUpRequest
         {
             Firstname = $"{new Random().NextDouble()}",
             Lastname = $"{new Random().NextDouble()}",
@@ -113,7 +114,7 @@ namespace Goose.Tests.Application.IntegrationTests
             Name = $"{new Random().NextDouble()}"
         };
 
-        private IssueDTO _issueDto = new IssueDTO
+        protected IssueDTO _issueDto = new IssueDTO
         {
             Author = null,
             Client = null,
@@ -138,24 +139,22 @@ namespace Goose.Tests.Application.IntegrationTests
             }
         };
 
-        public SimpleTestHelperBuilder(HttpClient client)
-        {
-            _client = client;
-        }
+       
+        public void SetClient(HttpClient client) => _client = client;
 
-        public SimpleTestHelperBuilder SetIssue(IssueDTO issue)
+        public SimpleTestHelperBuilderBase SetIssue(IssueDTO issue)
         {
             _issueDto = issue;
             return this;
         }
 
-        public SimpleTestHelperBuilder WithIssue(Action<IssueDTO> action)
+        public SimpleTestHelperBuilderBase WithIssue(Action<IssueDTO> action)
         {
             action(_issueDto);
             return this;
         }
 
-        public async Task<SimpleTestHelper> Build()
+        public virtual async Task<SimpleTestHelper> Build()
         {
             var simpleHelper = new SimpleTestHelper(_client);
             await simpleHelper.SignUp(_signUpRequest);
@@ -167,9 +166,16 @@ namespace Goose.Tests.Application.IntegrationTests
             _issueDto.Author = simpleHelper.User;
             _issueDto.Client = simpleHelper.User;
             _issueDto.Project = simpleHelper.Project;
-            await simpleHelper.CreateIssue(_issueDto);
+            await CreateIssues(simpleHelper);
 
             return simpleHelper;
         }
+
+        public virtual async Task CreateIssues(SimpleTestHelper simpleTestHelper)
+        {
+            await simpleTestHelper.CreateIssue(_issueDto);
+        }
+
     }
+
 }

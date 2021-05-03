@@ -6,6 +6,7 @@ using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using Goose.API;
 using Goose.API.Repositories;
+using Goose.API.Services.Issues;
 using Goose.Domain.DTOs;
 using Goose.Domain.DTOs.Issues;
 using Goose.Domain.Models.Auth;
@@ -30,11 +31,14 @@ namespace Goose.Tests.Application.IntegrationTests
         private List<ObjectId> _issues = new();
 
 
-        private readonly ICompanyRepository _companyRepository;
-        private readonly IUserRepository _userRepository;
-        private readonly IIssueRepository _issueRepository;
-        private readonly IRoleRepository _roleRepository;
-        private readonly IProjectRepository _projectRepository;
+        public ICompanyRepository CompanyRepository { get; }
+        public IUserRepository UserRepository { get; }
+        public IIssueRepository IssueRepository { get; }
+        public IRoleRepository RoleRepository { get; }
+        public IProjectRepository ProjectRepository { get; }
+        public IIssueRequirementService IssueRequirementService { get; }
+
+        public ICompanyRepository MyProperty { get; set; }
 
         public NewTestHelper(HttpClient client)
         {
@@ -44,11 +48,12 @@ namespace Goose.Tests.Application.IntegrationTests
             var scopeFactory = factory.Server.Services.GetService<IServiceScopeFactory>();
 
             using var scope = scopeFactory.CreateScope();
-            _companyRepository = scope.ServiceProvider.GetService<ICompanyRepository>();
-            _userRepository = scope.ServiceProvider.GetService<IUserRepository>();
-            _projectRepository = scope.ServiceProvider.GetService<IProjectRepository>();
-            _roleRepository = scope.ServiceProvider.GetService<IRoleRepository>();
-            _issueRepository = scope.ServiceProvider.GetService<IIssueRepository>();
+            CompanyRepository = scope.ServiceProvider.GetService<ICompanyRepository>();
+            UserRepository = scope.ServiceProvider.GetService<IUserRepository>();
+            ProjectRepository = scope.ServiceProvider.GetService<IProjectRepository>();
+            RoleRepository = scope.ServiceProvider.GetService<IRoleRepository>();
+            IssueRepository = scope.ServiceProvider.GetService<IIssueRepository>();
+            IssueRequirementService = scope.ServiceProvider.GetService<IIssueRequirementService>();
         }
 
         #region Generate
@@ -80,7 +85,7 @@ namespace Goose.Tests.Application.IntegrationTests
 
         public async Task AddUserToProject(ObjectId projectId, ObjectId userId, params string[] roles)
         {
-            var user = await _userRepository.GetAsync(userId);
+            var user = await UserRepository.GetAsync(userId);
             await AddUserToProject(projectId, user, roles);
         }
 
@@ -168,7 +173,7 @@ namespace Goose.Tests.Application.IntegrationTests
         public async Task<SignInResponse> CreateUserForCompany(PropertyUserLoginDTO login, ObjectId companyId)
         {
             // NOTE: Customer gets cleaned up in `ClearCompany(...)`
-            var company = await _companyRepository.GetAsync(companyId);
+            var company = await CompanyRepository.GetAsync(companyId);
             var uri = $"/api/companies/{company.Id}/users";
             var response = await _client.PostAsync(uri, login.ToStringContent());
             return await response.Content.Parse<SignInResponse>();
@@ -202,7 +207,7 @@ namespace Goose.Tests.Application.IntegrationTests
 
         public async Task<Issue> GetIssueAsync(ObjectId issueId)
         {
-            return await _issueRepository.GetAsync(issueId);
+            return await IssueRepository.GetAsync(issueId);
         }
 
         public async Task<IssueDTODetailed> GetIssueThroughClientAsync(ObjectId projectId, ObjectId issueId)
@@ -271,11 +276,11 @@ namespace Goose.Tests.Application.IntegrationTests
 
         public async Task ClearCompany(ObjectId companyId)
         {
-            var company = await _companyRepository.GetAsync(companyId);
+            var company = await CompanyRepository.GetAsync(companyId);
             if (company != null)
             {
-                await Task.WhenAll(company.Users.Select(it => _userRepository.DeleteAsync(it.UserId)));
-                await _companyRepository.DeleteAsync(company.Id);
+                await Task.WhenAll(company.Users.Select(it => UserRepository.DeleteAsync(it.UserId)));
+                await CompanyRepository.DeleteAsync(company.Id);
             }
         }
 
@@ -286,7 +291,7 @@ namespace Goose.Tests.Application.IntegrationTests
 
         public async Task ClearProject(ObjectId projectId)
         {
-            await _projectRepository.DeleteAsync(projectId);
+            await ProjectRepository.DeleteAsync(projectId);
         }
 
         public async Task ClearProjects()
@@ -296,7 +301,7 @@ namespace Goose.Tests.Application.IntegrationTests
 
         public async Task ClearIssue(ObjectId issueId)
         {
-            await _issueRepository.DeleteAsync(issueId);
+            await IssueRepository.DeleteAsync(issueId);
         }
 
         public async Task ClearIssues()
@@ -311,11 +316,11 @@ namespace Goose.Tests.Application.IntegrationTests
 
         public async void Dispose()
         {
-            _companyRepository?.Dispose();
-            _userRepository?.Dispose();
-            _issueRepository?.Dispose();
-            _roleRepository?.Dispose();
-            _projectRepository?.Dispose();
+            CompanyRepository?.Dispose();
+            UserRepository?.Dispose();
+            IssueRepository?.Dispose();
+            RoleRepository?.Dispose();
+            ProjectRepository?.Dispose();
 
             await ClearIssues();
             await ClearProjects();

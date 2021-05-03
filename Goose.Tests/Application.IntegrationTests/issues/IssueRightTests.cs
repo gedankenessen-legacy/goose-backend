@@ -19,46 +19,22 @@ namespace Goose.Tests.Application.IntegrationTests.issues
     [Parallelizable(ParallelScope.All)]
     class IssueRightTests
     {
-        private sealed class TestScope : IDisposable
+        private class SimpleTestHelperBuilderIssueRights : SimpleTestHelperBuilderBase
         {
-            public HttpClient client;
-            public WebApplicationFactory<Startup> _factory;
-            public SimpleTestHelper Helper;
-
-            public CompanyDTO Company;
-            public ProjectDTO Project;
-
-            public TestScope()
+            public override async Task CreateIssues(SimpleTestHelper simpleTestHelper)
             {
-                Task.Run(() =>
+                var tasks = new List<Task<HttpResponseMessage>>();
+                for (int i = 0; i < 10; i++)
                 {
-                    _factory = new WebApplicationFactory<Startup>();
-                    client = _factory.CreateClient();
-                    Helper = new SimpleTestHelperBuilder(client).Build().Result;
-                    Company = Helper.Company;
-                    Project = Helper.Project;
+                    var copy = _issueDto.Copy();
+                    copy.Id = ObjectId.Empty;
+                    copy.IssueDetail.Visibility = i % 2 == 0;
+                    tasks.Add(simpleTestHelper.CreateIssue(copy));
+                }
 
-                    var tasks = new List<Task<HttpResponseMessage>>();
-                    for (int i = 0; i < 10; i++)
-                    {
-                        var copy = Helper.Issue.Copy();
-                        copy.Id = ObjectId.Empty;
-                        copy.IssueDetail.Visibility = i % 2 == 0;
-                        tasks.Add(Helper.CreateIssue(copy));
-                    }
-
-                    Task.WaitAll(tasks.ToArray());
-                }).Wait();
-            }
-
-            public void Dispose()
-            {
-                client?.Dispose();
-                _factory?.Dispose();
-                Helper.Dispose();
+                Task.WaitAll(tasks.ToArray());
             }
         }
-
         //Create Issue as Write Employee
         [Test]
         public async Task CreateIssueAsWriteEmployee()
@@ -217,12 +193,12 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         [Test]
         public async Task GetIssueAsLeader()
         {
-            using (var scope = new TestScope())
+            using (var scope = new TestScope(new SimpleTestHelperBuilderIssueRights()))
             {
                 var uri = $"api/projects/{scope.Project.Id}/issues";
                 var response = await scope.client.GetAsync(uri);
                 var list = await response.Content.Parse<IList<IssueDTO>>();
-                Assert.AreEqual(11, list.Count);
+                Assert.AreEqual(10, list.Count);
             }
         }
 
@@ -230,13 +206,13 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         [Test]
         public async Task GetIssueAsEmployee()
         {
-            using (var scope = new TestScope())
+            using (var scope = new TestScope(new SimpleTestHelperBuilderIssueRights()))
             {
                 await scope.Helper.Helper.GenerateUserAndSetToProject(scope.Company.Id, scope.Project.Id, Role.EmployeeRole);
                 var uri = $"api/projects/{scope.Project.Id}/issues";
                 var response = await scope.client.GetAsync(uri);
                 var list = await response.Content.Parse<IList<IssueDTO>>();
-                Assert.AreEqual(11, list.Count);
+                Assert.AreEqual(10, list.Count);
             }
         }
 
@@ -244,7 +220,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         [Test]
         public async Task GetIssueAsCustomer()
         {
-            using (var scope = new TestScope())
+            using (var scope = new TestScope(new SimpleTestHelperBuilderIssueRights()))
             {
                 await scope.Helper.Helper.GenerateUserAndSetToProject(scope.Company.Id, scope.Project.Id, Role.CustomerRole);
                 var uri = $"api/projects/{scope.Project.Id}/issues";
@@ -258,13 +234,13 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         [Test]
         public async Task GetIssueAsReadOnlyEmployee()
         {
-            using (var scope = new TestScope())
+            using (var scope = new TestScope(new SimpleTestHelperBuilderIssueRights()))
             {
                 await scope.Helper.Helper.GenerateUserAndSetToProject(scope.Company.Id, scope.Project.Id, Role.EmployeeRole);
                 var uri = $"api/projects/{scope.Project.Id}/issues";
                 var response = await scope.client.GetAsync(uri);
                 var list = await response.Content.Parse<IList<IssueDTO>>();
-                Assert.AreEqual(11, list.Count);
+                Assert.AreEqual(10, list.Count);
             }
         }
 
@@ -366,6 +342,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
                 var response = await scope.client.PostAsync(uri, newItem.ToStringContent());
                 Assert.IsFalse(response.IsSuccessStatusCode);
             }
+
         }
     }
 }

@@ -16,41 +16,24 @@ namespace Goose.Tests.Application.IntegrationTests.Company
     [Parallelizable(ParallelScope.All)]
     public class CompanyUserTest
     {
-        private sealed class TestScope : IDisposable
+       
+        private class SimpleTestHelperBuilderCompanyUser : SimpleTestHelperBuilderBase
         {
-            public HttpClient client;
-            public WebApplicationFactory<Startup> _factory;
-            public SignInResponse signInObject;
-            public CompanyDTO company => signInObject.Companies[0];
-            public NewTestHelper helper;
-
-            public TestScope()
+            public override async Task<SimpleTestHelper> Build()
             {
-                Task.Run(() =>
-                {
-                    _factory = new WebApplicationFactory<Startup>();
-                    client = _factory.CreateClient();
-
-                    helper = new NewTestHelper(client);
-                    signInObject = helper.GenerateCompany().Parse<SignInResponse>().Result;
-                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signInObject.Token);
-                }).Wait();
-            }
-
-            public void Dispose()
-            {
-                client?.Dispose();
-                _factory?.Dispose();
-                helper.Dispose();
+                var simpleHelper = new SimpleTestHelper(_client);
+                await simpleHelper.SignUp(_signUpRequest);
+                _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", simpleHelper.SignIn.Token);
+                return simpleHelper;
             }
         }
 
         [Test]
         public async Task CreateUserTrue()
         {
-            using (var scope = new TestScope())
+            using (var scope = new TestScope(new SimpleTestHelperBuilderCompanyUser()))
             {
-                var uri = $"api/companies/{scope.company.Id}/users";
+                var uri = $"api/companies/{scope.Helper.Company.Id}/users";
 
                 PropertyUserLoginDTO user = GetUser("Phillip", "Schmidt", "Test123456", new List<RoleDTO>() {new RoleDTO() {Name = "Mitarbeiter"}});
 
@@ -59,7 +42,7 @@ namespace Goose.Tests.Application.IntegrationTests.Company
 
                 Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
 
-                var uriUser = $"api/companies/{scope.company.Id}/users/{newUser.User.Id}";
+                var uriUser = $"api/companies/{scope.Helper.Company.Id}/users/{newUser.User.Id}";
 
                 response = await scope.client.GetAsync(uriUser);
 
@@ -72,9 +55,9 @@ namespace Goose.Tests.Application.IntegrationTests.Company
         [Test]
         public async Task CreateUserWithOutCompanyRole()
         {
-            using (var scope = new TestScope())
+            using (var scope = new TestScope(new SimpleTestHelperBuilderCompanyUser()))
             {
-                var uri = $"api/companies/{scope.company.Id}/users";
+                var uri = $"api/companies/{scope.Helper.Company.Id}/users";
 
                 PropertyUserLoginDTO user = GetUser("Phillip", "Schmidt", "Test123456", new List<RoleDTO>() {new RoleDTO() {Name = "Mitarbeiter"}});
 
@@ -83,7 +66,7 @@ namespace Goose.Tests.Application.IntegrationTests.Company
 
                 Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
 
-                var uriUser = $"api/companies/{scope.company.Id}/users/{newUser.User.Id}";
+                var uriUser = $"api/companies/{scope.Helper.Company.Id}/users/{newUser.User.Id}";
 
                 response = await scope.client.GetAsync(uriUser);
 
@@ -104,9 +87,9 @@ namespace Goose.Tests.Application.IntegrationTests.Company
         [Test]
         public async Task CreateUserFirstNameFalse()
         {
-            using (var scope = new TestScope())
+            using (var scope = new TestScope(new SimpleTestHelperBuilderCompanyUser()))
             {
-                var uri = $"api/companies/{scope.company.Id}/users";
+                var uri = $"api/companies/{scope.Helper.Company.Id}/users";
 
                 PropertyUserLoginDTO user = GetUser(" ", "Schmidt", "Test123456", new List<RoleDTO>() {new RoleDTO() {Name = "Mitarbeiter"}});
 
@@ -119,9 +102,9 @@ namespace Goose.Tests.Application.IntegrationTests.Company
         [Test]
         public async Task CreateUserLastNameFalse()
         {
-            using (var scope = new TestScope())
+            using (var scope = new TestScope(new SimpleTestHelperBuilderCompanyUser()))
             {
-                var uri = $"api/companies/{scope.company.Id}/users";
+                var uri = $"api/companies/{scope.Helper.Company.Id}/users";
 
                 PropertyUserLoginDTO user = GetUser("Phillip", " ", "Test123456", new List<RoleDTO>() {new RoleDTO() {Name = "Mitarbeiter"}});
 

@@ -13,31 +13,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
     [Parallelizable(ParallelScope.All)]
     class IssueRequirementTests
     {
-        private sealed class TestScope : IDisposable
-        {
-            public HttpClient client;
-            public WebApplicationFactory<Startup> _factory;
-            public SimpleTestHelper Helper;
-
-            public TestScope()
-            {
-                Task.Run(() =>
-                {
-                    _factory = new WebApplicationFactory<Startup>();
-                    client = _factory.CreateClient();
-                    Helper = new SimpleTestHelperBuilder(client).Build().Result;
-                    ;
-                }).Wait();
-            }
-
-            public void Dispose()
-            {
-                client?.Dispose();
-                _factory?.Dispose();
-                Helper.Dispose();
-            }
-        }
-
+      
         [Test]
         public async Task AddRequirement()
         {
