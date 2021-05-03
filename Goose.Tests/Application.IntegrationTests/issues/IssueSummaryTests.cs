@@ -1,13 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Net.Http;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using Goose.API;
-using Goose.API.Services.Issues;
 using Goose.Domain.Models.Issues;
 using Goose.Domain.Models.Projects;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 
 namespace Goose.Tests.Application.IntegrationTests.issues
@@ -19,27 +13,27 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         [Test]
         public async Task CreateSummary()
         {
-            using (var scope = new TestScope())
+            using var helper = await new SimpleTestHelperBuilder().Build();
             {
-                var issue = scope.Helper.Issue;
-                IssueRequirement issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen" };
-                await scope.Helper.Helper.IssueRequirementService.CreateAsync(issue.Id, issueRequirement);
+                var issue = helper.Issue;
+                IssueRequirement issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen"};
+                await helper.Helper.IssueRequirementService.CreateAsync(issue.Id, issueRequirement);
 
                 var uri = $"/api/issues/{issue.Id}/summaries";
-                var response = await scope.client.PostAsync(uri, new object().ToStringContent());
+                var response = await helper.client.PostAsync(uri, new object().ToStringContent());
                 Assert.IsTrue(response.IsSuccessStatusCode);
 
                 uri = $"/api/issues/{issue.Id}/summaries";
-                response = await scope.client.GetAsync(uri);
+                response = await helper.client.GetAsync(uri);
                 Assert.IsTrue(response.IsSuccessStatusCode);
 
                 var requirements = await response.Content.Parse<IList<IssueRequirement>>();
 
                 Assert.IsTrue(requirements != null && requirements.Count > 0);
 
-                issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen2" };
+                issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen2"};
                 uri = $"/api/issues/{issue.Id}/requirements/";
-                response = await scope.client.PostAsync(uri, issueRequirement.ToStringContent());
+                response = await helper.client.PostAsync(uri, issueRequirement.ToStringContent());
                 Assert.IsFalse(response.IsSuccessStatusCode);
             }
         }
@@ -47,16 +41,16 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         [Test]
         public async Task CreateSummaryFalse()
         {
-            using (var scope = new TestScope())
+            using var helper = await new SimpleTestHelperBuilder().Build();
             {
-                var issue = scope.Helper.Issue;
+                var issue = helper.Issue;
 
                 var uri = $"/api/issues/{issue.Id}/summaries";
-                var responce = await scope.client.PostAsync(uri, new object().ToStringContent());
+                var responce = await helper.client.PostAsync(uri, new object().ToStringContent());
                 Assert.IsFalse(responce.IsSuccessStatusCode);
 
                 uri = $"/api/issues/{issue.Id}/summaries";
-                responce = await scope.client.GetAsync(uri);
+                responce = await helper.client.GetAsync(uri);
                 Assert.IsFalse(responce.IsSuccessStatusCode);
             }
         }
@@ -64,29 +58,29 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         [Test]
         public async Task AcceptSummary()
         {
-            using (var scope = new TestScope())
+            using var helper = await new SimpleTestHelperBuilder().Build();
             {
-                var issue = scope.Helper.Issue;
-                IssueRequirement issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen" };
-                await scope.Helper.Helper.IssueRequirementService.CreateAsync(issue.Id, issueRequirement);
+                var issue = helper.Issue;
+                IssueRequirement issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen"};
+                await helper.Helper.IssueRequirementService.CreateAsync(issue.Id, issueRequirement);
 
                 var uri = $"/api/issues/{issue.Id}/summaries";
-                var response = await scope.client.PostAsync(uri, new object().ToStringContent());
+                var response = await helper.client.PostAsync(uri, new object().ToStringContent());
                 Assert.IsTrue(response.IsSuccessStatusCode);
 
                 uri = $"/api/issues/{issue.Id}/summaries?accept=true";
-                response = await scope.client.PutAsync(uri, new object().ToStringContent());
+                response = await helper.client.PutAsync(uri, new object().ToStringContent());
                 Assert.IsTrue(response.IsSuccessStatusCode);
 
-                var newIssue = await scope.Helper.GetIssueAsync(issue.Id);
+                var newIssue = await helper.GetIssueAsync(issue.Id);
                 Assert.IsTrue(newIssue.IssueDetail.RequirementsAccepted);
 
-                var state = await scope.Helper.Helper.GetStateByNameAsync(newIssue.ProjectId, State.WaitingState);
+                var state = await helper.Helper.GetStateByNameAsync(newIssue.ProjectId, State.WaitingState);
                 Assert.AreEqual(state.Id, newIssue.StateId);
 
-                issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen2" };
+                issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen2"};
                 uri = $"/api/issues/{issue.Id}/requirements/";
-                response = await scope.client.PostAsync(uri, issueRequirement.ToStringContent());
+                response = await helper.client.PostAsync(uri, issueRequirement.ToStringContent());
                 Assert.IsFalse(response.IsSuccessStatusCode);
             }
         }
@@ -94,10 +88,10 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         [Test]
         public async Task AcceptSummaryFalse()
         {
-            using (var scope = new TestScope())
+            using var helper = await new SimpleTestHelperBuilder().Build();
             {
-                var uri = $"/api/issues/{scope.Helper.Issue.Id}/summaries?accept=true";
-                var response = await scope.client.PutAsync(uri, new object().ToStringContent());
+                var uri = $"/api/issues/{helper.Issue.Id}/summaries?accept=true";
+                var response = await helper.client.PutAsync(uri, new object().ToStringContent());
                 Assert.IsFalse(response.IsSuccessStatusCode);
             }
         }
@@ -105,43 +99,42 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         [Test]
         public async Task DeclineSummary()
         {
-            using (var scope = new TestScope())
+            using var helper = await new SimpleTestHelperBuilder().Build();
             {
-                IssueRequirement issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen" };
-                await scope.Helper.Helper.IssueRequirementService.CreateAsync(scope.Helper.Issue.Id, issueRequirement);
+                IssueRequirement issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen"};
+                await helper.Helper.IssueRequirementService.CreateAsync(helper.Issue.Id, issueRequirement);
 
-                var uri = $"/api/issues/{scope.Helper.Issue.Id}/summaries";
-                var responce = await scope.client.PostAsync(uri, new object().ToStringContent());
+                var uri = $"/api/issues/{helper.Issue.Id}/summaries";
+                var responce = await helper.client.PostAsync(uri, new object().ToStringContent());
                 Assert.IsTrue(responce.IsSuccessStatusCode);
 
-                uri = $"/api/issues/{scope.Helper.Issue.Id}/summaries?accept=false";
-                responce = await scope.client.PutAsync(uri, new object().ToStringContent());
+                uri = $"/api/issues/{helper.Issue.Id}/summaries?accept=false";
+                responce = await helper.client.PutAsync(uri, new object().ToStringContent());
                 Assert.IsTrue(responce.IsSuccessStatusCode);
 
-                var issue = await scope.Helper.GetIssueAsync(scope.Helper.Issue.Id);
+                var issue = await helper.GetIssueAsync(helper.Issue.Id);
                 Assert.IsFalse(issue.IssueDetail.RequirementsAccepted);
                 Assert.IsFalse(issue.IssueDetail.RequirementsSummaryCreated);
 
-                issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen2" };
+                issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen2"};
                 uri = $"/api/issues/{issue.Id}/requirements/";
-                responce = await scope.client.PostAsync(uri, issueRequirement.ToStringContent());
+                responce = await helper.client.PostAsync(uri, issueRequirement.ToStringContent());
                 Assert.IsTrue(responce.IsSuccessStatusCode);
             }
-            
         }
 
         [Test]
         public async Task DeclineSummaryFalse()
         {
-            using (var scope = new TestScope())
+            using var helper = await new SimpleTestHelperBuilder().Build();
             {
-                var uri = $"/api/issues/{scope.Helper.Issue.Id}/summaries?accept=false";
-                var responce = await scope.client.PutAsync(uri, new object().ToStringContent());
+                var uri = $"/api/issues/{helper.Issue.Id}/summaries?accept=false";
+                var responce = await helper.client.PutAsync(uri, new object().ToStringContent());
                 Assert.IsFalse(responce.IsSuccessStatusCode);
 
-                var issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen2" };
-                uri = $"/api/issues/{scope.Helper.Issue.Id}/requirements/";
-                responce = await scope.client.PostAsync(uri, issueRequirement.ToStringContent());
+                var issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen2"};
+                uri = $"/api/issues/{helper.Issue.Id}/requirements/";
+                responce = await helper.client.PostAsync(uri, issueRequirement.ToStringContent());
                 Assert.IsTrue(responce.IsSuccessStatusCode);
             }
         }
@@ -149,28 +142,28 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         [Test]
         public async Task DeclineSummaryFalse2()
         {
-            using (var scope = new TestScope())
+            using var helper = await new SimpleTestHelperBuilder().Build();
             {
-                IssueRequirement issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen" };
-                await scope.Helper.Helper.IssueRequirementService.CreateAsync(scope.Helper.Issue.Id, issueRequirement);
+                IssueRequirement issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen"};
+                await helper.Helper.IssueRequirementService.CreateAsync(helper.Issue.Id, issueRequirement);
 
-                var uri = $"/api/issues/{scope.Helper.Issue.Id}/summaries";
-                var responce = await scope.client.PostAsync(uri, new object().ToStringContent());
+                var uri = $"/api/issues/{helper.Issue.Id}/summaries";
+                var responce = await helper.client.PostAsync(uri, new object().ToStringContent());
                 Assert.IsTrue(responce.IsSuccessStatusCode);
 
-                uri = $"/api/issues/{scope.Helper.Issue.Id}/summaries?accept=true";
-                responce = await scope.client.PutAsync(uri, new object().ToStringContent());
+                uri = $"/api/issues/{helper.Issue.Id}/summaries?accept=true";
+                responce = await helper.client.PutAsync(uri, new object().ToStringContent());
                 Assert.IsTrue(responce.IsSuccessStatusCode);
 
-                var issue = await scope.Helper.GetIssueAsync(scope.Helper.Issue.Id);
+                var issue = await helper.GetIssueAsync(helper.Issue.Id);
                 Assert.IsTrue(issue.IssueDetail.RequirementsAccepted);
 
-                
-                var state = await scope.Helper.Helper.GetStateByNameAsync(issue.ProjectId, State.WaitingState);
+
+                var state = await helper.Helper.GetStateByNameAsync(issue.ProjectId, State.WaitingState);
                 Assert.AreEqual(state.Id, issue.StateId);
 
                 uri = $"/api/issues/{issue.Id}/summaries?accept=false";
-                responce = await scope.client.PutAsync(uri, new object().ToStringContent()); 
+                responce = await helper.client.PutAsync(uri, new object().ToStringContent());
                 Assert.IsFalse(responce.IsSuccessStatusCode);
             }
         }

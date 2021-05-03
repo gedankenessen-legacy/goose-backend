@@ -1,13 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
-using Goose.API;
 using Goose.Domain.DTOs;
+using Goose.Domain.DTOs.Issues;
 using Goose.Domain.Models.Auth;
-using Microsoft.AspNetCore.Mvc.Testing;
 using NUnit.Framework;
 
 namespace Goose.Tests.Application.IntegrationTests.Company
@@ -16,102 +14,89 @@ namespace Goose.Tests.Application.IntegrationTests.Company
     [Parallelizable(ParallelScope.All)]
     public class CompanyUserTest
     {
-       
-        private class SimpleTestHelperBuilderCompanyUser : SimpleTestHelperBuilderBase
+        private class SimpleTestHelperBuilderCompanyUser : SimpleTestHelperBuilder
         {
-            public override async Task<SimpleTestHelper> Build()
-            {
-                var simpleHelper = new SimpleTestHelper(_client);
-                await simpleHelper.SignUp(_signUpRequest);
-                _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", simpleHelper.SignIn.Token);
-                return simpleHelper;
-            }
+            public override Task<ProjectDTO> CreateProject(HttpClient client, SimpleTestHelper helper) => null;
+            public override Task AddUserToProject(HttpClient client, SimpleTestHelper helper) => null;
+            public override Task<IssueDTO> CreateIssue(HttpClient client, SimpleTestHelper helper) => null;
         }
 
         [Test]
         public async Task CreateUserTrue()
         {
-            using (var scope = new TestScope(new SimpleTestHelperBuilderCompanyUser()))
-            {
-                var uri = $"api/companies/{scope.Helper.Company.Id}/users";
+            using var helper = await new SimpleTestHelperBuilderCompanyUser().Build();
+            var uri = $"api/companies/{helper.Company.Id}/users";
 
-                PropertyUserLoginDTO user = GetUser("Phillip", "Schmidt", "Test123456", new List<RoleDTO>() {new RoleDTO() {Name = "Mitarbeiter"}});
+            PropertyUserLoginDTO user = GetUser("Phillip", "Schmidt", "Test123456", new List<RoleDTO>() {new RoleDTO() {Name = "Mitarbeiter"}});
 
-                var response = await scope.client.PostAsync(uri, user.ToStringContent());
-                var newUser = await response.Content.Parse<PropertyUserDTO>();
+            var response = await helper.client.PostAsync(uri, user.ToStringContent());
+            var newUser = await response.Content.Parse<PropertyUserDTO>();
 
-                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
 
-                var uriUser = $"api/companies/{scope.Helper.Company.Id}/users/{newUser.User.Id}";
+            var uriUser = $"api/companies/{helper.Company.Id}/users/{newUser.User.Id}";
 
-                response = await scope.client.GetAsync(uriUser);
+            response = await helper.client.GetAsync(uriUser);
 
-                var exists = await response.Content.Parse<PropertyUserDTO>() != null;
+            var exists = await response.Content.Parse<PropertyUserDTO>() != null;
 
-                Assert.IsTrue(exists);
-            }
+            Assert.IsTrue(exists);
         }
 
         [Test]
         public async Task CreateUserWithOutCompanyRole()
         {
-            using (var scope = new TestScope(new SimpleTestHelperBuilderCompanyUser()))
-            {
-                var uri = $"api/companies/{scope.Helper.Company.Id}/users";
+            using var helper = await new SimpleTestHelperBuilderCompanyUser().Build();
+            var uri = $"api/companies/{helper.Company.Id}/users";
 
-                PropertyUserLoginDTO user = GetUser("Phillip", "Schmidt", "Test123456", new List<RoleDTO>() {new RoleDTO() {Name = "Mitarbeiter"}});
+            PropertyUserLoginDTO user = GetUser("Phillip", "Schmidt", "Test123456", new List<RoleDTO>() {new RoleDTO() {Name = "Mitarbeiter"}});
 
-                var response = await scope.client.PostAsync(uri, user.ToStringContent());
-                var newUser = await response.Content.Parse<PropertyUserDTO>();
+            var response = await helper.client.PostAsync(uri, user.ToStringContent());
+            var newUser = await response.Content.Parse<PropertyUserDTO>();
 
-                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
 
-                var uriUser = $"api/companies/{scope.Helper.Company.Id}/users/{newUser.User.Id}";
+            var uriUser = $"api/companies/{helper.Company.Id}/users/{newUser.User.Id}";
 
-                response = await scope.client.GetAsync(uriUser);
+            response = await helper.client.GetAsync(uriUser);
 
-                var exists = await response.Content.Parse<PropertyUserDTO>() != null;
+            var exists = await response.Content.Parse<PropertyUserDTO>() != null;
 
-                Assert.IsTrue(exists);
+            Assert.IsTrue(exists);
 
-                var signInNewUser = await SignIn(scope.client, newUser.User.Username, "Test123456");
+            var signInNewUser = await SignIn(helper.client, newUser.User.Username, "Test123456");
 
-                scope.client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signInNewUser.Token);
+            helper.client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signInNewUser.Token);
 
-                response = await scope.client.PostAsync(uri, user.ToStringContent());
+            response = await helper.client.PostAsync(uri, user.ToStringContent());
 
-                Assert.IsFalse(response.IsSuccessStatusCode);
-            }
+            Assert.IsFalse(response.IsSuccessStatusCode);
         }
 
         [Test]
         public async Task CreateUserFirstNameFalse()
         {
-            using (var scope = new TestScope(new SimpleTestHelperBuilderCompanyUser()))
-            {
-                var uri = $"api/companies/{scope.Helper.Company.Id}/users";
+            using var helper = await new SimpleTestHelperBuilderCompanyUser().Build();
 
-                PropertyUserLoginDTO user = GetUser(" ", "Schmidt", "Test123456", new List<RoleDTO>() {new RoleDTO() {Name = "Mitarbeiter"}});
+            var uri = $"api/companies/{helper.Company.Id}/users";
 
-                var response = await scope.client.PostAsync(uri, user.ToStringContent());
+            PropertyUserLoginDTO user = GetUser(" ", "Schmidt", "Test123456", new List<RoleDTO>() {new RoleDTO() {Name = "Mitarbeiter"}});
+            var response = await helper.client.PostAsync(uri, user.ToStringContent());
 
-                Assert.IsFalse(response.IsSuccessStatusCode);
-            }
+            Assert.IsFalse(response.IsSuccessStatusCode);
         }
 
         [Test]
         public async Task CreateUserLastNameFalse()
         {
-            using (var scope = new TestScope(new SimpleTestHelperBuilderCompanyUser()))
-            {
-                var uri = $"api/companies/{scope.Helper.Company.Id}/users";
+            using var helper = await new SimpleTestHelperBuilderCompanyUser().Build();
+            var uri = $"api/companies/{helper.Company.Id}/users";
 
-                PropertyUserLoginDTO user = GetUser("Phillip", " ", "Test123456", new List<RoleDTO>() {new RoleDTO() {Name = "Mitarbeiter"}});
+            PropertyUserLoginDTO user = GetUser("Phillip", " ", "Test123456", new List<RoleDTO>() {new RoleDTO() {Name = "Mitarbeiter"}});
 
-                var response = await scope.client.PostAsync(uri, user.ToStringContent());
+            var response = await helper.client.PostAsync(uri, user.ToStringContent());
 
-                Assert.IsFalse(response.IsSuccessStatusCode);
-            }
+            Assert.IsFalse(response.IsSuccessStatusCode);
         }
 
         private async Task<SignInResponse> SignIn(HttpClient client, string userName, string password)
