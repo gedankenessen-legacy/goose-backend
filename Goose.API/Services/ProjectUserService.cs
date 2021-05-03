@@ -124,15 +124,15 @@ namespace Goose.API.Services
                 RoleIds = roleIds.ToList(),
             };
 
-            var existingProject = await _projectRepository.GetAsync(projectId);
-
-            if (existingProject == null)
-            {
-                throw new HttpStatusException(404, "Invalid projectId");
-            }
-
             using (await _mutex.LockAsync())
             {
+                var existingProject = await _projectRepository.GetAsync(projectId);
+
+                if (existingProject == null)
+                {
+                    throw new HttpStatusException(404, "Invalid projectId");
+                }
+
                 var projectLeaderRole = (await _roleRepository.FilterByAsync(x => x.Name == Role.ProjectLeaderRole)).SingleOrDefault();
 
                 if (projectLeaderRole != null && roleIds.Contains(projectLeaderRole.Id))
