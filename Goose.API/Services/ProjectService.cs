@@ -11,6 +11,8 @@ using MongoDB.Bson;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Goose.API.Utils.Authentication;
+using System;
 
 namespace Goose.API.Services
 {
@@ -100,6 +102,13 @@ namespace Goose.API.Services
         {
             var project = await _projectRepository.GetAsync(projectId);
 
+            var userId = _httpContextAccessor.HttpContext.User.GetUserId();
+
+            var isInProject = project.Users?.Any(x => x.UserId.Equals(userId)) != null;
+
+            if(!isInProject)
+                throw new HttpStatusException(StatusCodes.Status403Forbidden, "Sie haben kein Zugriff auf dieses Projekt");
+
             return new ProjectDTO(project);
         }
 
@@ -107,7 +116,11 @@ namespace Goose.API.Services
         {
             var projects = await _projectRepository.FilterByAsync(x => x.CompanyId == companyId);
 
-            var projectDTOs = from project in projects
+            var userId = _httpContextAccessor.HttpContext.User.GetUserId();
+
+            var projectList = projects.Where(x => x.Users.Any(u => u.UserId.Equals(userId)));
+
+            var projectDTOs = from project in projectList
                               select new ProjectDTO(project);
 
             return projectDTOs.ToList();

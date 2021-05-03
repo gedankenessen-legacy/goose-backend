@@ -305,7 +305,8 @@ namespace Goose.API.Services.Issues
             {
                 ProjectRolesRequirement.EmployeeRequirement,
                 ProjectRolesRequirement.LeaderRequirement,
-                ProjectRolesRequirement.ReadonlyEmployeeRequirement
+                ProjectRolesRequirement.ReadonlyEmployeeRequirement,
+                CompanyRolesRequirement.CompanyOwner
             };
             
 
@@ -321,7 +322,8 @@ namespace Goose.API.Services.Issues
             Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
             {
                 { ProjectRolesRequirement.EmployeeRequirement, "You need to be the employee with write-rights in this project, in order to change the state" },
-                { ProjectRolesRequirement.LeaderRequirement, "You need to be the leader in this project, in order to change the state." },                
+                { ProjectRolesRequirement.LeaderRequirement, "You need to be the leader in this project, in order to change the state." },
+                { CompanyRolesRequirement.CompanyOwner, "You need to be a Owner of the Company, in order to change the state" }
             };
 
             // validate requirements with the appropriate handlers.
@@ -337,6 +339,7 @@ namespace Goose.API.Services.Issues
                 { ProjectRolesRequirement.EmployeeRequirement, "You need to be the employee with write-rights in this project, in order to create or update a issue." },
                 { ProjectRolesRequirement.LeaderRequirement, "You need to be the leader in this project, in order to create or update a issue." },
                 { ProjectRolesRequirement.CustomerRequirement, "You need to be a customer in this project, in order to create or update a issue." },
+                { CompanyRolesRequirement.CompanyOwner, "You need to be a Owner of the Company, in order to create or update a issue"}
             };
 
             // validate requirements with the appropriate handlers.
