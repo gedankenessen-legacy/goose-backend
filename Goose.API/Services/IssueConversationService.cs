@@ -205,7 +205,8 @@ namespace Goose.API.Services
             {
                 { ProjectRolesRequirement.EmployeeRequirement, "You need to be the employee with write-rights in this project, in order to write a conversation." },
                 { ProjectRolesRequirement.LeaderRequirement, "You need to be the leader in this project, in order to write a conversation." },
-                { ProjectRolesRequirement.CustomerRequirement, "You need to be the customer of this project, in order to write a conversation." }
+                { ProjectRolesRequirement.CustomerRequirement, "You need to be the customer of this project, in order to write a conversation." },
+                { CompanyRolesRequirement.CompanyOwner, "You need to be the ComponyOwner of the Company, in order to write a conversation to this Project" }
             };
 
             // validate requirements with the appropriate handlers.
@@ -221,10 +222,11 @@ namespace Goose.API.Services
 
             Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
             {
-                { ProjectRolesRequirement.ReadonlyEmployeeRequirement, "You need to be the employee with read-rights in this project, in order to write a conversation." },
-                { ProjectRolesRequirement.EmployeeRequirement, "You need to be the employee with write-rights in this project, in order to write a conversation." },
-                { ProjectRolesRequirement.LeaderRequirement, "You need to be the leader in this project, in order to write a conversation." },
-                { ProjectRolesRequirement.CustomerRequirement, "You need to be the customer of this project, in order to write a conversation." }
+                { ProjectRolesRequirement.ReadonlyEmployeeRequirement, "You need to be the employee with read-rights in this project, in order to see a conversation." },
+                { ProjectRolesRequirement.EmployeeRequirement, "You need to be the employee with write-rights in this project, in order to see a conversation." },
+                { ProjectRolesRequirement.LeaderRequirement, "You need to be the leader in this project, in order to see a conversation." },
+                { ProjectRolesRequirement.CustomerRequirement, "You need to be the customer of this project, in order to see a conversation." },
+                { CompanyRolesRequirement.CompanyOwner, "You need to be the ComponyOwner of the Company, in order to see a conversation to this Project" }
             };
 
             // validate requirements with the appropriate handlers.
