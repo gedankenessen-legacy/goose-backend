@@ -28,7 +28,6 @@ namespace Goose.API.Services
         private readonly IUserRepository _userRepository;
         private readonly IRoleRepository _roleRepository;
         private readonly AsyncLock _mutex = new AsyncLock();
-        private readonly SemaphoreSlim sem = new(1);
 
         public ProjectUserService(IProjectRepository projectRepository, IUserRepository userRepository, IRoleRepository roleRepository)
         {
@@ -126,9 +125,8 @@ namespace Goose.API.Services
                 RoleIds = roleIds.ToList(),
             };
 
-            await sem.WaitAsync();
-            try
-            {
+            using (await _mutex.LockAsync())
+            { 
                 var existingProject = await _projectRepository.GetAsync(projectId);
 
                 if (existingProject == null)
@@ -156,10 +154,6 @@ namespace Goose.API.Services
                 existingProject.Users.Add(newProjectUser);
                 await _projectRepository.UpdateAsync(existingProject);
                 return await GetProjectUsers(projectId);
-            }
-            finally
-            {
-                sem.Release();
             }
         }
 
