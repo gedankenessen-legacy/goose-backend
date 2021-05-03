@@ -153,33 +153,33 @@ namespace Goose.API
             services.AddAutoMapper(typeof(AutoMapping));
             
             services.AddSingleton<IDbContext, DbContext>();
-            services.AddScoped<IAuthorizationHandler, CompanyRoleHandler>();
-            services.AddScoped<IAuthorizationHandler, ProjectRoleHandler>();
+            services.AddSingleton<IAuthorizationHandler, CompanyRoleHandler>();
+            services.AddSingleton<IAuthorizationHandler, ProjectRoleHandler>();
 
-            services.AddScoped<IIssueRepository, IssueRepository>();
-            services.AddScoped<IUserRepository, UserRepository>();
-            services.AddScoped<IRoleRepository, RoleRepository>();
-            services.AddScoped<IProjectRepository, ProjectRepository>();
-            services.AddScoped<ICompanyRepository, CompanyRepository>();
+            services.AddSingleton<IIssueRepository, IssueRepository>();
+            services.AddSingleton<IUserRepository, UserRepository>();
+            services.AddSingleton<IRoleRepository, RoleRepository>();
+            services.AddSingleton<IProjectRepository, ProjectRepository>();
+            services.AddSingleton<ICompanyRepository, CompanyRepository>();
 
-            services.AddScoped<IIssueService, IssueService>();
-            services.AddScoped<IIssueDetailedService, IssueDetailedService>();
-            services.AddScoped<IIssueConversationService, IssueConversationService>();
-            services.AddScoped<IIssueAssignedUserService, IssueAssignedUserService>();
-            services.AddScoped<IIssueRequirementService, IssueRequirementService>();
-            services.AddScoped<IIssueRequestValidator, IssueRequestValidator>();
-            services.AddScoped<IIssuePredecessorService, IssuePredecessorService>();
-            services.AddScoped<IIssuePredecessorService, IssuePredecessorService>();
-            services.AddScoped<IIssueTimeSheetService, IssueTimeSheetService>(); 
-            services.AddScoped<IUserService, UserService>();     
-            services.AddScoped<IRoleService, RoleService>();    
-            services.AddScoped<IProjectService, ProjectService>();
-            services.AddScoped<IProjectUserService, ProjectUserService>();
-            services.AddScoped<IStateService, StateService>();
-            services.AddScoped<ICompanyService, CompanyService>();
-            services.AddScoped<IAuthService, AuthService>();
-            services.AddScoped<ICompanyUserService, CompanyUserService>();
-            services.AddScoped<IIssueSummaryService, IssueSummaryService>();
+            services.AddSingleton<IIssueService, IssueService>();
+            services.AddSingleton<IIssueDetailedService, IssueDetailedService>();
+            services.AddSingleton<IIssueConversationService, IssueConversationService>();
+            services.AddSingleton<IIssueAssignedUserService, IssueAssignedUserService>();
+            services.AddSingleton<IIssueRequirementService, IssueRequirementService>();
+            services.AddSingleton<IIssueRequestValidator, IssueRequestValidator>();
+            services.AddSingleton<IIssuePredecessorService, IssuePredecessorService>();
+            services.AddSingleton<IIssuePredecessorService, IssuePredecessorService>();
+            services.AddSingleton<IIssueTimeSheetService, IssueTimeSheetService>(); 
+            services.AddSingleton<IUserService, UserService>();     
+            services.AddSingleton<IRoleService, RoleService>();    
+            services.AddSingleton<IProjectService, ProjectService>();
+            services.AddSingleton<IProjectUserService, ProjectUserService>();
+            services.AddSingleton<IStateService, StateService>();
+            services.AddSingleton<ICompanyService, CompanyService>();
+            services.AddSingleton<IAuthService, AuthService>();
+            services.AddSingleton<ICompanyUserService, CompanyUserService>();
+            services.AddSingleton<IIssueSummaryService, IssueSummaryService>();
 
             services.AddHttpContextAccessor();
         }
