@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Goose.API.Utils;
 using Goose.API.Utils.Exceptions;
 using Goose.Domain.Models.Identity;
+using System.Threading;
 
 namespace Goose.API.Services
 {
@@ -145,9 +146,14 @@ namespace Goose.API.Services
                 }
             }
 
-            existingProject.Users.Add(newProjectUser);
+            using (var rw = new ReaderWriterLockSlim())
+            {
+                rw.EnterWriteLock();
+                existingProject.Users.Add(newProjectUser);
 
-            await _projectRepository.UpdateAsync(existingProject);
+                await _projectRepository.UpdateAsync(existingProject);
+                rw.ExitWriteLock();
+            }
 
             return await GetProjectUsers(projectId);
         }
