@@ -16,7 +16,7 @@ namespace Goose.API.Services
     {
         Task<IList<PropertyUserDTO>> GetProjectUsers(ObjectId projectId);
         Task<PropertyUserDTO> GetProjectUser(ObjectId projectId, ObjectId userId);
-        Task UpdateProjectUser(ObjectId projectId, ObjectId userId, PropertyUserDTO projectUserDTO);
+        Task<PropertyUserDTO> UpdateProjectUser(ObjectId projectId, ObjectId userId, PropertyUserDTO projectUserDTO);
         Task RemoveUserFromProject(ObjectId projectId, ObjectId userId);
     }
 
@@ -100,7 +100,7 @@ namespace Goose.API.Services
             return userDTOs.ToList();
         }
 
-        public async Task UpdateProjectUser(ObjectId projectId, ObjectId userId, PropertyUserDTO projectUserDTO)
+        public async Task<PropertyUserDTO> UpdateProjectUser(ObjectId projectId, ObjectId userId, PropertyUserDTO projectUserDTO)
         {
             if (userId != projectUserDTO.User.Id)
             {
@@ -109,6 +109,11 @@ namespace Goose.API.Services
 
             var roleIds = from role in projectUserDTO.Roles
                           select role.Id;
+
+            var rolen = new List<RoleDTO>();
+
+            foreach (var roleid in roleIds)
+                rolen.Add(new RoleDTO(await _roleRepository.GetAsync(roleid)));
 
             var newProjectUser = new PropertyUser()
             {
@@ -140,9 +145,18 @@ namespace Goose.API.Services
                 }
             }
 
-            existingProject.Users.ReplaceOrInsert(x => x.UserId == userId, newProjectUser);
+            existingProject.Users.Add(newProjectUser);
 
             await _projectRepository.UpdateAsync(existingProject);
+
+            var list = existingProject.Users;
+
+            var user = list.FirstOrDefault(x => x.UserId.Equals(userId));
+
+            if (user is null)
+                throw new HttpStatusException(400, "Etwas ist schief gelaufen");
+
+            return new PropertyUserDTO() { User = new UserDTO(await _userRepository.GetAsync(userId)), Roles = rolen };
         }
 
         public async Task RemoveUserFromProject(ObjectId projectId, ObjectId userId)

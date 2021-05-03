@@ -28,11 +28,11 @@ namespace Goose.API.Controllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public async Task<ActionResult> UpdateProjectUser([FromBody] PropertyUserDTO projectUserDTO, [FromRoute] ObjectId projectId, ObjectId userId)
+        public async Task<ActionResult<PropertyUserDTO>> UpdateProjectUser([FromBody] PropertyUserDTO projectUserDTO, [FromRoute] ObjectId projectId, ObjectId userId)
         {
-            await _projectUserService.UpdateProjectUser(projectId, userId, projectUserDTO);
+           var user =  await _projectUserService.UpdateProjectUser(projectId, userId, projectUserDTO);
 
-            return NoContent();
+            return Ok(user);
         }
 
         // GET: api/projects/{projectId}/users/
