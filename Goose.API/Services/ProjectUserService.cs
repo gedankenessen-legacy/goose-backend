@@ -148,11 +148,18 @@ namespace Goose.API.Services
 
             using (var rw = new ReaderWriterLockSlim())
             {
-                rw.EnterWriteLock();
-                existingProject.Users.Add(newProjectUser);
+                try
+                {
+                    rw.EnterWriteLock();
+                    existingProject.Users.Add(newProjectUser);
 
-                await _projectRepository.UpdateAsync(existingProject);
-                rw.ExitWriteLock();
+                    await _projectRepository.UpdateAsync(existingProject);
+                }
+                finally
+                {
+                    rw.ExitWriteLock();
+                }
+                
             }
 
             return await GetProjectUsers(projectId);
