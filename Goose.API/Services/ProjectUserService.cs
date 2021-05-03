@@ -28,6 +28,7 @@ namespace Goose.API.Services
         private readonly IUserRepository _userRepository;
         private readonly IRoleRepository _roleRepository;
         private readonly AsyncLock _mutex = new AsyncLock();
+        private readonly SemaphoreSlim sem = new(1);
 
         public ProjectUserService(IProjectRepository projectRepository, IUserRepository userRepository, IRoleRepository roleRepository)
         {
@@ -56,7 +57,7 @@ namespace Goose.API.Services
             var user = await _userRepository.GetAsync(userId);
             var roles = await _roleRepository.GetAsync(projectUser.RoleIds);
             var roleDTOs = from role in roles
-                           select new RoleDTO(role);
+                select new RoleDTO(role);
 
             return new PropertyUserDTO()
             {
@@ -75,7 +76,7 @@ namespace Goose.API.Services
             }
 
             var userIds = from projectUser in project.Users
-                          select projectUser.UserId;
+                select projectUser.UserId;
             var users = await _userRepository.GetAsync(userIds);
 
             // wir holen einfach immer alle rollen aus der Datenbank
@@ -84,21 +85,22 @@ namespace Goose.API.Services
             // Hier wird eine innere Funktion verwendet, damit die Rollen einfach nachschlagen werden können.
             // Dazu wird ein Dictionary aufgebaut, indem die roleDTOs zu einer bestimmten Id bereit gehalten werden
             var rolesDict = roles.ToDictionary(x => x.Id, x => new RoleDTO(x));
+
             IList<RoleDTO> GetRoleDTOs(PropertyUser projectUser)
             {
                 var result = from roleId in projectUser.RoleIds
-                             select rolesDict[roleId];
+                    select rolesDict[roleId];
 
                 return result.ToList();
             }
 
             var userDTOs = from projectUser in project.Users
-                           join user in users on projectUser.UserId equals user.Id
-                           select new PropertyUserDTO()
-                           {
-                               User = new UserDTO(user),
-                               Roles = GetRoleDTOs(projectUser),
-                           };
+                join user in users on projectUser.UserId equals user.Id
+                select new PropertyUserDTO()
+                {
+                    User = new UserDTO(user),
+                    Roles = GetRoleDTOs(projectUser),
+                };
 
             return userDTOs.ToList();
         }
@@ -111,7 +113,7 @@ namespace Goose.API.Services
             }
 
             var roleIds = from role in projectUserDTO.Roles
-                          select role.Id;
+                select role.Id;
 
             var rolen = new List<RoleDTO>();
 
@@ -124,7 +126,8 @@ namespace Goose.API.Services
                 RoleIds = roleIds.ToList(),
             };
 
-            using (await _mutex.LockAsync())
+            await sem.WaitAsync();
+            try
             {
                 var existingProject = await _projectRepository.GetAsync(projectId);
 
@@ -141,8 +144,8 @@ namespace Goose.API.Services
                     // darf es aber nur einen ProjektLeiter geben
 
                     var existingProjectLeader = from projectUser in existingProject.Users
-                                                where projectUser.RoleIds.Contains(projectLeaderRole.Id)
-                                                select projectUser;
+                        where projectUser.RoleIds.Contains(projectLeaderRole.Id)
+                        select projectUser;
 
                     if (existingProjectLeader.Any())
                     {
@@ -154,7 +157,10 @@ namespace Goose.API.Services
                 await _projectRepository.UpdateAsync(existingProject);
                 return await GetProjectUsers(projectId);
             }
-
+            finally
+            {
+                sem.Release();
+            }
         }
 
         public async Task RemoveUserFromProject(ObjectId projectId, ObjectId userId)
@@ -175,6 +181,5 @@ namespace Goose.API.Services
 
             await _projectRepository.UpdateAsync(existingProject);
         }
-
     }
 }
