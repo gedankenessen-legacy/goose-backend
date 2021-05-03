@@ -16,7 +16,7 @@ namespace Goose.API.Services
     {
         Task<IList<PropertyUserDTO>> GetProjectUsers(ObjectId projectId);
         Task<PropertyUserDTO> GetProjectUser(ObjectId projectId, ObjectId userId);
-        Task<PropertyUserDTO> UpdateProjectUser(ObjectId projectId, ObjectId userId, PropertyUserDTO projectUserDTO);
+        Task<IList<PropertyUserDTO>> UpdateProjectUser(ObjectId projectId, ObjectId userId, PropertyUserDTO projectUserDTO);
         Task RemoveUserFromProject(ObjectId projectId, ObjectId userId);
     }
 
@@ -100,7 +100,7 @@ namespace Goose.API.Services
             return userDTOs.ToList();
         }
 
-        public async Task<PropertyUserDTO> UpdateProjectUser(ObjectId projectId, ObjectId userId, PropertyUserDTO projectUserDTO)
+        public async Task<IList<PropertyUserDTO>> UpdateProjectUser(ObjectId projectId, ObjectId userId, PropertyUserDTO projectUserDTO)
         {
             if (userId != projectUserDTO.User.Id)
             {
@@ -149,16 +149,7 @@ namespace Goose.API.Services
 
             await _projectRepository.UpdateAsync(existingProject);
 
-            var project = await _projectRepository.GetAsync(projectId);
-
-            var list = project.Users;
-
-            var user = list.FirstOrDefault(x => x.UserId.Equals(userId));
-
-            if (user is null)
-                throw new HttpStatusException(400, "Etwas ist schief gelaufen");
-
-            return new PropertyUserDTO() { User = new UserDTO(await _userRepository.GetAsync(userId)), Roles = rolen };
+            return await GetProjectUsers(projectId);
         }
 
         public async Task RemoveUserFromProject(ObjectId projectId, ObjectId userId)

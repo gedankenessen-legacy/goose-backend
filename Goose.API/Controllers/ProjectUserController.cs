@@ -28,18 +28,18 @@ namespace Goose.API.Controllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public async Task<ActionResult<PropertyUserDTO>> UpdateProjectUser([FromBody] PropertyUserDTO projectUserDTO, [FromRoute] ObjectId projectId, ObjectId userId)
+        public async Task<ActionResult<IList<PropertyUserDTO>>> UpdateProjectUser([FromBody] PropertyUserDTO projectUserDTO, [FromRoute] ObjectId projectId, ObjectId userId)
         {
-           var user =  await _projectUserService.UpdateProjectUser(projectId, userId, projectUserDTO);
+           var users =  await _projectUserService.UpdateProjectUser(projectId, userId, projectUserDTO);
 
-            return Ok(user);
+            return Ok(users);
         }
 
         // GET: api/projects/{projectId}/users/
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<IList<ProjectDTO>>> GetProjectUsers([FromRoute] ObjectId projectId)
+        public async Task<ActionResult<IList<PropertyUserDTO>>> GetProjectUsers([FromRoute] ObjectId projectId)
         {
             var projectIter = await _projectUserService.GetProjectUsers(projectId);
             return Ok(projectIter);
@@ -50,7 +50,7 @@ namespace Goose.API.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<ProjectDTO>> GetProjectUser([FromRoute] ObjectId projectId, ObjectId userId)
+        public async Task<ActionResult<PropertyUserDTO>> GetProjectUser([FromRoute] ObjectId projectId, ObjectId userId)
         {
             var projectUser = await _projectUserService.GetProjectUser(projectId, userId);
 
