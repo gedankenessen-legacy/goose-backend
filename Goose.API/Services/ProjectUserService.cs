@@ -26,6 +26,7 @@ namespace Goose.API.Services
         private readonly IProjectRepository _projectRepository;
         private readonly IUserRepository _userRepository;
         private readonly IRoleRepository _roleRepository;
+        private readonly ReaderWriterLockSlim _readerWriterLockSlim = new ReaderWriterLockSlim();
 
         public ProjectUserService(IProjectRepository projectRepository, IUserRepository userRepository, IRoleRepository roleRepository)
         {
@@ -44,7 +45,7 @@ namespace Goose.API.Services
             }
 
             var projectUser = project.Users.SingleOrDefault(x => x.UserId == userId);
-            
+
             if (projectUser == null)
             {
                 // user nicht Mitglied der Projects
@@ -89,7 +90,7 @@ namespace Goose.API.Services
 
                 return result.ToList();
             }
-            
+
             var userDTOs = from projectUser in project.Users
                            join user in users on projectUser.UserId equals user.Id
                            select new PropertyUserDTO()
@@ -129,37 +130,32 @@ namespace Goose.API.Services
                 throw new HttpStatusException(404, "Invalid projectId");
             }
 
-            var projectLeaderRole = (await _roleRepository.FilterByAsync(x => x.Name == Role.ProjectLeaderRole)).SingleOrDefault();
-
-            if (projectLeaderRole != null && roleIds.Contains(projectLeaderRole.Id))
+            try
             {
-                // Nutzer soll die Projektleiterrolle bekommen, in jedem Projekt
-                // darf es aber nur einen ProjektLeiter geben
+                _readerWriterLockSlim.EnterWriteLock();
+                var projectLeaderRole = (await _roleRepository.FilterByAsync(x => x.Name == Role.ProjectLeaderRole)).SingleOrDefault();
 
-                var existingProjectLeader = from projectUser in existingProject.Users
-                                            where projectUser.RoleIds.Contains(projectLeaderRole.Id)
-                                            select projectUser;
-
-                if (existingProjectLeader.Any())
+                if (projectLeaderRole != null && roleIds.Contains(projectLeaderRole.Id))
                 {
-                    throw new HttpStatusException(403, "Cannot make two users a project Leader");
+                    // Nutzer soll die Projektleiterrolle bekommen, in jedem Projekt
+                    // darf es aber nur einen ProjektLeiter geben
+
+                    var existingProjectLeader = from projectUser in existingProject.Users
+                                                where projectUser.RoleIds.Contains(projectLeaderRole.Id)
+                                                select projectUser;
+
+                    if (existingProjectLeader.Any())
+                    {
+                        throw new HttpStatusException(403, "Cannot make two users a project Leader");
+                    }
                 }
+
+                existingProject.Users.Add(newProjectUser);
+                await _projectRepository.UpdateAsync(existingProject);
             }
-
-            using (var rw = new ReaderWriterLockSlim())
+            finally
             {
-                try
-                {
-                    rw.EnterWriteLock();
-                    existingProject.Users.Add(newProjectUser);
-
-                    await _projectRepository.UpdateAsync(existingProject);
-                }
-                finally
-                {
-                    rw.ExitWriteLock();
-                }
-                
+                _readerWriterLockSlim.ExitWriteLock();
             }
 
             return await GetProjectUsers(projectId);
