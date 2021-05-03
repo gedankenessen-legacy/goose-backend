@@ -149,7 +149,9 @@ namespace Goose.API.Services
 
             await _projectRepository.UpdateAsync(existingProject);
 
-            var list = existingProject.Users;
+            var project = await _projectRepository.GetAsync(projectId);
+
+            var list = project.Users;
 
             var user = list.FirstOrDefault(x => x.UserId.Equals(userId));
 
