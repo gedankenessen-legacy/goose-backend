@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Text.Json.Serialization;
 using Goose.Data.Models;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;

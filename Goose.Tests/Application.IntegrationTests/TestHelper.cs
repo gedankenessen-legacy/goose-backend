@@ -123,19 +123,36 @@ namespace Goose.Tests.Application.IntegrationTests
             return await response.Content.Parse<SignInResponse>();
         }
 
-        public async Task GenerateProject(HttpClient client)
+        public async Task<SignInResponse> GenerateUserForCompany(HttpClient client, ICompanyRepository companyRepository, PropertyUserLoginDTO login)
+        {
+            // NOTE: Customer gets cleaned up in `ClearCompany(...)`
+            var company = (await companyRepository.FilterByAsync(x => x.Name.Equals(FirmenName))).FirstOrDefault();
+            var uri = $"/api/companies/{company.Id}/users";
+            var response = await client.PostAsync(uri, login.ToStringContent());
+            return await response.Content.Parse<SignInResponse>();
+        }
+
+        public async Task<SignInResponse> SignIn(HttpClient client, SignInRequest signInRequest)
+        {
+            var uri = "/api/auth/signIn";
+            var response = await client.PostAsync(uri, signInRequest.ToStringContent());
+            return await response.Content.Parse<SignInResponse>();
+        }
+
+        public async Task<ProjectDTO> GenerateProject(HttpClient client)
         {
             var company = (await _companyRepository.FilterByAsync(x => x.Name.Equals(FirmenName))).FirstOrDefault();
             var uri = $"api/companies/{company.Id}/projects";
             var newProject = new ProjectDTO() { Name = ProjektName };
-            await client.PostAsync(uri, newProject.ToStringContent());
+            var response = await client.PostAsync(uri, newProject.ToStringContent());
+            return await response.Content.Parse<ProjectDTO>();
         }
 
-        public async Task AddUserToProject(HttpClient client, string roleName)
+        public async Task AddUserToProject(HttpClient client, Role role)
         {
             // add user to company
             var user = await GetUser();
-            await AddUserToProject(client, user, roleName);
+            await AddUserToProject(client, user, role.Name);
         }
 
         public async Task AddUserToProject(HttpClient client, ObjectId id, string roleName)
@@ -160,7 +177,7 @@ namespace Goose.Tests.Application.IntegrationTests
             var respones = await client.PutAsync(uri, addRequest.ToStringContent());
         }
 
-        public async Task<ObjectId> GenerateUserAndSetToProject(HttpClient client, string role)
+        public async Task<ObjectId> GenerateUserAndSetToProject(HttpClient client, Role role)
         {
             //get Project
             var project = await GetProject();
@@ -174,11 +191,11 @@ namespace Goose.Tests.Application.IntegrationTests
                 Firstname = "MyGoose",
                 Lastname = "MyLastname",
                 Password = "Test12345",
-                Roles = new[] { roles.First(it => it.Name.Equals(role)) }
+                Roles = new[] { roles.First(it => it.Name.Equals(role.Name)) }
             });
 
             //Add User to Project with Role
-            await AddUserToProject(client, userSignUp.User.Id, role);
+            await AddUserToProject(client, userSignUp.User.Id, role.Name);
 
             //Sign In with new User
             var signInResult = await SignIn(client, new SignInRequest
@@ -250,13 +267,6 @@ namespace Goose.Tests.Application.IntegrationTests
             return await response.Content.Parse<SignInResponse>();
         }
 
-        public async Task<SignInResponse> SignIn(HttpClient client, SignInRequest signInRequest)
-        {
-            var uri = "/api/auth/signIn";
-            var response = await client.PostAsync(uri, signInRequest.ToStringContent());
-            return await response.Content.Parse<SignInResponse>();
-        }
-
         /// <summary>
         /// Generates a Test Company, User, Project and Issue.
         /// These objects can be retrieved from the DB via the Get???() methods.
@@ -300,7 +310,7 @@ namespace Goose.Tests.Application.IntegrationTests
             return companies.FirstOrDefault();
         }
 
-        public async Task<Project> GetProject()
+        public async Task<Domain.Models.Projects.Project> GetProject()
         {
             var projects = await _projectRepository.FilterByAsync(x => x.ProjectDetail.Name == ProjektName);
             return projects.FirstOrDefault();

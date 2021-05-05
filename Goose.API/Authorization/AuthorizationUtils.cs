@@ -1,9 +1,11 @@
-﻿using Goose.API.Utils.Exceptions;
+﻿using Goose.API.Authorization.Requirements;
+using Goose.API.Utils.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Goose.API.Authorization
 {
@@ -18,11 +20,11 @@ namespace Goose.API.Authorization
             // for each failied req. throw an error if served, else throw generic error. 
             foreach (var failedRequirement in authorizationResult.Failure.FailedRequirements)
             {
-                if (errorMap.TryGetValue(failedRequirement, out string errorMessage))
+                if (errorMap.TryGetValue(failedRequirement, out string errorMessage))          
                     throw new HttpStatusException(StatusCodes.Status403Forbidden, errorMessage);
-
+          
                 // fallback error message.
-                throw new HttpStatusException(StatusCodes.Status403Forbidden, "You are missing one or more requirements, in order to process this request.");
+                throw new HttpStatusException(StatusCodes.Status403Forbidden, "You are missing one or more requirements, in order to process this request.");    
             }
         }
 
@@ -42,7 +44,7 @@ namespace Goose.API.Authorization
 
             var errorMsg = "";
 
-            foreach(var failedRequirement in authorizationResult.Failure.FailedRequirements)
+            foreach (var failedRequirement in authorizationResult.Failure.FailedRequirements)
             {
                 if (errorMap.TryGetValue(failedRequirement, out string errorMessage))
                 {

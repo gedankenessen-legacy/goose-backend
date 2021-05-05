@@ -9,7 +9,11 @@ using System.Threading.Tasks;
 using Goose.API.Utils;
 using Goose.API.Utils.Exceptions;
 using Goose.Domain.Models.Identity;
+using Goose.Domain.Models.Companies;
+using Microsoft.AspNetCore.Authorization;
+using Goose.API.Authorization.Requirements;
 using Microsoft.AspNetCore.Http;
+using Goose.API.Authorization;
 
 namespace Goose.API.Services
 {
@@ -26,12 +30,18 @@ namespace Goose.API.Services
         private readonly IProjectRepository _projectRepository;
         private readonly IUserRepository _userRepository;
         private readonly IRoleRepository _roleRepository;
+        private readonly ICompanyRepository _companyRepository;
+        private readonly IAuthorizationService _authorizationService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public ProjectUserService(IProjectRepository projectRepository, IUserRepository userRepository, IRoleRepository roleRepository)
+        public ProjectUserService(IProjectRepository projectRepository, IUserRepository userRepository, IRoleRepository roleRepository, IAuthorizationService authorizationService, IHttpContextAccessor httpContextAccessor, ICompanyRepository companyRepository)
         {
             _projectRepository = projectRepository;
             _userRepository = userRepository;
             _roleRepository = roleRepository;
+            _companyRepository = companyRepository;
+            _authorizationService = authorizationService;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<PropertyUserDTO> GetProjectUser(ObjectId projectId, ObjectId userId)
@@ -123,7 +133,14 @@ namespace Goose.API.Services
                 throw new HttpStatusException(404, "Invalid projectId");
             }
 
-            var projectLeaderRole = (await _roleRepository.FilterByAsync(x => x.Name == Role.ProjectLeaderRole)).SingleOrDefault();
+            Company company = await _companyRepository.GetAsync(existingProject.CompanyId);
+
+            if (company is null)
+                throw new HttpStatusException(StatusCodes.Status400BadRequest, "Company not found.");
+
+            await AuthorizeUpdateAsync(company);
+
+            var projectLeaderRole = Role.ProjectLeaderRole;
 
             if (projectLeaderRole != null && roleIds.Contains(projectLeaderRole.Id))
             {
@@ -143,6 +160,20 @@ namespace Goose.API.Services
             existingProject.Users.ReplaceOrInsert(x => x.UserId == userId, newProjectUser);
 
             await _projectRepository.UpdateAsync(existingProject);
+        }
+
+        private async Task<bool> AuthorizeUpdateAsync(Company company)
+        {
+            // Dict with the requirement as key und the error message as value.
+            Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
+            {
+                { CompanyRolesRequirement.CompanyOwner, "You need to be the owner of this company, in order to update the users" },
+            };
+
+            // validate requirements with the appropriate handlers.
+            (await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, company, requirementsWithErrors.Keys)).ThrowErrorForFailedRequirements(requirementsWithErrors);
+
+            return true;
         }
 
         public async Task RemoveUserFromProject(ObjectId projectId, ObjectId userId)

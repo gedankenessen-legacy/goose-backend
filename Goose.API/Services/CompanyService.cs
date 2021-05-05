@@ -55,7 +55,7 @@ namespace Goose.API.Services
             if (await CompanyNameAvailableAsync(companyName) is false)
                 throw new HttpStatusException(StatusCodes.Status409Conflict, "A company with this name is already existing.");
 
-            var role = (await _roleRepository.FilterByAsync(x => x.Name.Equals(Role.CompanyRole))).FirstOrDefault();
+            var role = Role.CompanyRole;
 
             if (role is null)
                 role = await _roleService.CreateRoleAsync(new Role() { Name = "Firma" });
@@ -223,6 +223,7 @@ namespace Goose.API.Services
             if (companyUser is null) 
                 throw new HttpStatusException(StatusCodes.Status400BadRequest, "Error determin company roles for user.");
 
+            // TODO: Role class could serve a dict. with roles...
             var roles = await _roleRepository.GetAsync();
 
             foreach (var requiredRoleName in requiredRoleNames)
