@@ -1,190 +1,171 @@
-﻿using Goose.API;
-using Goose.API.Repositories;
-using Goose.API.Services.Issues;
-using Goose.Domain.Models.Auth;
-using Goose.Domain.Models.Projects;
-using Goose.Domain.Models.Issues;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-using NUnit.Framework;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Net.Http.Headers;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using Goose.Domain.Models.Issues;
+using Goose.Domain.Models.Projects;
+using NUnit.Framework;
 
 namespace Goose.Tests.Application.IntegrationTests.issues
 {
     [TestFixture]
-    [SingleThreaded]
+    [Parallelizable(ParallelScope.All)]
     class IssueSummaryTests
     {
-        private HttpClient _client;
-        private IIssueRequirementService _issueRequirementService;
-
-        [OneTimeSetUp]
-        public void OneTimeSetUp()
-        {
-            var factory = new WebApplicationFactory<Startup>();
-            _client = factory.CreateClient();
-
-            var scopeFactory = factory.Server.Services.GetService<IServiceScopeFactory>();
-
-            using var scope = scopeFactory.CreateScope();
-            _issueRequirementService = scope.ServiceProvider.GetService<IIssueRequirementService>();
-        }
-
-        [SetUp]
-        public async Task Setup()
-        {
-            await TestHelper.Instance.GenerateAll(_client);
-        }
-
-        [TearDown]
-        public async Task TearDown()
-        {
-            await TestHelper.Instance.ClearAll();
-        }
-
         [Test]
         public async Task CreateSummary()
         {
-            var issue = await TestHelper.Instance.GetIssueAsync();
-            IssueRequirement issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen" };
-            await _issueRequirementService.CreateAsync(issue.Id, issueRequirement);
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            {
+                var issue = helper.Issue;
+                IssueRequirement issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen"};
+                await helper.Helper.IssueRequirementService.CreateAsync(issue.Id, issueRequirement);
 
-            var uri = $"/api/issues/{issue.Id}/summaries";
-            var responce = await _client.PostAsync(uri, new object().ToStringContent());
-            Assert.IsTrue(responce.IsSuccessStatusCode);
+                var uri = $"/api/issues/{issue.Id}/summaries";
+                var response = await helper.client.PostAsync(uri, new object().ToStringContent());
+                Assert.IsTrue(response.IsSuccessStatusCode);
 
-            uri = $"/api/issues/{issue.Id}/summaries";
-            responce = await _client.GetAsync(uri);
-            Assert.IsTrue(responce.IsSuccessStatusCode);
+                uri = $"/api/issues/{issue.Id}/summaries";
+                response = await helper.client.GetAsync(uri);
+                Assert.IsTrue(response.IsSuccessStatusCode);
 
-            var requirements = await responce.Content.Parse<IList<IssueRequirement>>();
+                var requirements = await response.Content.Parse<IList<IssueRequirement>>();
 
-            Assert.IsTrue(requirements != null && requirements.Count > 0);
+                Assert.IsTrue(requirements != null && requirements.Count > 0);
 
-            issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen2" };
-            uri = $"/api/issues/{issue.Id}/requirements/";
-            responce = await _client.PostAsync(uri, issueRequirement.ToStringContent());
-            Assert.IsFalse(responce.IsSuccessStatusCode);
+                issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen2"};
+                uri = $"/api/issues/{issue.Id}/requirements/";
+                response = await helper.client.PostAsync(uri, issueRequirement.ToStringContent());
+                Assert.IsFalse(response.IsSuccessStatusCode);
+            }
         }
 
         [Test]
         public async Task CreateSummaryFalse()
         {
-            var issue = await TestHelper.Instance.GetIssueAsync();
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            {
+                var issue = helper.Issue;
 
-            var uri = $"/api/issues/{issue.Id}/summaries";
-            var responce = await _client.PostAsync(uri, new object().ToStringContent());
-            Assert.IsFalse(responce.IsSuccessStatusCode);
+                var uri = $"/api/issues/{issue.Id}/summaries";
+                var responce = await helper.client.PostAsync(uri, new object().ToStringContent());
+                Assert.IsFalse(responce.IsSuccessStatusCode);
 
-            uri = $"/api/issues/{issue.Id}/summaries";
-            responce = await _client.GetAsync(uri);
-            Assert.IsFalse(responce.IsSuccessStatusCode);
+                uri = $"/api/issues/{issue.Id}/summaries";
+                responce = await helper.client.GetAsync(uri);
+                Assert.IsFalse(responce.IsSuccessStatusCode);
+            }
         }
 
         [Test]
         public async Task AcceptSummary()
         {
-            var issue = await TestHelper.Instance.GetIssueAsync();
-            IssueRequirement issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen" };
-            await _issueRequirementService.CreateAsync(issue.Id, issueRequirement);
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            {
+                var issue = helper.Issue;
+                IssueRequirement issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen"};
+                await helper.Helper.IssueRequirementService.CreateAsync(issue.Id, issueRequirement);
 
-            var uri = $"/api/issues/{issue.Id}/summaries";
-            var responce = await _client.PostAsync(uri, new object().ToStringContent());
-            Assert.IsTrue(responce.IsSuccessStatusCode);
+                var uri = $"/api/issues/{issue.Id}/summaries";
+                var response = await helper.client.PostAsync(uri, new object().ToStringContent());
+                Assert.IsTrue(response.IsSuccessStatusCode);
 
-            uri = $"/api/issues/{issue.Id}/summaries?accept=true";
-            responce = await _client.PutAsync(uri, new object().ToStringContent());
-            Assert.IsTrue(responce.IsSuccessStatusCode);
+                uri = $"/api/issues/{issue.Id}/summaries?accept=true";
+                response = await helper.client.PutAsync(uri, new object().ToStringContent());
+                Assert.IsTrue(response.IsSuccessStatusCode);
 
-            issue = await TestHelper.Instance.GetIssueAsync();
-            Assert.IsTrue(issue.IssueDetail.RequirementsAccepted);
+                var newIssue = await helper.GetIssueAsync(issue.Id);
+                Assert.IsTrue(newIssue.IssueDetail.RequirementsAccepted);
 
-            var state = await TestHelper.Instance.GetStateByName(_client, issue.ProjectId, State.WaitingState);
-            Assert.AreEqual(state.Id, issue.StateId);
+                var state = await helper.Helper.GetStateByNameAsync(newIssue.ProjectId, State.WaitingState);
+                Assert.AreEqual(state.Id, newIssue.StateId);
 
-            issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen2" };
-            uri = $"/api/issues/{issue.Id}/requirements/";
-            responce = await _client.PostAsync(uri, issueRequirement.ToStringContent());
-            Assert.IsFalse(responce.IsSuccessStatusCode);
+                issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen2"};
+                uri = $"/api/issues/{issue.Id}/requirements/";
+                response = await helper.client.PostAsync(uri, issueRequirement.ToStringContent());
+                Assert.IsFalse(response.IsSuccessStatusCode);
+            }
         }
 
         [Test]
         public async Task AcceptSummaryFalse()
         {
-            var issue = await TestHelper.Instance.GetIssueAsync();
-            var uri = $"/api/issues/{issue.Id}/summaries?accept=true";
-            var responce = await _client.PutAsync(uri, new object().ToStringContent());
-            Assert.IsFalse(responce.IsSuccessStatusCode);
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            {
+                var uri = $"/api/issues/{helper.Issue.Id}/summaries?accept=true";
+                var response = await helper.client.PutAsync(uri, new object().ToStringContent());
+                Assert.IsFalse(response.IsSuccessStatusCode);
+            }
         }
 
         [Test]
         public async Task DeclineSummary()
         {
-            var issue = await TestHelper.Instance.GetIssueAsync();
-            IssueRequirement issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen" };
-            await _issueRequirementService.CreateAsync(issue.Id, issueRequirement);
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            {
+                IssueRequirement issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen"};
+                await helper.Helper.IssueRequirementService.CreateAsync(helper.Issue.Id, issueRequirement);
 
-            var uri = $"/api/issues/{issue.Id}/summaries";
-            var responce = await _client.PostAsync(uri, new object().ToStringContent());
-            Assert.IsTrue(responce.IsSuccessStatusCode);
+                var uri = $"/api/issues/{helper.Issue.Id}/summaries";
+                var responce = await helper.client.PostAsync(uri, new object().ToStringContent());
+                Assert.IsTrue(responce.IsSuccessStatusCode);
 
-            uri = $"/api/issues/{issue.Id}/summaries?accept=false";
-            responce = await _client.PutAsync(uri, new object().ToStringContent());
-            Assert.IsTrue(responce.IsSuccessStatusCode);
+                uri = $"/api/issues/{helper.Issue.Id}/summaries?accept=false";
+                responce = await helper.client.PutAsync(uri, new object().ToStringContent());
+                Assert.IsTrue(responce.IsSuccessStatusCode);
 
-            issue = await TestHelper.Instance.GetIssueAsync();
-            Assert.IsFalse(issue.IssueDetail.RequirementsAccepted);
-            Assert.IsFalse(issue.IssueDetail.RequirementsSummaryCreated);
+                var issue = await helper.GetIssueAsync(helper.Issue.Id);
+                Assert.IsFalse(issue.IssueDetail.RequirementsAccepted);
+                Assert.IsFalse(issue.IssueDetail.RequirementsSummaryCreated);
 
-            issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen2" };
-            uri = $"/api/issues/{issue.Id}/requirements/";
-            responce = await _client.PostAsync(uri, issueRequirement.ToStringContent());
-            Assert.IsTrue(responce.IsSuccessStatusCode);
+                issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen2"};
+                uri = $"/api/issues/{issue.Id}/requirements/";
+                responce = await helper.client.PostAsync(uri, issueRequirement.ToStringContent());
+                Assert.IsTrue(responce.IsSuccessStatusCode);
+            }
         }
 
         [Test]
         public async Task DeclineSummaryFalse()
         {
-            var issue = await TestHelper.Instance.GetIssueAsync();
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            {
+                var uri = $"/api/issues/{helper.Issue.Id}/summaries?accept=false";
+                var responce = await helper.client.PutAsync(uri, new object().ToStringContent());
+                Assert.IsFalse(responce.IsSuccessStatusCode);
 
-            var uri = $"/api/issues/{issue.Id}/summaries?accept=false";
-            var responce = await _client.PutAsync(uri, new object().ToStringContent());
-            Assert.IsFalse(responce.IsSuccessStatusCode);
-
-            var issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen2" };
-            uri = $"/api/issues/{issue.Id}/requirements/";
-            responce = await _client.PostAsync(uri, issueRequirement.ToStringContent());
-            Assert.IsTrue(responce.IsSuccessStatusCode);
+                var issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen2"};
+                uri = $"/api/issues/{helper.Issue.Id}/requirements/";
+                responce = await helper.client.PostAsync(uri, issueRequirement.ToStringContent());
+                Assert.IsTrue(responce.IsSuccessStatusCode);
+            }
         }
 
         [Test]
         public async Task DeclineSummaryFalse2()
         {
-            var issue = await TestHelper.Instance.GetIssueAsync();
-            IssueRequirement issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen" };
-            await _issueRequirementService.CreateAsync(issue.Id, issueRequirement);
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            {
+                IssueRequirement issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen"};
+                await helper.Helper.IssueRequirementService.CreateAsync(helper.Issue.Id, issueRequirement);
 
-            var uri = $"/api/issues/{issue.Id}/summaries";
-            var responce = await _client.PostAsync(uri, new object().ToStringContent());
-            Assert.IsTrue(responce.IsSuccessStatusCode);
+                var uri = $"/api/issues/{helper.Issue.Id}/summaries";
+                var responce = await helper.client.PostAsync(uri, new object().ToStringContent());
+                Assert.IsTrue(responce.IsSuccessStatusCode);
 
-            uri = $"/api/issues/{issue.Id}/summaries?accept=true";
-            responce = await _client.PutAsync(uri, new object().ToStringContent());
-            Assert.IsTrue(responce.IsSuccessStatusCode);
+                uri = $"/api/issues/{helper.Issue.Id}/summaries?accept=true";
+                responce = await helper.client.PutAsync(uri, new object().ToStringContent());
+                Assert.IsTrue(responce.IsSuccessStatusCode);
 
-            issue = await TestHelper.Instance.GetIssueAsync();
-            Assert.IsTrue(issue.IssueDetail.RequirementsAccepted);
+                var issue = await helper.GetIssueAsync(helper.Issue.Id);
+                Assert.IsTrue(issue.IssueDetail.RequirementsAccepted);
 
-            var state = await TestHelper.Instance.GetStateByName(_client, issue.ProjectId, State.WaitingState);
-            Assert.AreEqual(state.Id, issue.StateId);
 
-            uri = $"/api/issues/{issue.Id}/summaries?accept=false";
-            responce = await _client.PutAsync(uri, new object().ToStringContent()); 
-            Assert.IsFalse(responce.IsSuccessStatusCode);
+                var state = await helper.Helper.GetStateByNameAsync(issue.ProjectId, State.WaitingState);
+                Assert.AreEqual(state.Id, issue.StateId);
+
+                uri = $"/api/issues/{issue.Id}/summaries?accept=false";
+                responce = await helper.client.PutAsync(uri, new object().ToStringContent());
+                Assert.IsFalse(responce.IsSuccessStatusCode);
+            }
         }
     }
 }

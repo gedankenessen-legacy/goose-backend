@@ -1,69 +1,46 @@
-﻿using Goose.API;
-using Goose.API.Repositories;
-using Goose.API.Services.Issues;
-using Goose.Domain.Models.Auth;
-using Goose.Domain.Models.Projects;
-using Goose.Domain.Models.Issues;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-using NUnit.Framework;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Threading.Tasks;
-using Goose.Domain.Models.Identity;
-using Goose.Domain.DTOs;
 using Goose.Domain.DTOs.Issues;
+using Goose.Domain.Models.Identity;
+using Goose.Domain.Models.Issues;
+using Goose.Domain.Models.Projects;
+using MongoDB.Bson;
+using NUnit.Framework;
 
 namespace Goose.Tests.Application.IntegrationTests.issues
 {
     [TestFixture]
-    [SingleThreaded]
+    [Parallelizable(ParallelScope.All)]
     class IssueRightTests
     {
-        private HttpClient _client;
-        private IIssueRequirementService _issueRequirementService;
-
-        [OneTimeSetUp]
-        public void OneTimeSetUp()
+        private class SimpleTestHelperBuilderIssueRights : SimpleTestHelperBuilder
         {
-            var factory = new WebApplicationFactory<Startup>();
-            _client = factory.CreateClient();
+            public override async Task<IssueDTO> CreateIssue(HttpClient client, SimpleTestHelper helper)
+            {
+                var issue = await base.CreateIssue(client, helper);
+                var tasks = new List<Task<HttpResponseMessage>>();
+                for (int i = 0; i < 10; i++)
+                {
+                    var copy = issue.Copy();
+                    copy.Id = ObjectId.Empty;
+                    copy.IssueDetail.Visibility = i % 2 == 0;
+                    tasks.Add(helper.CreateIssue(copy));
+                }
 
-            var scopeFactory = factory.Server.Services.GetService<IServiceScopeFactory>();
-
-            using var scope = scopeFactory.CreateScope();
-            _issueRequirementService = scope.ServiceProvider.GetService<IIssueRequirementService>();
-        }
-
-        [SetUp]
-        public async Task Setup()
-        {
-            var signInResult = await TestHelper.Instance.GenerateCompany(_client);
-            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signInResult.Token);
-            await TestHelper.Instance.GenerateProject(_client);
-            await TestHelper.Instance.AddUserToProject(_client, Role.ProjectLeaderRole);
-
-            //Create 10 Issues with diffrent visibilities
-            //i % 2 to set the visibility
-            for (int i = 0; i < 10; i++)
-                await TestHelper.Instance.GenerateIssue(_client, i, TestHelper.Instance.TicketNameProp + i, i % 2 == 0);
-        }
-
-        [TearDown]
-        public async Task TearDown()
-        {
-            await TestHelper.Instance.ClearAll();
+                Task.WaitAll(tasks.ToArray());
+                return await tasks[0].Result.Parse<IssueDTO>();
+            }
         }
 
         //Create Issue as Write Employee
         [Test]
         public async Task CreateIssueAsWriteEmployee()
         {
-            await TestHelper.Instance.GenerateUserAndSetToProject(_client, Role.EmployeeRole);
-
-            var postResult = await TestHelper.Instance.GenerateIssue(_client, 11, TestHelper.Instance.TicketNameProp + 11);
+            using var helper = await new SimpleTestHelperBuilderIssueRights().Build();
+            await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.EmployeeRole);
+            var postResult = await helper.CreateIssue();
 
             Assert.IsTrue(postResult.IsSuccessStatusCode);
         }
@@ -72,9 +49,9 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         [Test]
         public async Task CreateIssueAsCustomer()
         {
-            await TestHelper.Instance.GenerateUserAndSetToProject(_client, Role.CustomerRole);
-
-            var postResult = await TestHelper.Instance.GenerateIssue(_client, 11, TestHelper.Instance.TicketNameProp + 11);
+            using var helper = await new SimpleTestHelperBuilderIssueRights().Build();
+            await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.CustomerRole);
+            var postResult = await helper.CreateIssue();
 
             Assert.IsTrue(postResult.IsSuccessStatusCode);
         }
@@ -83,9 +60,9 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         [Test]
         public async Task CreateIssueAsReadOnlyEmployee()
         {
-            await TestHelper.Instance.GenerateUserAndSetToProject(_client, Role.ReadonlyEmployeeRole);
-
-            var postResult = await TestHelper.Instance.GenerateIssue(_client, 11, TestHelper.Instance.TicketNameProp + 11);
+            using var helper = await new SimpleTestHelperBuilderIssueRights().Build();
+            await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.ReadonlyEmployeeRole);
+            var postResult = await helper.CreateIssue();
 
             Assert.IsFalse(postResult.IsSuccessStatusCode);
         }
@@ -94,188 +71,137 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         [Test]
         public async Task UpdateIssueAsEmployee()
         {
-            await TestHelper.Instance.GenerateUserAndSetToProject(_client, Role.EmployeeRole);
+            using var helper = await new SimpleTestHelperBuilderIssueRights().Build();
+            await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.EmployeeRole);
 
-            var issue = await TestHelper.Instance.GetIssueAsync(0);
-
+            var issue = helper.Issue.Copy();
             issue.IssueDetail.Priority = 9;
 
-            var state = await TestHelper.Instance.GetStateById(_client, issue.ProjectId, issue.StateId);
-            var project = await TestHelper.Instance.GetProject();
-            var client = await TestHelper.Instance.GetUserByUserId(issue.ClientId);
-            var author = await TestHelper.Instance.GetUserByUserId(issue.AuthorId);
+            var uri = $"api/projects/{issue.Project.Id}/issues/{issue.Id}";
 
-            var uri = $"api/projects/{issue.ProjectId}/issues/{issue.Id}";
+            var response = await helper.client.PutAsync(uri, issue.ToStringContent());
 
-            var responce = await _client.PutAsync(uri, new IssueDTO(issue, state, new ProjectDTO(project), new UserDTO(client), new UserDTO(author)).ToStringContent());
-
-            Assert.IsTrue(responce.IsSuccessStatusCode);
-
-            var issueUpdated = await TestHelper.Instance.GetIssueAsync(0);
-
-            Assert.AreEqual(9, issueUpdated.IssueDetail.Priority);
+            Assert.IsTrue(response.IsSuccessStatusCode);
+            Assert.AreEqual(9, (await helper.GetIssueAsync(issue.Id)).IssueDetail.Priority);
         }
 
         //Update Issue as Customer 
         [Test]
         public async Task UpdateIssueAsCustomer()
         {
-            await TestHelper.Instance.GenerateUserAndSetToProject(_client, Role.CustomerRole);
+            using var helper = await new SimpleTestHelperBuilderIssueRights().Build();
+            await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.CustomerRole);
 
-            var issue = await TestHelper.Instance.GetIssueAsync(0);
-
+            var issue = helper.Issue.Copy();
             issue.IssueDetail.Priority = 9;
 
-            var state = await TestHelper.Instance.GetStateById(_client, issue.ProjectId, issue.StateId);
-            var project = await TestHelper.Instance.GetProject();
-            var client = await TestHelper.Instance.GetUserByUserId(issue.ClientId);
-            var author = await TestHelper.Instance.GetUserByUserId(issue.AuthorId);
+            var uri = $"api/projects/{issue.Project.Id}/issues/{issue.Id}";
 
-            var uri = $"api/projects/{issue.ProjectId}/issues/{issue.Id}";
+            var response = await helper.client.PutAsync(uri, issue.ToStringContent());
 
-            var responce = await _client.PutAsync(uri, new IssueDTO(issue, state, new ProjectDTO(project), new UserDTO(client), new UserDTO(author)).ToStringContent());
-
-            Assert.IsTrue(responce.IsSuccessStatusCode);
-
-            var issueUpdated = await TestHelper.Instance.GetIssueAsync(0);
-
-            Assert.AreEqual(9, issueUpdated.IssueDetail.Priority);
+            Assert.IsTrue(response.IsSuccessStatusCode);
+            Assert.AreEqual(9, (await helper.GetIssueAsync(issue.Id)).IssueDetail.Priority);
         }
 
         //Update Issue as Read Only Employee (false)
         [Test]
         public async Task UpdateIssueAsReadOnlyEmployee()
         {
-            await TestHelper.Instance.GenerateUserAndSetToProject(_client, Role.ReadonlyEmployeeRole);
+            using var helper = await new SimpleTestHelperBuilderIssueRights().Build();
+            await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.ReadonlyEmployeeRole);
 
-            var issue = await TestHelper.Instance.GetIssueAsync(0);
-
+            var issue = helper.Issue.Copy();
             issue.IssueDetail.Priority = 9;
 
-            var state = await TestHelper.Instance.GetStateById(_client, issue.ProjectId, issue.StateId);
-            var project = await TestHelper.Instance.GetProject();
-            var client = await TestHelper.Instance.GetUserByUserId(issue.ClientId);
-            var author = await TestHelper.Instance.GetUserByUserId(issue.AuthorId);
+            var uri = $"api/projects/{issue.Project.Id}/issues/{issue.Id}";
 
-            var uri = $"api/projects/{issue.ProjectId}/issues/{issue.Id}";
+            var response = await helper.client.PutAsync(uri, issue.ToStringContent());
 
-            var responce = await _client.PutAsync(uri, new IssueDTO(issue, state, new ProjectDTO(project), new UserDTO(client), new UserDTO(author)).ToStringContent());
-
-            Assert.IsFalse(responce.IsSuccessStatusCode);
+            Assert.IsFalse(response.IsSuccessStatusCode);
         }
 
         //Update state of Issue as Write Employee
         [Test]
         public async Task UpdateStateOfIssueAsEmployee()
         {
-            await TestHelper.Instance.GenerateUserAndSetToProject(_client, Role.EmployeeRole);
+            using var helper = await new SimpleTestHelperBuilderIssueRights().Build();
+            await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.EmployeeRole);
 
-            var issue = await TestHelper.Instance.GetIssueAsync(0);
+            var copy = helper.Issue.Copy();
+            copy.State = await helper.Helper.GetStateByNameAsync(copy.Project.Id, State.WaitingState);
 
-            issue.IssueDetail.Priority = 9;
+            var uri = $"api/projects/{copy.Project.Id}/issues/{copy.Id}";
 
-            var state = await TestHelper.Instance.GetStateByName(_client, issue.ProjectId, State.WaitingState);
-            var project = await TestHelper.Instance.GetProject();
-            var client = await TestHelper.Instance.GetUserByUserId(issue.ClientId);
-            var author = await TestHelper.Instance.GetUserByUserId(issue.AuthorId);
-
-            var uri = $"api/projects/{issue.ProjectId}/issues/{issue.Id}";
-
-            var responce = await _client.PutAsync(uri, new IssueDTO(issue, state, new ProjectDTO(project), new UserDTO(client), new UserDTO(author)).ToStringContent());
-
-            Assert.IsTrue(responce.IsSuccessStatusCode);
-
-            var issueUpdated = await TestHelper.Instance.GetIssueAsync(0);
-
-            Assert.AreEqual(state.Id, issueUpdated.StateId);
+            var response = await helper.client.PutAsync(uri, copy.ToStringContent());
+            Assert.IsTrue(response.IsSuccessStatusCode);
+            Assert.AreEqual(copy.State.Id, (await helper.GetIssueAsync(copy.Id)).StateId);
         }
 
         //Update state of Issue as Customer (false)
         [Test]
         public async Task UpdateStateOfIssueAsCustomer()
         {
-            await TestHelper.Instance.GenerateUserAndSetToProject(_client, Role.CustomerRole);
+            using var helper = await new SimpleTestHelperBuilderIssueRights().Build();
+            await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.CustomerRole);
 
-            var issue = await TestHelper.Instance.GetIssueAsync(0);
+            var copy = helper.Issue.Copy();
+            copy.State = await helper.Helper.GetStateByNameAsync(copy.Project.Id, State.WaitingState);
 
-            issue.IssueDetail.Priority = 9;
+            var uri = $"api/projects/{copy.Project.Id}/issues/{copy.Id}";
 
-            var state = await TestHelper.Instance.GetStateByName(_client, issue.ProjectId, State.WaitingState);
-            var project = await TestHelper.Instance.GetProject();
-            var client = await TestHelper.Instance.GetUserByUserId(issue.ClientId);
-            var author = await TestHelper.Instance.GetUserByUserId(issue.AuthorId);
-
-            var uri = $"api/projects/{issue.ProjectId}/issues/{issue.Id}";
-
-            var responce = await _client.PutAsync(uri, new IssueDTO(issue, state, new ProjectDTO(project), new UserDTO(client), new UserDTO(author)).ToStringContent());
-
-            Assert.IsFalse(responce.IsSuccessStatusCode);
-
-            var issueUpdated = await TestHelper.Instance.GetIssueAsync(0);
-            var actualState = await TestHelper.Instance.GetStateByName(_client, issue.ProjectId, State.CheckingState);
-
-            Assert.AreEqual(actualState.Id, issueUpdated.StateId);
+            var response = await helper.client.PutAsync(uri, copy.ToStringContent());
+            Assert.IsFalse(response.IsSuccessStatusCode);
+            Assert.AreEqual(helper.Issue.State.Id, (await helper.GetIssueAsync(copy.Id)).StateId);
         }
 
-        //Update state of Issue as Read Only Employee (false)
         [Test]
         public async Task UpdateStateOfIssueAsReadOnlyEmployee()
         {
-            await TestHelper.Instance.GenerateUserAndSetToProject(_client, Role.ReadonlyEmployeeRole);
+            using var helper = await new SimpleTestHelperBuilderIssueRights().Build();
+            await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.ReadonlyEmployeeRole);
 
-            var issue = await TestHelper.Instance.GetIssueAsync(0);
+            var copy = helper.Issue.Copy();
+            copy.State = await helper.Helper.GetStateByNameAsync(copy.Project.Id, State.WaitingState);
 
-            issue.IssueDetail.Priority = 9;
+            var uri = $"api/projects/{copy.Project.Id}/issues/{copy.Id}";
 
-            var state = await TestHelper.Instance.GetStateByName(_client, issue.ProjectId, State.WaitingState);
-            var project = await TestHelper.Instance.GetProject();
-            var client = await TestHelper.Instance.GetUserByUserId(issue.ClientId);
-            var author = await TestHelper.Instance.GetUserByUserId(issue.AuthorId);
-
-            var uri = $"api/projects/{issue.ProjectId}/issues/{issue.Id}";
-
-            var responce = await _client.PutAsync(uri, new IssueDTO(issue, state, new ProjectDTO(project), new UserDTO(client), new UserDTO(author)).ToStringContent());
-
-            Assert.IsFalse(responce.IsSuccessStatusCode);
-
-            var issueUpdated = await TestHelper.Instance.GetIssueAsync(0);
-            var actualState = await TestHelper.Instance.GetStateByName(_client, issue.ProjectId, State.CheckingState);
-
-            Assert.AreEqual(actualState.Id, issueUpdated.StateId);
+            var response = await helper.client.PutAsync(uri, copy.ToStringContent());
+            Assert.IsFalse(response.IsSuccessStatusCode);
+            Assert.AreEqual(helper.Issue.State.Id, (await helper.GetIssueAsync(copy.Id)).StateId);
         }
 
         //See Tickets as Leader (10)
         [Test]
         public async Task GetIssueAsLeader()
         {
-            var project = await TestHelper.Instance.GetProject();
-            var uri = $"api/projects/{project.Id}/issues";
-            var responce = await _client.GetAsync(uri);
-            var list = await responce.Content.Parse<IList<IssueDTO>>();
-            Assert.AreEqual(10, list.Count);
+            using var helper = await new SimpleTestHelperBuilderIssueRights().Build();
+            var uri = $"api/projects/{helper.Project.Id}/issues";
+            var response = await helper.client.GetAsync(uri);
+            var list = await response.Content.Parse<IList<IssueDTO>>();
+            Assert.AreEqual(11, list.Count);
         }
 
         //See Tickets as Write Employee (10)
         [Test]
         public async Task GetIssueAsEmployee()
         {
-            await TestHelper.Instance.GenerateUserAndSetToProject(_client, Role.EmployeeRole);
-            var project = await TestHelper.Instance.GetProject();
-            var uri = $"api/projects/{project.Id}/issues";
-            var responce = await _client.GetAsync(uri);
-            var list = await responce.Content.Parse<IList<IssueDTO>>();
-            Assert.AreEqual(10, list.Count);
+            using var helper = await new SimpleTestHelperBuilderIssueRights().Build();
+            await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.EmployeeRole);
+            var uri = $"api/projects/{helper.Project.Id}/issues";
+            var response = await helper.client.GetAsync(uri);
+            var list = await response.Content.Parse<IList<IssueDTO>>();
+            Assert.AreEqual(11, list.Count);
         }
 
         //See Tickets as Customer (5)
         [Test]
         public async Task GetIssueAsCustomer()
         {
-            await TestHelper.Instance.GenerateUserAndSetToProject(_client, Role.CustomerRole);
-            var project = await TestHelper.Instance.GetProject();
-            var uri = $"api/projects/{project.Id}/issues";
-            var responce = await _client.GetAsync(uri);
-            var list = await responce.Content.Parse<IList<IssueDTO>>();
+            using var helper = await new SimpleTestHelperBuilderIssueRights().Build();
+            await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.CustomerRole);
+            var uri = $"api/projects/{helper.Project.Id}/issues";
+            var response = await helper.client.GetAsync(uri);
+            var list = await response.Content.Parse<IList<IssueDTO>>();
             Assert.AreEqual(5, list.Count);
         }
 
@@ -283,35 +209,33 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         [Test]
         public async Task GetIssueAsReadOnlyEmployee()
         {
-            await TestHelper.Instance.GenerateUserAndSetToProject(_client, Role.ReadonlyEmployeeRole);
-            var project = await TestHelper.Instance.GetProject();
-            var uri = $"api/projects/{project.Id}/issues";
-            var responce = await _client.GetAsync(uri);
-            var list = await responce.Content.Parse<IList<IssueDTO>>();
-            Assert.AreEqual(10, list.Count);
+            using var helper = await new SimpleTestHelperBuilderIssueRights().Build();
+            await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.EmployeeRole);
+            var uri = $"api/projects/{helper.Project.Id}/issues";
+            var response = await helper.client.GetAsync(uri);
+            var list = await response.Content.Parse<IList<IssueDTO>>();
+            Assert.AreEqual(11, list.Count);
         }
 
         //Write a Message as Leader 
         [Test]
         public async Task WriteMessageAsLeader()
         {
-            var user = await TestHelper.Instance.GetUser();
-
+            using var helper = await new SimpleTestHelperBuilderIssueRights().Build();
             var newItem = new IssueConversationDTO()
             {
                 Type = IssueConversation.MessageType,
                 Data = "TestConversation",
             };
 
-            var issue = await TestHelper.Instance.GetIssueAsync(0);
-            var uri = $"/api/issues/{issue.Id}/conversations/";
+            var uri = $"/api/issues/{helper.Issue.Id}/conversations/";
 
-            var response = await _client.PostAsync(uri, newItem.ToStringContent());
+            var response = await helper.client.PostAsync(uri, newItem.ToStringContent());
             Assert.IsTrue(response.IsSuccessStatusCode);
 
-            issue = await TestHelper.Instance.GetIssueAsync();
+            var issue = await helper.GetIssueAsync(helper.Issue.Id);
             var latestConversationItem = issue.ConversationItems.Last();
-            Assert.AreEqual(latestConversationItem.CreatorUserId, user.Id);
+            Assert.AreEqual(latestConversationItem.CreatorUserId, helper.User.Id);
             Assert.AreEqual(latestConversationItem.Type, IssueConversation.MessageType);
             Assert.AreEqual(latestConversationItem.Data, "TestConversation");
         }
@@ -320,7 +244,8 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         [Test]
         public async Task WriteMessageAsEmployee()
         {
-            var userId = await TestHelper.Instance.GenerateUserAndSetToProject(_client, Role.EmployeeRole);
+            using var helper = await new SimpleTestHelperBuilderIssueRights().Build();
+            var userId = await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.EmployeeRole);
 
             var newItem = new IssueConversationDTO()
             {
@@ -328,13 +253,12 @@ namespace Goose.Tests.Application.IntegrationTests.issues
                 Data = "TestConversation",
             };
 
-            var issue = await TestHelper.Instance.GetIssueAsync();
-            var uri = $"/api/issues/{issue.Id}/conversations/";
+            var uri = $"/api/issues/{helper.Issue.Id}/conversations/";
 
-            var response = await _client.PostAsync(uri, newItem.ToStringContent());
+            var response = await helper.client.PostAsync(uri, newItem.ToStringContent());
             Assert.IsTrue(response.IsSuccessStatusCode);
 
-            issue = await TestHelper.Instance.GetIssueAsync();
+            var issue = await helper.GetIssueAsync(helper.Issue.Id);
             var latestConversationItem = issue.ConversationItems.Last();
             Assert.AreEqual(latestConversationItem.CreatorUserId, userId);
             Assert.AreEqual(latestConversationItem.Type, IssueConversation.MessageType);
@@ -345,7 +269,8 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         [Test]
         public async Task WriteMessageAsCustomer()
         {
-            var userId = await TestHelper.Instance.GenerateUserAndSetToProject(_client, Role.CustomerRole);
+            using var helper = await new SimpleTestHelperBuilderIssueRights().Build();
+            var userId = await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.CustomerRole);
 
             var newItem = new IssueConversationDTO()
             {
@@ -353,13 +278,12 @@ namespace Goose.Tests.Application.IntegrationTests.issues
                 Data = "TestConversation",
             };
 
-            var issue = await TestHelper.Instance.GetIssueAsync();
-            var uri = $"/api/issues/{issue.Id}/conversations/";
+            var uri = $"/api/issues/{helper.Issue.Id}/conversations/";
 
-            var response = await _client.PostAsync(uri, newItem.ToStringContent());
+            var response = await helper.client.PostAsync(uri, newItem.ToStringContent());
             Assert.IsTrue(response.IsSuccessStatusCode);
 
-            issue = await TestHelper.Instance.GetIssueAsync();
+            var issue = await helper.GetIssueAsync(helper.Issue.Id);
             var latestConversationItem = issue.ConversationItems.Last();
             Assert.AreEqual(latestConversationItem.CreatorUserId, userId);
             Assert.AreEqual(latestConversationItem.Type, IssueConversation.MessageType);
@@ -370,7 +294,8 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         [Test]
         public async Task WriteMessageAsReadOnlyEmployee()
         {
-            var userId = await TestHelper.Instance.GenerateUserAndSetToProject(_client, Role.ReadonlyEmployeeRole);
+            using var helper = await new SimpleTestHelperBuilderIssueRights().Build();
+            await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.ReadonlyEmployeeRole);
 
             var newItem = new IssueConversationDTO()
             {
@@ -378,10 +303,9 @@ namespace Goose.Tests.Application.IntegrationTests.issues
                 Data = "TestConversation",
             };
 
-            var issue = await TestHelper.Instance.GetIssueAsync();
-            var uri = $"/api/issues/{issue.Id}/conversations/";
+            var uri = $"/api/issues/{helper.Issue.Id}/conversations/";
 
-            var response = await _client.PostAsync(uri, newItem.ToStringContent());
+            var response = await helper.client.PostAsync(uri, newItem.ToStringContent());
             Assert.IsFalse(response.IsSuccessStatusCode);
         }
     }
