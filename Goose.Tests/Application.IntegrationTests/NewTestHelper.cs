@@ -83,42 +83,39 @@ namespace Goose.Tests.Application.IntegrationTests
             return await CreateProject(companyId, projectDto);
         }
 
-        public async Task AddUserToProject(ObjectId projectId, ObjectId userId, params string[] roles)
+        public async Task AddUserToProject(ObjectId projectId, ObjectId userId, params Role[] roles)
         {
             var user = await UserRepository.GetAsync(userId);
             await AddUserToProject(projectId, user, roles);
         }
 
-        private async Task AddUserToProject(ObjectId projectId, User user, params string[] roleNames)
+        private async Task AddUserToProject(ObjectId projectId, User user, params Role[] roles)
         {
-            var roles = await (await _client.GetAsync("api/roles")).Content.Parse<List<RoleDTO>>();
-
             var uri = $"api/projects/{projectId}/users/{user.Id}";
             var addRequest = new PropertyUserDTO()
             {
                 User = new UserDTO(user),
-                Roles = roleNames.Select(roleName => roles.First(it => roleName.Equals(it.Name))).ToList()
+                Roles = roles.Select(it => new RoleDTO(it)).ToList()
             };
             await _client.PutAsync(uri, addRequest.ToStringContent());
         }
 
 
         public async Task<ObjectId> GenerateUserAndSetToProject(ObjectId companyId, ObjectId projectId,
-            params string[] roleNames)
+            params Role[] roles)
         {
-            var roles = await (await _client.GetAsync("api/roles")).Content.Parse<List<RoleDTO>>();
             var login = new PropertyUserLoginDTO
             {
                 Firstname = $"{new Random().NextDouble()}",
                 Lastname = $"{new Random().NextDouble()}",
                 Password = "Test12345",
-                Roles = roleNames.Select(role => roles.First(it => role.Equals(it.Name))).ToList()
+                Roles = roles.Select(it => new RoleDTO(it)).ToList()
             };
-            return await GenerateUserAndSetToProject(companyId, projectId, login, roleNames);
+            return await GenerateUserAndSetToProject(companyId, projectId, login, roles);
         }
 
         public async Task<ObjectId> GenerateUserAndSetToProject(ObjectId companyId, ObjectId projectId, PropertyUserLoginDTO user,
-            params string[] roles)
+            params Role[] roles)
         {
             //generate User 
             var newUser = await CreateUserForCompany(user, companyId);
@@ -215,6 +212,7 @@ namespace Goose.Tests.Application.IntegrationTests
             var uri = $"api/projects/{projectId}/issues/{issueId}?GetAll=true";
             return await _client.GetAsync(uri).Parse<IssueDTODetailed>();
         }
+
         public async Task<IssueDTODetailed> GetIssueThroughClientAsync(IssueDTO issueDto)
         {
             return await GetIssueThroughClientAsync(issueDto.Project.Id, issueDto.Id);
