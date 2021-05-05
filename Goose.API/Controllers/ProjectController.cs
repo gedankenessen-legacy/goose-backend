@@ -1,7 +1,5 @@
-﻿using Goose.API.Authorization;
-using Goose.API.Services;
+﻿using Goose.API.Services;
 using Goose.Domain.DTOs;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
@@ -11,6 +9,7 @@ using System.Threading.Tasks;
 namespace Goose.API.Controllers
 {
     [Route("api/companies/{companyId}/projects")]
+    [ApiController]
     public class ProjectController : ControllerBase
     {
         private readonly IProjectService _projectService;
@@ -41,6 +40,12 @@ namespace Goose.API.Controllers
         }
 
         // GET: api/companies/{companyId}/projects
+        /// <summary>
+        /// Dieser Endpunkt liefert folgende Projekte zurück:
+        /// Für einen CompanyUser liefert er alle Projekte der Company zurück
+        /// Ansonsten, bei Kunden und Mitarbeitern, liefert er nur die Projekte zurück
+        /// bei denen der aufrufende Nutzer auch eine Rolle hat.
+        /// </summary>
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]

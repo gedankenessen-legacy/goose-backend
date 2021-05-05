@@ -21,6 +21,7 @@ using System.Threading.Tasks;
 namespace Goose.Tests.Application.IntegrationTests.issues
 {
     [TestFixture]
+    [SingleThreaded]
     class IssueConversationTests
     {
         private HttpClient _client;
@@ -53,6 +54,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         [Test]
         public async Task PostConversation()
         {
+            // merge conflict, author please review this line vvv
             await TestHelper.Instance.AddUserToProject(_client, Role.ProjectLeaderRole.Name);
 
             var user = await TestHelper.Instance.GetUser();
@@ -104,27 +106,30 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             var user = await TestHelper.Instance.GetUser();
 
             var issue = await TestHelper.Instance.GetIssueAsync();
+            var otherIssue = await TestHelper.Instance.GetIssueAsync(1);
             var uri = $"/api/issues/{issue.Id}/predecessors/{predecessorIssue.Id}";
 
             // Add the predecessor
             var response = await _client.PutAsync(uri, null);
             Assert.IsTrue(response.IsSuccessStatusCode);
 
-            issue = await TestHelper.Instance.GetIssueAsync();
-            var latestConversationItem = issue.ConversationItems.Last();
-            Assert.AreEqual(latestConversationItem.CreatorUserId, user.Id);
+            var issueDTO = await TestHelper.Instance.GetIssueThroughClientAsync(_client);
+            var latestConversationItem = issueDTO.ConversationItems.Last();
+            Assert.AreEqual(latestConversationItem.Creator.Id, user.Id);
             Assert.AreEqual(latestConversationItem.Type, IssueConversation.PredecessorAddedType);
-            Assert.AreEqual(latestConversationItem.Data, predecessorIssue.Id.ToString());
+            Assert.AreEqual(latestConversationItem.OtherTicketId, predecessorIssue.Id);
+            Assert.IsTrue(latestConversationItem.Data.Contains(otherIssue.IssueDetail.Name));
 
             // Remove the predecessor
             response = await _client.DeleteAsync(uri);
             Assert.IsTrue(response.IsSuccessStatusCode);
 
-            issue = await TestHelper.Instance.GetIssueAsync();
-            latestConversationItem = issue.ConversationItems.Last();
-            Assert.AreEqual(latestConversationItem.CreatorUserId, user.Id);
+            issueDTO = await TestHelper.Instance.GetIssueThroughClientAsync(_client);
+            latestConversationItem = issueDTO.ConversationItems.Last();
+            Assert.AreEqual(latestConversationItem.Creator.Id, user.Id);
             Assert.AreEqual(latestConversationItem.Type, IssueConversation.PredecessorRemovedType);
-            Assert.AreEqual(latestConversationItem.Data, predecessorIssue.Id.ToString());
+            Assert.AreEqual(latestConversationItem.OtherTicketId, predecessorIssue.Id);
+            Assert.IsTrue(latestConversationItem.Data.Contains(otherIssue.IssueDetail.Name));
         }
 
         [Test]
@@ -143,21 +148,23 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             var response = await _client.PutAsync(addUri, null);
             Assert.IsTrue(response.IsSuccessStatusCode);
 
-            issue = await TestHelper.Instance.GetIssueAsync();
-            var latestConversationItem = issue.ConversationItems.Last();
-            Assert.AreEqual(latestConversationItem.CreatorUserId, user.Id);
+            var issueDTO = await TestHelper.Instance.GetIssueThroughClientAsync(_client);
+            var latestConversationItem = issueDTO.ConversationItems.Last();
+            Assert.AreEqual(latestConversationItem.Creator.Id, user.Id);
             Assert.AreEqual(latestConversationItem.Type, IssueConversation.ChildIssueAddedType);
-            Assert.AreEqual(latestConversationItem.Data, childIssue.Id.ToString());
+            Assert.AreEqual(latestConversationItem.OtherTicketId, childIssue.Id);
+            Assert.IsTrue(latestConversationItem.Data.Contains(childIssue.IssueDetail.Name));
 
             // Remove the parent
             response = await _client.DeleteAsync(removeUri);
             Assert.IsTrue(response.IsSuccessStatusCode);
 
-            issue = await TestHelper.Instance.GetIssueAsync();
-            latestConversationItem = issue.ConversationItems.Last();
-            Assert.AreEqual(latestConversationItem.CreatorUserId, user.Id);
+            issueDTO = await TestHelper.Instance.GetIssueThroughClientAsync(_client);
+            latestConversationItem = issueDTO.ConversationItems.Last();
+            Assert.AreEqual(latestConversationItem.Creator.Id, user.Id);
             Assert.AreEqual(latestConversationItem.Type, IssueConversation.ChildIssueRemovedType);
-            Assert.AreEqual(latestConversationItem.Data, childIssue.Id.ToString());
+            Assert.AreEqual(latestConversationItem.OtherTicketId, childIssue.Id);
+            Assert.IsTrue(latestConversationItem.Data.Contains(childIssue.IssueDetail.Name));
         }
 
         [Test]
@@ -211,10 +218,17 @@ namespace Goose.Tests.Application.IntegrationTests.issues
 
             // Test if the SummaryDeclined Conversation Item is there
             issue = await TestHelper.Instance.GetIssueAsync();
-            latestConversationItem = issue.ConversationItems.Last();
+            latestConversationItem = issue.ConversationItems[issue.ConversationItems.Count -2];
+            Assert.IsTrue(latestConversationItem is not null);
             Assert.AreEqual(latestConversationItem.CreatorUserId, user.Id);
             Assert.AreEqual(latestConversationItem.Type, IssueConversation.SummaryAcceptedType);
             Assert.AreEqual(latestConversationItem.Requirements.Single(), issueRequirement.Requirement);
+
+            latestConversationItem = issue.ConversationItems[issue.ConversationItems.Count - 1];
+            Assert.IsTrue(latestConversationItem is not null);
+            Assert.AreEqual(latestConversationItem.CreatorUserId, user.Id);
+            Assert.AreEqual(latestConversationItem.Type, IssueConversation.StateChangeType);
+            Assert.AreEqual(latestConversationItem.Data, $"Status von {State.NegotiationState} zu {State.WaitingState} geändert.");
         }
 
         [Test]

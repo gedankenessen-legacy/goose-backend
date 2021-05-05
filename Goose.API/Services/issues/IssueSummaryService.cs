@@ -72,6 +72,14 @@ namespace Goose.API.Services.issues
                 Data = "",
                 Requirements = issue.IssueDetail.Requirements.Select(x => x.Requirement).ToList(),
             });
+
+            issue.ConversationItems.Add(new IssueConversation()
+            {
+                Id = ObjectId.GenerateNewId(),
+                CreatorUserId = _httpContextAccessor.HttpContext.User.GetUserId(),
+                Type = IssueConversation.StateChangeType,
+                Data = $"Status von {State.NegotiationState} zu {State.WaitingState} geändert.",
+            });
             await _issueRepository.UpdateAsync(issue);
         }
 
