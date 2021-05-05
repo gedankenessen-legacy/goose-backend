@@ -8,6 +8,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Goose.API.Utils;
+using Microsoft.AspNetCore.Authorization;
+using Goose.API.Authorization.Requirements;
+using Microsoft.AspNetCore.Http;
+using Goose.API.Authorization;
 
 namespace Goose.API.Services
 {
@@ -24,15 +28,28 @@ namespace Goose.API.Services
     {
         private readonly IProjectRepository _projectRepository;
         private readonly IIssueRepository _issueRepository;
+        private readonly IAuthorizationService _authorizationService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public StateService(IProjectRepository projectRepository, IIssueRepository issueRepository)
+        public StateService(IProjectRepository projectRepository, IIssueRepository issueRepository, IAuthorizationService authorizationService, IHttpContextAccessor httpContextAccessor)
         {
             _projectRepository = projectRepository;
             _issueRepository = issueRepository;
+            _authorizationService = authorizationService;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<StateDTO> CreateStateAsync(ObjectId projectId, StateDTO requestedState)
         {
+            var project = await _projectRepository.GetAsync(projectId);
+
+            if (project is null)
+            {
+                throw new HttpStatusException(404, "Project not found");
+            }
+
+            await AuthorizeEmployeeAndLeaderRolesAsync(project);
+
             var state = new State()
             {
                 Id = ObjectId.GenerateNewId(),
@@ -89,6 +106,15 @@ namespace Goose.API.Services
 
         public async Task UpdateState(ObjectId projectId, ObjectId stateId, StateDTO stateDTO)
         {
+            var project = await _projectRepository.GetAsync(projectId);
+
+            if (project is null)
+            {
+                throw new HttpStatusException(404, "Project not found");
+            }
+
+            await AuthorizeEmployeeAndLeaderRolesAsync(project);
+
             if (stateDTO.Id != stateId)
             {
                 throw new HttpStatusException(400, "Cannot Update: State ID does not match");
@@ -114,6 +140,8 @@ namespace Goose.API.Services
                 throw new HttpStatusException(404, "Invalid projectId");
             }
 
+            await AuthorizeEmployeeAndLeaderRolesAsync(project);
+
             var stateDeleted = project.States.Remove(state => {
                 if (state.Id != stateId)
                 {
@@ -134,6 +162,21 @@ namespace Goose.API.Services
             {
                 await _projectRepository.UpdateAsync(project);
             }
+        }
+
+        private async Task<bool> AuthorizeEmployeeAndLeaderRolesAsync(Project project)
+        {
+            // Dict with the requirement as key und the error message as value.
+            Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
+            {
+                { ProjectRolesRequirement.EmployeeRequirement, "You missing the employee role in this project, in order to create a state." },
+                { ProjectRolesRequirement.LeaderRequirement, "You missing the leader role in this project, in order to create a state." },
+            };
+
+            // validate requirements with the appropriate handlers.
+            (await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, project, requirementsWithErrors.Keys)).ThrowErrorIfAllFailed(requirementsWithErrors);
+
+            return true;
         }
     }
 }
