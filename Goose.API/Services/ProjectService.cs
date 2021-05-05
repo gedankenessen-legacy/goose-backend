@@ -144,7 +144,7 @@ namespace Goose.API.Services
                 throw new HttpStatusException(StatusCodes.Status403Forbidden, "You are no member of this company.");
             }
 
-            var companyRole = (await _roleRepository.FilterByAsync(x => x.Name == Role.CompanyRole)).Single();
+            var companyRole = (await _roleRepository.FilterByAsync(x => x.Name == Role.CompanyRole.Name)).Single();
 
             var projects = await _projectRepository.FilterByAsync(x => x.CompanyId == companyId);
 

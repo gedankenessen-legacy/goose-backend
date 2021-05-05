@@ -55,7 +55,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         public async Task PostConversation()
         {
             // merge conflict, author please review this line vvv
-            await TestHelper.Instance.AddUserToProject(_client, Role.ProjectLeaderRole.Name);
+            await TestHelper.Instance.AddUserToProject(_client, Role.ProjectLeaderRole);
 
             var user = await TestHelper.Instance.GetUser();
 
