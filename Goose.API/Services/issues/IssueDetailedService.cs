@@ -30,7 +30,6 @@ namespace Goose.API.Services.Issues
         private readonly IIssueConversationService _conversationService;
         private readonly IIssueTimeSheetService _timeSheetService;
         private readonly IIssueService _issueService;
-        private readonly IProjectRepository _projectRepository;
 
         private readonly IIssueRepository _issueRepository;
         private readonly IUserRepository _userRepository;
@@ -38,14 +37,13 @@ namespace Goose.API.Services.Issues
 
         public IssueDetailedService(IIssueConversationService conversationService,
             IIssueTimeSheetService timeSheetService, IIssueService issueService, IUserRepository userRepository,
-            IIssueRepository issueRepository, IProjectRepository projectRepository, IIssueRequestValidator issueValidator)
+            IIssueRepository issueRepository, IIssueRequestValidator issueValidator)
         {
             _conversationService = conversationService;
             _timeSheetService = timeSheetService;
             _issueService = issueService;
             _userRepository = userRepository;
             _issueRepository = issueRepository;
-            _projectRepository = projectRepository;
             _issueValidator = issueValidator;
         }
 
@@ -74,6 +72,7 @@ namespace Goose.API.Services.Issues
                 issueTaskList.Add(CreateDtoFromIssue(issue, getAssignedUsers, getConversations,
                     getTimeSheets, getParent, getPredecessors, getSuccessors, getAll));
             }
+
             return (await Task.WhenAll(issueTaskList)).ToList();
         }
 
@@ -84,10 +83,11 @@ namespace Goose.API.Services.Issues
             if (!await _issueValidator.HasExistingProjectId(projectId))
                 throw new HttpStatusException(StatusCodes.Status404NotFound, $"Project with id [{projectId}] does not exist");
 
-            if (!(await _issueService.UserCanSeeInternTicket(projectId)))
-                throw new HttpStatusException(StatusCodes.Status403Forbidden, $"Sie haben nicht die berechtigung dieses Ticket zu sehen");
-
             var issue = await _issueRepository.GetAsync(issueId);
+
+            if (!issue.IssueDetail.Visibility && !await _issueService.UserCanSeeInternTicket(projectId))
+                throw new HttpStatusException(StatusCodes.Status403Forbidden, $"Ein Kunde hat keine Berechtigung interne Tickets (Ticket: {issueId}) zu sehen");
+
             return await CreateDtoFromIssue(issue, getAssignedUsers, getConversations, getTimeSheets, getParent, getPredecessors, getSuccessors, getAll);
         }
 
