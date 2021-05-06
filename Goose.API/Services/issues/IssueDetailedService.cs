@@ -84,10 +84,11 @@ namespace Goose.API.Services.Issues
             if (!await _issueValidator.HasExistingProjectId(projectId))
                 throw new HttpStatusException(StatusCodes.Status404NotFound, $"Project with id [{projectId}] does not exist");
 
-            if (!(await _issueService.UserCanSeeInternTicket(projectId)))
-                throw new HttpStatusException(StatusCodes.Status403Forbidden, $"Sie haben nicht die berechtigung dieses Ticket zu sehen");
-
             var issue = await _issueRepository.GetAsync(issueId);
+            
+            if (!issue.IssueDetail.Visibility && !await _issueService.UserCanSeeInternTicket(projectId))
+                throw new HttpStatusException(StatusCodes.Status403Forbidden, $"Sie haben nicht die berechtigung dieses Ticket zu sehen");
+            
             return await CreateDtoFromIssue(issue, getAssignedUsers, getConversations, getTimeSheets, getParent, getPredecessors, getSuccessors, getAll);
         }
 
