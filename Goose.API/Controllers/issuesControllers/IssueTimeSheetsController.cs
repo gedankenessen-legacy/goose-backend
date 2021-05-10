@@ -43,7 +43,7 @@ namespace Goose.API.Controllers.IssuesControllers
             [FromBody] IssueTimeSheetDTO timeSheetDto)
         {
             var res = await _issueService.CreateAsync(issueId, timeSheetDto);
-            return CreatedAtAction(nameof(Get), new {id = res.Id}, res);
+            return CreatedAtAction(nameof(Get), new {issueId, id = res.Id}, res);
         }
 
         [ProducesResponseType(StatusCodes.Status204NoContent)]
