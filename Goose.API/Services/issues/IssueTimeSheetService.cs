@@ -6,6 +6,9 @@ using Goose.Domain.DTOs;
 using Goose.Domain.DTOs.Issues;
 using Goose.Domain.Models.Issues;
 using Goose.API.Utils;
+using Goose.API.Utils.Authentication;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
 
 namespace Goose.API.Services.Issues
@@ -24,11 +27,13 @@ namespace Goose.API.Services.Issues
     {
         private readonly IIssueRepository _issueRepo;
         private readonly IUserRepository _userRepo;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public IssueTimeSheetService(IIssueRepository issueRepo, IUserRepository userRepo)
+        public IssueTimeSheetService(IIssueRepository issueRepo, IUserRepository userRepo, IHttpContextAccessor httpContextAccessor)
         {
             _issueRepo = issueRepo;
             _userRepo = userRepo;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<IList<IssueTimeSheetDTO>> GetAllOfIssueAsync(ObjectId issueId)
@@ -46,11 +51,13 @@ namespace Goose.API.Services.Issues
         public async Task<IssueTimeSheetDTO> CreateAsync(ObjectId issueId, IssueTimeSheetDTO timeSheetDto)
         {
             var issue = await _issueRepo.GetAsync(issueId);
-
-            timeSheetDto.Id = ObjectId.GenerateNewId();
-            issue.TimeSheets.Add(timeSheetDto.ToTimeSheet());
+            var timesheet = timeSheetDto.ToTimeSheet(); 
+            
+            timesheet.Id = ObjectId.GenerateNewId();
+            timesheet.UserId = _httpContextAccessor.HttpContext.User.GetUserId();
+            issue.TimeSheets.Add(timesheet);
             await _issueRepo.UpdateAsync(issue);
-            return timeSheetDto;
+            return await GetAsync(issueId, timesheet.Id);
         }
 
         public async Task UpdateAsync(ObjectId issueId, IssueTimeSheetDTO timeSheetDto)
