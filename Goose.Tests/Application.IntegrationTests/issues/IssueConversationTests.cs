@@ -1,251 +1,227 @@
-﻿using Goose.API;
-using Goose.API.Repositories;
+﻿using System;
+using System.Linq;
+using System.Net.Http;
+using System.Threading.Tasks;
+using Goose.API;
 using Goose.API.Services.Issues;
 using Goose.Domain.DTOs;
 using Goose.Domain.DTOs.Issues;
-using Goose.Domain.Models.Auth;
-using Goose.Domain.Models.Identity;
 using Goose.Domain.Models.Issues;
 using Goose.Domain.Models.Projects;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Goose.Tests.Application.IntegrationTests.issues
 {
     [TestFixture]
+    [Parallelizable(ParallelScope.All)]
     class IssueConversationTests
     {
-        private HttpClient _client;
-        private IIssueRequirementService _issueRequirementService;
-
-        [OneTimeSetUp]
-        public void OneTimeSetUp()
-        {
-            var factory = new WebApplicationFactory<Startup>();
-            _client = factory.CreateClient();
-
-            var scopeFactory = factory.Server.Services.GetService<IServiceScopeFactory>();
-
-            using var scope = scopeFactory.CreateScope();
-            _issueRequirementService = scope.ServiceProvider.GetService<IIssueRequirementService>();
-        }
-
-        [SetUp]
-        public async Task Setup()
-        {
-            await TestHelper.Instance.GenerateAll(_client);
-        }
-
-        [TearDown]
-        public async Task Teardown()
-        {
-            await TestHelper.Instance.ClearAll();
-        }
-
         [Test]
         public async Task PostConversation()
         {
-            await TestHelper.Instance.AddUserToProject(_client, Role.ProjectLeaderRole);
-
-            var user = await TestHelper.Instance.GetUser();
-
-            var newItem = new IssueConversationDTO()
+            using var helper = await new SimpleTestHelperBuilder().Build();
             {
-                Type = IssueConversation.MessageType,
-                Data = "TestConversation",
-            };
+                var newItem = new IssueConversationDTO()
+                {
+                    Type = IssueConversation.MessageType,
+                    Data = "TestConversation",
+                };
+                var issueId = helper.Issue.Id;
+                var uri = $"/api/issues/{issueId}/conversations/";
 
-            var issue = await TestHelper.Instance.GetIssueAsync();
-            var uri = $"/api/issues/{issue.Id}/conversations/";
+                var response = await helper.client.PostAsync(uri, newItem.ToStringContent());
+                Assert.IsTrue(response.IsSuccessStatusCode);
 
-            var response = await _client.PostAsync(uri, newItem.ToStringContent());
-            Assert.IsTrue(response.IsSuccessStatusCode);
-
-            issue = await TestHelper.Instance.GetIssueAsync();
-            var latestConversationItem = issue.ConversationItems.Last();
-            Assert.AreEqual(latestConversationItem.CreatorUserId, user.Id);
-            Assert.AreEqual(latestConversationItem.Type, IssueConversation.MessageType);
-            Assert.AreEqual(latestConversationItem.Data, "TestConversation");
+                var issue = await helper.Helper.GetIssueAsync(issueId);
+                var latestConversationItem = issue.ConversationItems.Last();
+                Assert.AreEqual(latestConversationItem.CreatorUserId, helper.User.Id);
+                Assert.AreEqual(latestConversationItem.Type, IssueConversation.MessageType);
+                Assert.AreEqual(latestConversationItem.Data, "TestConversation");
+            }
         }
 
         [Test]
         public async Task PostConversationWrongType()
         {
+            using var helper = await new SimpleTestHelperBuilder().Build();
             var newItem = new IssueConversationDTO()
             {
                 Type = IssueConversation.StateChangeType,
                 Data = "TestConversation",
             };
 
-            var issue = await TestHelper.Instance.GetIssueAsync();
-            var uri = $"/api/issues/{issue.Id}/conversations/";
+            var uri = $"/api/issues/{helper.Issue.Id}/conversations/";
 
-            var response = await _client.PostAsync(uri, newItem.ToStringContent());
+            var response = await helper.client.PostAsync(uri, newItem.ToStringContent());
             Assert.IsFalse(response.IsSuccessStatusCode);
 
-            issue = await TestHelper.Instance.GetIssueAsync();
+            var issue = await helper.Helper.GetIssueAsync(helper.Issue.Id);
             Assert.AreEqual(0, issue.ConversationItems.Count);
         }
 
         [Test]
         public async Task PredecessorConversation()
         {
-            await TestHelper.Instance.GenerateIssue(_client, 1);
-            var predecessorIssue = await TestHelper.Instance.GetIssueAsync(1);
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            {
+                var predecessorIssue = await helper.CreateIssue().Parse<IssueDTO>();
 
-            var user = await TestHelper.Instance.GetUser();
+                var uri = $"/api/issues/{helper.Issue.Id}/predecessors/{predecessorIssue.Id}";
 
-            var issue = await TestHelper.Instance.GetIssueAsync();
-            var uri = $"/api/issues/{issue.Id}/predecessors/{predecessorIssue.Id}";
+                // Add the predecessor
+                var response = await helper.client.PutAsync(uri, null);
+                Assert.IsTrue(response.IsSuccessStatusCode);
 
-            // Add the predecessor
-            var response = await _client.PutAsync(uri, null);
-            Assert.IsTrue(response.IsSuccessStatusCode);
+                var issueDTO = await helper.Helper.GetIssueThroughClientAsync(helper.Issue);
+                var latestConversationItem = issueDTO.ConversationItems.Last();
+                Assert.AreEqual(latestConversationItem.Creator.Id, helper.User.Id);
+                Assert.AreEqual(latestConversationItem.Type, IssueConversation.PredecessorAddedType);
+                Assert.AreEqual(latestConversationItem.OtherTicketId, predecessorIssue.Id);
+                Assert.IsTrue(latestConversationItem.Data.Contains(predecessorIssue.IssueDetail.Name));
 
-            issue = await TestHelper.Instance.GetIssueAsync();
-            var latestConversationItem = issue.ConversationItems.Last();
-            Assert.AreEqual(latestConversationItem.CreatorUserId, user.Id);
-            Assert.AreEqual(latestConversationItem.Type, IssueConversation.PredecessorAddedType);
-            Assert.AreEqual(latestConversationItem.Data, predecessorIssue.Id.ToString());
+                // Remove the predecessor
+                response = await helper.client.DeleteAsync(uri);
+                Assert.IsTrue(response.IsSuccessStatusCode);
 
-            // Remove the predecessor
-            response = await _client.DeleteAsync(uri);
-            Assert.IsTrue(response.IsSuccessStatusCode);
-
-            issue = await TestHelper.Instance.GetIssueAsync();
-            latestConversationItem = issue.ConversationItems.Last();
-            Assert.AreEqual(latestConversationItem.CreatorUserId, user.Id);
-            Assert.AreEqual(latestConversationItem.Type, IssueConversation.PredecessorRemovedType);
-            Assert.AreEqual(latestConversationItem.Data, predecessorIssue.Id.ToString());
+                issueDTO = await helper.Helper.GetIssueThroughClientAsync(helper.Issue);
+                latestConversationItem = issueDTO.ConversationItems.Last();
+                Assert.AreEqual(latestConversationItem.Creator.Id, helper.User.Id);
+                Assert.AreEqual(latestConversationItem.Type, IssueConversation.PredecessorRemovedType);
+                Assert.AreEqual(latestConversationItem.OtherTicketId, predecessorIssue.Id);
+                Assert.IsTrue(latestConversationItem.Data.Contains(predecessorIssue.IssueDetail.Name));
+            }
         }
 
         [Test]
         public async Task ChildConversation()
         {
-            await TestHelper.Instance.GenerateIssue(_client, 1);
-            var childIssue = await TestHelper.Instance.GetIssueAsync(1);
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            var issue = helper.Issue;
+            var childIssue = await helper.CreateIssue().Parse<IssueDTO>();
 
-            var user = await TestHelper.Instance.GetUser();
-
-            var issue = await TestHelper.Instance.GetIssueAsync();
             var addUri = $"/api/issues/{childIssue.Id}/parent/{issue.Id}";
             var removeUri = $"/api/issues/{childIssue.Id}/parent";
 
             // Add the parent
-            var response = await _client.PutAsync(addUri, null);
+            var response = await helper.client.PutAsync(addUri, null);
             Assert.IsTrue(response.IsSuccessStatusCode);
 
-            issue = await TestHelper.Instance.GetIssueAsync();
-            var latestConversationItem = issue.ConversationItems.Last();
-            Assert.AreEqual(latestConversationItem.CreatorUserId, user.Id);
+            var issueDTO = await helper.Helper.GetIssueThroughClientAsync(issue.Project.Id, issue.Id);
+            var latestConversationItem = issueDTO.ConversationItems.Last();
+            Assert.AreEqual(latestConversationItem.Creator.Id, helper.User.Id);
             Assert.AreEqual(latestConversationItem.Type, IssueConversation.ChildIssueAddedType);
-            Assert.AreEqual(latestConversationItem.Data, childIssue.Id.ToString());
+            Assert.AreEqual(latestConversationItem.OtherTicketId, childIssue.Id);
+            Assert.IsTrue(latestConversationItem.Data.Contains(childIssue.IssueDetail.Name));
 
             // Remove the parent
-            response = await _client.DeleteAsync(removeUri);
+            response = await helper.client.DeleteAsync(removeUri);
             Assert.IsTrue(response.IsSuccessStatusCode);
 
-            issue = await TestHelper.Instance.GetIssueAsync();
-            latestConversationItem = issue.ConversationItems.Last();
-            Assert.AreEqual(latestConversationItem.CreatorUserId, user.Id);
+            issueDTO = await helper.Helper.GetIssueThroughClientAsync(issue.Project.Id, issue.Id);
+            latestConversationItem = issueDTO.ConversationItems.Last();
+            Assert.AreEqual(latestConversationItem.Creator.Id, helper.User.Id);
             Assert.AreEqual(latestConversationItem.Type, IssueConversation.ChildIssueRemovedType);
-            Assert.AreEqual(latestConversationItem.Data, childIssue.Id.ToString());
+            Assert.AreEqual(latestConversationItem.OtherTicketId, childIssue.Id);
+            Assert.IsTrue(latestConversationItem.Data.Contains(childIssue.IssueDetail.Name));
         }
 
         [Test]
         public async Task StatusConversation()
         {
-            var user = await TestHelper.Instance.GetUser();
-            var project = await TestHelper.Instance.GetProject();
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            {
+                var user = helper.User;
+                var project = helper.Project;
 
-            var issue = await TestHelper.Instance.GetIssueAsync();
-            var uri = $"/api/projects/{project.Id}/issues/{issue.Id}";
+                var issue = await helper.Helper.GetIssueAsync(helper.Issue.Id);
+                var uri = $"/api/projects/{project.Id}/issues/{issue.Id}";
 
-            var newState = await TestHelper.Instance.GetStateByName(_client, issue.ProjectId, State.NegotiationState);
-            var userDTO = new UserDTO(user);
-            var issueDTO = new IssueDTO(issue, newState, new ProjectDTO(project), userDTO, userDTO);
+                var newState = await helper.Helper.GetStateByNameAsync(issue.ProjectId, State.NegotiationState);
+                var issueDTO = new IssueDTO(issue, newState, project, user, user);
 
-            var response = await _client.PutAsync(uri, issueDTO.ToStringContent());
-            Assert.IsTrue(response.IsSuccessStatusCode);
+                var response = await helper.client.PutAsync(uri, issueDTO.ToStringContent());
+                Assert.IsTrue(response.IsSuccessStatusCode);
 
-            issue = await TestHelper.Instance.GetIssueAsync();
-            var latestConversationItem = issue.ConversationItems.Last();
-            Assert.AreEqual(latestConversationItem.CreatorUserId, user.Id);
-            Assert.AreEqual(latestConversationItem.Type, IssueConversation.StateChangeType);
-            Assert.AreNotEqual(latestConversationItem.Data, "");
+                issue = await helper.GetIssueAsync(helper.Issue.Id);
+                var latestConversationItem = issue.ConversationItems.Last();
+                Assert.AreEqual(latestConversationItem.CreatorUserId, user.Id);
+                Assert.AreEqual(latestConversationItem.Type, IssueConversation.StateChangeType);
+                Assert.AreNotEqual(latestConversationItem.Data, "");
+            }
         }
 
         [Test]
         public async Task SummaryAcceptedConversation()
         {
-            var user = await TestHelper.Instance.GetUser();
-
-            var issue = await TestHelper.Instance.GetIssueAsync();
-            IssueRequirement issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen" };
-            await _issueRequirementService.CreateAsync(issue.Id, issueRequirement);
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            var issue = helper.Issue;
+            IssueRequirement issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen"};
+            await helper.Helper.IssueRequirementService.CreateAsync(issue.Id, issueRequirement);
 
             // Create a summary
             var uri = $"/api/issues/{issue.Id}/summaries";
-            var response = await _client.PostAsync(uri, null);
+            var response = await helper.client.PostAsync(uri, null);
             Assert.IsTrue(response.IsSuccessStatusCode);
 
             // Test if the SummaryCreated Conversation Item is there
-            issue = await TestHelper.Instance.GetIssueAsync();
-            var latestConversationItem = issue.ConversationItems.Last();
-            Assert.AreEqual(latestConversationItem.CreatorUserId, user.Id);
+            var newIssue = await helper.Helper.GetIssueAsync(issue.Id);
+            var latestConversationItem = newIssue.ConversationItems.Last();
+            Assert.AreEqual(latestConversationItem.CreatorUserId, helper.User.Id);
             Assert.AreEqual(latestConversationItem.Type, IssueConversation.SummaryCreatedType);
             Assert.AreEqual(latestConversationItem.Requirements.Single(), issueRequirement.Requirement);
 
             // Accept the summary
             uri = $"/api/issues/{issue.Id}/summaries?accept=true";
-            response = await _client.PutAsync(uri, null);
+            response = await helper.client.PutAsync(uri, null);
             Assert.IsTrue(response.IsSuccessStatusCode);
 
             // Test if the SummaryDeclined Conversation Item is there
-            issue = await TestHelper.Instance.GetIssueAsync();
-            latestConversationItem = issue.ConversationItems.Last();
-            Assert.AreEqual(latestConversationItem.CreatorUserId, user.Id);
+            newIssue = await helper.GetIssueAsync(issue.Id);
+            latestConversationItem = newIssue.ConversationItems[newIssue.ConversationItems.Count - 2];
+            Assert.IsTrue(latestConversationItem is not null);
+            Assert.AreEqual(latestConversationItem.CreatorUserId, helper.User.Id);
             Assert.AreEqual(latestConversationItem.Type, IssueConversation.SummaryAcceptedType);
             Assert.AreEqual(latestConversationItem.Requirements.Single(), issueRequirement.Requirement);
+
+            latestConversationItem = newIssue.ConversationItems[newIssue.ConversationItems.Count - 1];
+            Assert.IsTrue(latestConversationItem is not null);
+            Assert.AreEqual(latestConversationItem.CreatorUserId, helper.User.Id);
+            Assert.AreEqual(latestConversationItem.Type, IssueConversation.StateChangeType);
+            Assert.AreEqual(latestConversationItem.Data, $"Status von {State.NegotiationState} zu {State.WaitingState} geändert.");
         }
 
         [Test]
         public async Task DeclineSummaryConversion()
         {
-            var user = await TestHelper.Instance.GetUser();
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            var user = helper.User;
+            var issue = helper.Issue;
 
-            var issue = await TestHelper.Instance.GetIssueAsync();
-            IssueRequirement issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen" };
-            issueRequirement = await _issueRequirementService.CreateAsync(issue.Id, issueRequirement);
+            IssueRequirement issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen"};
+            issueRequirement = await helper.Helper.IssueRequirementService.CreateAsync(issue.Id, issueRequirement);
 
             // Create a summary
             var uri = $"/api/issues/{issue.Id}/summaries";
-            var response = await _client.PostAsync(uri, null);
+            var response = await helper.client.PostAsync(uri, null);
             Assert.IsTrue(response.IsSuccessStatusCode);
 
             // Test if the SummaryCreated Conversation Item is there
-            issue = await TestHelper.Instance.GetIssueAsync();
-            var latestConversationItem = issue.ConversationItems.Last();
+            var newIssue = await helper.GetIssueAsync(issue.Id);
+            var latestConversationItem = newIssue.ConversationItems.Last();
             Assert.AreEqual(latestConversationItem.CreatorUserId, user.Id);
             Assert.AreEqual(latestConversationItem.Type, IssueConversation.SummaryCreatedType);
             Assert.AreEqual(latestConversationItem.Requirements.Single(), issueRequirement.Requirement);
 
             // Decline the summary
             uri = $"/api/issues/{issue.Id}/summaries?accept=false";
-            response = await _client.PutAsync(uri, null);
+            response = await helper.client.PutAsync(uri, null);
             Assert.IsTrue(response.IsSuccessStatusCode);
 
             // Test if the SummaryDeclined Conversation Item is there
-            issue = await TestHelper.Instance.GetIssueAsync();
-            latestConversationItem = issue.ConversationItems.Last();
+            newIssue = await helper.Helper.GetIssueAsync(issue.Id);
+            latestConversationItem = newIssue.ConversationItems.Last();
             Assert.AreEqual(latestConversationItem.CreatorUserId, user.Id);
             Assert.AreEqual(latestConversationItem.Type, IssueConversation.SummaryDeclinedType);
             Assert.AreEqual(latestConversationItem.Requirements.Single(), issueRequirement.Requirement);

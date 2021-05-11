@@ -7,10 +7,15 @@ using Goose.Domain.Models.Projects;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Goose.Domain.Models;
+using Goose.Domain.Models.Projects;
 using MongoDB.Bson;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System;
+using Goose.API.Authorization;
+using Goose.API.Utils.Authentication;
+using Goose.Domain.Models.Identity;
 
 namespace Goose.API.Services
 {
@@ -26,13 +31,20 @@ namespace Goose.API.Services
     {
         private readonly IProjectRepository _projectRepository;
         private readonly ICompanyRepository _companyRepository;
+        private readonly IRoleRepository _roleRepository;
         private readonly IAuthorizationService _authorizationService;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public ProjectService(IProjectRepository projectRepository, ICompanyRepository companyRepository, IAuthorizationService authorizationService, IHttpContextAccessor httpContextAccessor)
+        public ProjectService(
+            IProjectRepository projectRepository,
+            ICompanyRepository companyRepository,
+            IRoleRepository roleRepository,
+            IAuthorizationService authorizationService,
+            IHttpContextAccessor httpContextAccessor)
         {
             _projectRepository = projectRepository;
             _companyRepository = companyRepository;
+            _roleRepository = roleRepository;
             _authorizationService = authorizationService;
             _httpContextAccessor = httpContextAccessor;
         }
@@ -45,9 +57,7 @@ namespace Goose.API.Services
             if (company is null)
                 throw new HttpStatusException(StatusCodes.Status400BadRequest, "Company not found.");
 
-           // ALSO POSSIBLE => ...AuthorizeAsync(_httpContextAccessor.HttpContext.User, company, new[]{ CompanyRolesRequirement.CompanyOwner, CompanyRolesRequirement.CompanyCustomer })...
-            if ((await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, company, CompanyRolesRequirement.CompanyOwner)).Succeeded is false)
-                throw new HttpStatusException(StatusCodes.Status403Forbidden, "Missing role(s).");
+            await AuthorizeCreationAsync(company);
 
             var newProject = new Project()
             {
@@ -63,6 +73,21 @@ namespace Goose.API.Services
             await _projectRepository.CreateAsync(newProject);
 
             return new ProjectDTO(newProject);
+        }
+
+        private async Task<bool> AuthorizeCreationAsync(Company company)
+        {
+            // Dict with the requirement as key und the error message as value.
+            Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
+            {
+                { CompanyRolesRequirement.CompanyOwner, "You need to be the owner of this company, in order to create a project."},
+                //{ new ProjectHasClientRequirement(), "Your company is missing a client, in order to create a project." }
+            };
+
+            // validate requirements with the appropriate handlers.
+            (await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, company, requirementsWithErrors.Keys)).ThrowErrorForFailedRequirements(requirementsWithErrors);
+
+            return true;
         }
 
         private IList<State> GetDefaultStates()
@@ -105,10 +130,38 @@ namespace Goose.API.Services
 
         public async Task<IList<ProjectDTO>> GetProjects(ObjectId companyId)
         {
+            var userId = _httpContextAccessor.HttpContext.User.GetUserId();
+            var company = await _companyRepository.GetAsync(companyId);
+
+            if (company == null)
+            {
+                throw new HttpStatusException(StatusCodes.Status404NotFound, "Invalid CompanyId");
+            }
+
+            var companyUser = company.Users.SingleOrDefault(x => x.UserId == userId);
+            if (companyUser == null)
+            {
+                throw new HttpStatusException(StatusCodes.Status403Forbidden, "You are no member of this company.");
+            }
+
+            var companyRole = (await _roleRepository.FilterByAsync(x => x.Name == Role.CompanyRole.Name)).Single();
+
             var projects = await _projectRepository.FilterByAsync(x => x.CompanyId == companyId);
 
-            var projectDTOs = from project in projects
+            IEnumerable<ProjectDTO> projectDTOs;
+            if (companyUser.RoleIds.Any(x => x == companyRole.Id))
+            {
+                // Die Firma darf alle Projekt sehen
+                projectDTOs = from project in projects
                               select new ProjectDTO(project);
+            }
+            else
+            {
+                // Ansonsten (Mitarbeiter & Kunden) dürfen nur Projekte sehen, in denen sie auch eine Rolle haben
+                projectDTOs = from project in projects
+                              where project.Users.Any(x => x.UserId == userId)
+                              select new ProjectDTO(project);
+            }
 
             return projectDTOs.ToList();
         }

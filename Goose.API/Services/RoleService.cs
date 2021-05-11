@@ -55,7 +55,7 @@ namespace Goose.API.Services
             var roleItems = await _roleRepository.FilterByAsync(x => x.Name.Equals(role.Name));
 
             if (roleItems.Count > 0)
-                throw new HttpStatusException(400, "Es existiert schon eine Role mit diesen Namen");
+                return roleItems.FirstOrDefault();
 
             var newRole = new Role()
             {

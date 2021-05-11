@@ -20,7 +20,7 @@ namespace Goose.API.Services.Issues
         public Task<IList<IssueTimeSheetDTO>> GetAllOfIssueAsync(ObjectId issueId);
         public Task<IssueTimeSheetDTO> GetAsync(ObjectId issueId, ObjectId timeSheetId);
         public Task<IssueTimeSheetDTO> CreateAsync(ObjectId issueId, IssueTimeSheetDTO timeSheet);
-        public Task UpdateAsync(ObjectId issueId, IssueTimeSheetDTO timeSheetDto);
+        public Task UpdateAsync(ObjectId issueId, ObjectId id, IssueTimeSheetDTO timeSheetDto);
         public Task DeleteAsync(ObjectId issueId, ObjectId timeSheetId);
     }
 
@@ -111,10 +111,13 @@ namespace Goose.API.Services.Issues
                     ProjectRolesRequirement.EmployeeRequirement, ProjectRolesRequirement.LeaderRequirement)
                 || await _authorizationService.HasAtLeastOneRequirement(user, await company, CompanyRolesRequirement.CompanyOwner))
             {
-                timeSheetDto.Id = ObjectId.GenerateNewId();
-                issue.TimeSheets.Add(timeSheetDto.ToTimeSheet());
+                var timesheet = timeSheetDto.ToTimeSheet();
+
+                timesheet.Id = ObjectId.GenerateNewId();
+                timesheet.UserId = _httpContextAccessor.HttpContext.User.GetUserId();
+                issue.TimeSheets.Add(timesheet);
                 await _issueRepo.UpdateAsync(issue);
-                return timeSheetDto;
+                return await GetAsync(issueId, timesheet.Id);
             }
 
             #endregion
@@ -124,7 +127,7 @@ namespace Goose.API.Services.Issues
                 $"User [{user.GetUserId()}] does not have a role in this project");
         }
 
-        public async Task UpdateAsync(ObjectId issueId, IssueTimeSheetDTO timeSheetDto)
+        public async Task UpdateAsync(ObjectId issueId, ObjectId id, IssueTimeSheetDTO timeSheetDto)
         {
             var user = _httpContextAccessor.HttpContext?.User;
             var issue = await _issueRepo.GetAsync(issueId);
@@ -138,7 +141,13 @@ namespace Goose.API.Services.Issues
                 || await _authorizationService.HasAtLeastOneRequirement(user!, await company,
                     CompanyRolesRequirement.CompanyOwner))
             {
-                issue.TimeSheets.Replace(it => it.Id == timeSheetDto.Id, timeSheetDto.ToTimeSheet());
+                
+                var timeSheet = issue.TimeSheets.FirstOrDefault(it => it.Id.Equals(id));
+                if (timeSheet == null) throw new HttpStatusException(StatusCodes.Status400BadRequest, $"There is no timesheet with the id [{id}]");
+
+                timeSheet.Start = timeSheetDto.Start;
+                timeSheet.End = timeSheetDto.End;
+                
                 await _issueRepo.UpdateAsync(issue);
             }
 

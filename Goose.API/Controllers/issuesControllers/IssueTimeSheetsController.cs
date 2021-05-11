@@ -13,11 +13,11 @@ namespace Goose.API.Controllers.IssuesControllers
     [ApiController]
     public class IssueTimeSheetsController : Controller
     {
-        private readonly IIssueTimeSheetService _issueService;
+        private readonly IIssueTimeSheetService _timeSheetService;
 
-        public IssueTimeSheetsController(IIssueTimeSheetService issueRepo)
+        public IssueTimeSheetsController(IIssueTimeSheetService timeSheetRepo)
         {
-            _issueService = issueRepo;
+            _timeSheetService = timeSheetRepo;
         }
 
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -25,7 +25,7 @@ namespace Goose.API.Controllers.IssuesControllers
         [HttpGet]
         public async Task<ActionResult<IList<IssueTimeSheetDTO>>> GetAll([FromRoute] ObjectId issueId)
         {
-            return Ok(await _issueService.GetAllOfIssueAsync(issueId));
+            return Ok(await _timeSheetService.GetAllOfIssueAsync(issueId));
         }
 
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -33,7 +33,7 @@ namespace Goose.API.Controllers.IssuesControllers
         [HttpGet("{id}")]
         public async Task<ActionResult<IssueTimeSheetDTO>> Get([FromRoute] ObjectId issueId, [FromRoute] ObjectId id)
         {
-            return Ok(await _issueService.GetAsync(issueId, id));
+            return Ok(await _timeSheetService.GetAsync(issueId, id));
         }
 
         [ProducesResponseType(StatusCodes.Status201Created)]
@@ -42,17 +42,17 @@ namespace Goose.API.Controllers.IssuesControllers
         public async Task<ActionResult<IList<IssueTimeSheetDTO>>> Post([FromRoute] ObjectId issueId,
             [FromBody] IssueTimeSheetDTO timeSheetDto)
         {
-            var res = await _issueService.CreateAsync(issueId, timeSheetDto);
-            return CreatedAtAction(nameof(Get), new {id = res.Id}, res);
+            var res = await _timeSheetService.CreateAsync(issueId, timeSheetDto);
+            return CreatedAtAction(nameof(Get), new {issueId, id = res.Id}, res);
         }
 
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [HttpPut("{id}")]
-        public async Task<ActionResult<IList<IssueTimeSheetDTO>>> Put([FromRoute] ObjectId id,
+        public async Task<ActionResult<IList<IssueTimeSheetDTO>>> Put([FromRoute] ObjectId issueId, [FromRoute] ObjectId id,
             [FromBody] IssueTimeSheetDTO timeSheetDto)
         {
-            await _issueService.UpdateAsync(id, timeSheetDto);
+            await _timeSheetService.UpdateAsync(issueId, id, timeSheetDto);
             return NoContent();
         }
 
@@ -62,7 +62,7 @@ namespace Goose.API.Controllers.IssuesControllers
         public async Task<ActionResult<IList<IssueTimeSheetDTO>>> Delete([FromRoute] ObjectId issueId,
             [FromRoute] ObjectId id)
         {
-            await _issueService.DeleteAsync(issueId, id);
+            await _timeSheetService.DeleteAsync(issueId, id);
             return NoContent();
         }
     }

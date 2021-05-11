@@ -1,8 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Goose.API.Authorization;
-using Goose.API.Authorization.Requirements;
 using Goose.API.Repositories;
 using Goose.API.Utils.Exceptions;
 using Goose.API.Utils.Validators;
@@ -14,13 +12,17 @@ using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
 using Goose.API.Utils.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using Goose.API.Authorization.Requirements;
+using Goose.API.Authorization;
 
 namespace Goose.API.Services.Issues
 {
     public interface IIssueService
     {
+        Task<IList<IssueDTO>> GetAll();
         public Task<IssueDTO> Get(ObjectId id);
         Task<IList<IssueDTO>> GetAllOfProject(ObjectId projectId);
+        public Task<IssueDTO> GetOfProject(ObjectId projectId, ObjectId id);
         public Task<IssueDTO> Create(IssueDTO issueDto);
         public Task<IssueDTO> Update(IssueDTO issueDto, ObjectId id);
         public Task<bool> Delete(ObjectId id);
@@ -29,11 +31,11 @@ namespace Goose.API.Services.Issues
         public Task RemoveParent(ObjectId issueId);
 
         public Task AssertNotArchived(Issue issue);
+        Task<bool> UserCanSeeInternTicket(ObjectId projectId);
     }
 
     public class IssueService : IIssueService
     {
-        private readonly ICompanyRepository _companyRepository;
         private readonly IStateService _stateService;
         private readonly IProjectRepository _projectRepository;
         private readonly IUserRepository _userRepository;
@@ -48,7 +50,8 @@ namespace Goose.API.Services.Issues
             IStateService stateService,
             IProjectRepository projectRepository,
             IUserRepository userRepository,
-            IHttpContextAccessor httpContextAccessor, IAuthorizationService authorizationService, ICompanyRepository companyRepository)
+            IHttpContextAccessor httpContextAccessor,
+            IAuthorizationService authorizationService)
         {
             _issueRepo = issueRepo;
             _stateService = stateService;
@@ -56,106 +59,40 @@ namespace Goose.API.Services.Issues
             _userRepository = userRepository;
             _httpContextAccessor = httpContextAccessor;
             _authorizationService = authorizationService;
-            _companyRepository = companyRepository;
+        }
+
+        public async Task<IList<IssueDTO>> GetAll()
+        {
+            return (await Task.WhenAll((await _issueRepo.GetAsync()).Select(CreateDtoFromIssue))).ToList();
         }
 
         public async Task<IssueDTO> Get(ObjectId id)
         {
-            var user = _httpContextAccessor.HttpContext?.User;
-            var issue = await CreateDtoFromIssue(await _issueRepo.GetAsync(id));
-            var project = await _projectRepository.GetAsync(issue.Project.Id);
-            var company = _companyRepository.GetAsync(project.CompanyId);
-
-            if ((await _authorizationService.AuthorizeAsync(user!, project,
-                    new[]
-                    {
-                        ProjectRolesRequirement.EmployeeRequirement, ProjectRolesRequirement.ReadonlyEmployeeRequirement,
-                        ProjectRolesRequirement.LeaderRequirement, ProjectRolesRequirement.CustomerRequirement
-                    })).Succeeded
-                || (await _authorizationService.AuthorizeAsync(user!, await company,
-                    CompanyRolesRequirement.CompanyOwner)).Succeeded)
-            {
-                return issue;
-            }
-
-            throw new HttpStatusException(StatusCodes.Status403Forbidden,
-                $"User [{user.GetUserId()}] does not have a role in this project");
+            return await CreateDtoFromIssue(await _issueRepo.GetAsync(id));
         }
 
         public async Task<IList<IssueDTO>> GetAllOfProject(ObjectId projectId)
         {
-            var user = _httpContextAccessor.HttpContext?.User;
-            var project = await _projectRepository.GetAsync(projectId);
-            var company = _companyRepository.GetAsync(project.CompanyId);
-            if (project == null)
-                throw new HttpStatusException(StatusCodes.Status400BadRequest,
-                    $"Cannot create an Issue. Project with id [{projectId}] does not exist");
-
-            if ((await _authorizationService.AuthorizeAsync(user!, project,
-                    new[]
-                    {
-                        ProjectRolesRequirement.EmployeeRequirement, ProjectRolesRequirement.ReadonlyEmployeeRequirement,
-                        ProjectRolesRequirement.LeaderRequirement, ProjectRolesRequirement.CustomerRequirement
-                    })).Succeeded
-                || (await _authorizationService.AuthorizeAsync(user!, await company,
-                    CompanyRolesRequirement.CompanyOwner)).Succeeded)
-            {
-                return (await Task.WhenAll((await _issueRepo.GetAllOfProjectAsync(projectId)).Select(CreateDtoFromIssue)))
-                    .ToList();
-            }
-
-            throw new HttpStatusException(StatusCodes.Status403Forbidden,
-                $"User [{user.GetUserId()}] does not have a role in this project");
+            return (await Task.WhenAll((await _issueRepo.GetAllOfProjectAsync(projectId)).Select(CreateDtoFromIssue)))
+                .ToList();
         }
 
         public async Task<IssueDTO> GetOfProject(ObjectId projectId, ObjectId id)
         {
-            var user = _httpContextAccessor.HttpContext?.User;
-            var project = await _projectRepository.GetAsync(projectId);
-            var company = _companyRepository.GetAsync(project.CompanyId);
-            if (project == null)
-                throw new HttpStatusException(StatusCodes.Status400BadRequest,
-                    $"Cannot create an Issue. Project with id [{projectId}] does not exist");
-
-            if ((await _authorizationService.AuthorizeAsync(user!, project,
-                new[]
-                {
-                    ProjectRolesRequirement.EmployeeRequirement, ProjectRolesRequirement.ReadonlyEmployeeRequirement,
-                    ProjectRolesRequirement.LeaderRequirement, ProjectRolesRequirement.CustomerRequirement
-                })).Succeeded || (await _authorizationService.AuthorizeAsync(user!, await company,
-                CompanyRolesRequirement.CompanyOwner)).Succeeded)
-            {
-                return await CreateDtoFromIssue(await _issueRepo.GetOfProjectAsync(projectId, id));
-            }
-
-            throw new HttpStatusException(StatusCodes.Status403Forbidden,
-                $"User [{user.GetUserId()}] does not have a role in this project");
+            return await CreateDtoFromIssue(await _issueRepo.GetOfProjectAsync(projectId, id));
         }
 
         public async Task<IssueDTO> Create(IssueDTO issueDto)
         {
-            var user = _httpContextAccessor.HttpContext?.User;
-            var project = await _projectRepository.GetAsync(issueDto.Project.Id);
-            var company = _companyRepository.GetAsync(project.CompanyId);
-            if (project == null)
+            if (await _projectRepository.GetAsync(issueDto.Project.Id) == null)
                 throw new HttpStatusException(StatusCodes.Status400BadRequest,
                     $"Cannot create an Issue. Project with id [{issueDto.Project.Id}] does not exist");
 
-            if ((await _authorizationService.AuthorizeAsync(user, project,
-                new[]
-                {
-                    ProjectRolesRequirement.EmployeeRequirement,
-                    ProjectRolesRequirement.LeaderRequirement, ProjectRolesRequirement.CustomerRequirement
-                })).Succeeded || (await _authorizationService.AuthorizeAsync(user!, await company,
-                CompanyRolesRequirement.CompanyOwner)).Succeeded)
-            {
-                var issue = await CreateValidIssue(issueDto);
-                await _issueRepo.CreateAsync(issue);
-                return await Get(issue.Id);
-            }
+            await UserCanCreateOrUpdateIssue(issueDto.Project.Id);
 
-            throw new HttpStatusException(StatusCodes.Status403Forbidden,
-                $"User [{user.GetUserId()}] does not have a role in this project or is a readonly emyployee");
+            var issue = await CreateValidIssue(issueDto);
+            await _issueRepo.CreateAsync(issue);
+            return await Get(issue.Id);
         }
 
         private async Task<Issue> CreateValidIssue(IssueDTO dto)
@@ -186,91 +123,78 @@ namespace Goose.API.Services.Issues
             //TODO more validation
             detail.Requirements = new List<IssueRequirement>();
             detail.RelevantDocuments = new List<string>();
+            detail.RequirementsSummaryCreated = false;
+            detail.RequirementsAccepted = false;
             return detail;
         }
 
         public async Task<IssueDTO> Update(IssueDTO issueDto, ObjectId id)
         {
-            var issue = await GetUpdatedIssue(await _issueRepo.GetAsync(id), issueDto);
-            await _issueRepo.UpdateAsync(issue);
+            var issue = await _issueRepo.GetAsync(id);
+
+            if (issue is null)
+                throw new HttpStatusException(StatusCodes.Status400BadRequest, $"Das angeforderte Ticket mit der id {id} konnte nicht gefunden werden");
+
+            await UserCanCreateOrUpdateIssue(issue.ProjectId);
+
+            var issueToUpdate = await GetUpdatedIssue(issue, issueDto);
+
+            await _issueRepo.UpdateAsync(issueToUpdate);
             return await Get(id);
         }
 
         private async Task<Issue> GetUpdatedIssue(Issue old, IssueDTO updated)
         {
-            var user = _httpContextAccessor.HttpContext?.User;
-            var project = await _projectRepository.GetAsync(old.ProjectId);
-            var company = _companyRepository.GetAsync(project.CompanyId);
-
-            #region UserIsCustomer
-
-            //TODO was darf der customer wirklich
-            if ((await _authorizationService.AuthorizeAsync(user!, project, ProjectRolesRequirement.CustomerRequirement)).Succeeded)
+            if (updated.State != null)
             {
-                old.IssueDetail.Name = updated.IssueDetail.Name;
-                old.IssueDetail.Priority = updated.IssueDetail.Priority;
-                old.IssueDetail.Description = updated.IssueDetail.Description;
-            }
+                var oldStateId = old.StateId;
+                var newStateId = updated.State.Id;
 
-            #endregion
-
-            #region UserIsEmployee
-
-            if ((await _authorizationService.AuthorizeAsync(user!, project,
-                    new[] {ProjectRolesRequirement.EmployeeRequirement, ProjectRolesRequirement.LeaderRequirement})).Succeeded
-                || (await _authorizationService.AuthorizeAsync(user!, await company,
-                    CompanyRolesRequirement.CompanyOwner)).Succeeded)
-            {
-                #region UpdateState
-
-                if (updated.State != null)
+                if (oldStateId != newStateId)
                 {
-                    var oldStateId = old.StateId;
-                    var newStateId = updated.State.Id;
+                    await UserCanChangeStatus(old.ProjectId);
+                    // State wird aktualisiert
+                    old.StateId = newStateId;
 
-                    if (oldStateId != newStateId)
+                    var oldState = await _stateService.GetState(old.ProjectId, oldStateId);
+                    var newState = await _stateService.GetState(old.ProjectId, newStateId);
+
+                    old.ConversationItems.Add(new IssueConversation()
                     {
-                        // State wird aktualisiert
-                        old.StateId = newStateId;
-
-                        var oldState = await _stateService.GetState(old.ProjectId, oldStateId);
-                        var newState = await _stateService.GetState(old.ProjectId, newStateId);
-
-                        old.ConversationItems.Add(new IssueConversation()
-                        {
-                            Id = ObjectId.GenerateNewId(),
-                            CreatorUserId = user.GetUserId(),
-                            Type = IssueConversation.StateChangeType,
-                            Data = $"Status von {oldState.Name} zu {newState.Name} geändert.",
-                        });
-                    }
+                        Id = ObjectId.GenerateNewId(),
+                        CreatorUserId = _httpContextAccessor.HttpContext.User.GetUserId(),
+                        Type = IssueConversation.StateChangeType,
+                        Data = $"Status von {oldState.Name} zu {newState.Name} geändert.",
+                    });
                 }
-
-                #endregion
-
-                #region UpdateDetails
-
-                old.IssueDetail.Name = updated.IssueDetail.Name;
-                old.IssueDetail.Priority = updated.IssueDetail.Priority;
-                old.IssueDetail.Description = updated.IssueDetail.Description;
-                old.IssueDetail.Progress = updated.IssueDetail.Progress;
-                old.IssueDetail.ExpectedTime = updated.IssueDetail.ExpectedTime;
-                if ((await _stateService.GetState(old.ProjectId, old.StateId)).Phase.Equals(State.NegotiationPhase))
-                {
-                    old.IssueDetail.StartDate = updated.IssueDetail.StartDate;
-                    old.IssueDetail.EndDate = updated.IssueDetail.EndDate;
-                }
-
-                #endregion
             }
 
-            #endregion
-
-
+            old.IssueDetail = await GetUpdatedIssueDetail(old, updated.IssueDetail);
             return old;
         }
 
-        //TODO muss im release raus
+        private async Task<IssueDetail> GetUpdatedIssueDetail(Issue old, IssueDetail updated)
+        {
+            var details = old.IssueDetail;
+            details.Name = updated.Name;
+
+            details.Priority = updated.Priority;
+            details.Description = updated.Description;
+            details.Progress = updated.Progress;
+            details.ExpectedTime = updated.ExpectedTime;
+            //nur in vorbereitungsphase
+            var state = await _stateService.GetState(old.ProjectId, old.StateId);
+            if (state.Phase.Equals(State.NegotiationPhase))
+            {
+                details.StartDate = updated.StartDate;
+                details.EndDate = updated.EndDate;
+            }
+
+            details.RelevantDocuments = updated.RelevantDocuments ?? details.RelevantDocuments;
+
+            return old.IssueDetail;
+        }
+
         public async Task<bool> Delete(ObjectId id)
         {
             return (await _issueRepo.DeleteAsync(id)).DeletedCount > 0;
@@ -302,7 +226,8 @@ namespace Goose.API.Services.Issues
                 Id = ObjectId.GenerateNewId(),
                 CreatorUserId = _httpContextAccessor.HttpContext.User.GetUserId(),
                 Type = IssueConversation.ChildIssueAddedType,
-                Data = $"{issueId}",
+                Data = null,
+                OtherTicketId = issueId,
             });
             await _issueRepo.UpdateAsync(parent);
         }
@@ -323,7 +248,8 @@ namespace Goose.API.Services.Issues
                     Id = ObjectId.GenerateNewId(),
                     CreatorUserId = _httpContextAccessor.HttpContext.User.GetUserId(),
                     Type = IssueConversation.ChildIssueRemovedType,
-                    Data = $"{issueId}",
+                    Data = null,
+                    OtherTicketId = issueId,
                 });
                 await _issueRepo.UpdateAsync(parent);
             }
@@ -367,6 +293,58 @@ namespace Goose.API.Services.Issues
             {
                 throw new HttpStatusException(403, "Issue is archived.");
             }
+        }
+
+        public async Task<bool> UserCanSeeInternTicket(ObjectId projectId)
+        {
+            var project = await _projectRepository.GetAsync(projectId);
+            IList<IAuthorizationRequirement> requirements = new List<IAuthorizationRequirement>()
+            {
+                ProjectRolesRequirement.EmployeeRequirement,
+                ProjectRolesRequirement.LeaderRequirement,
+                ProjectRolesRequirement.ReadonlyEmployeeRequirement,
+                CompanyRolesRequirement.CompanyOwner
+            };
+
+
+            // validate requirements with the appropriate handlers.
+            var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, project, requirements);
+
+            return authorizationResult.Failure.FailedRequirements.Count() < requirements.Count;
+        }
+
+        private async Task UserCanChangeStatus(ObjectId projectId)
+        {
+            var project = await _projectRepository.GetAsync(projectId);
+            Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
+            {
+                {ProjectRolesRequirement.EmployeeRequirement, "You need to be the employee with write-rights in this project, in order to change the state"},
+                {ProjectRolesRequirement.LeaderRequirement, "You need to be the leader in this project, in order to change the state."},
+                {CompanyRolesRequirement.CompanyOwner, "You need to be a Owner of the Company, in order to change the state"}
+            };
+
+            // validate requirements with the appropriate handlers.
+            var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, project, requirementsWithErrors.Keys);
+            authorizationResult.ThrowErrorIfAllFailed(requirementsWithErrors);
+        }
+
+        private async Task UserCanCreateOrUpdateIssue(ObjectId projectId)
+        {
+            var project = await _projectRepository.GetAsync(projectId);
+            Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
+            {
+                {
+                    ProjectRolesRequirement.EmployeeRequirement,
+                    "You need to be the employee with write-rights in this project, in order to create or update a issue."
+                },
+                {ProjectRolesRequirement.LeaderRequirement, "You need to be the leader in this project, in order to create or update a issue."},
+                {ProjectRolesRequirement.CustomerRequirement, "You need to be a customer in this project, in order to create or update a issue."},
+                {CompanyRolesRequirement.CompanyOwner, "You need to be a Owner of the Company, in order to create or update a issue"}
+            };
+
+            // validate requirements with the appropriate handlers.
+            var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, project, requirementsWithErrors.Keys);
+            authorizationResult.ThrowErrorIfAllFailed(requirementsWithErrors);
         }
     }
 }

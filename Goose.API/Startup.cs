@@ -128,7 +128,8 @@ namespace Goose.API
         /// </summary>
         private void ConfigureAuthorization(IServiceCollection services)
         {
-            
+            services.AddScoped<IAuthorizationHandler, CompanyRoleHandler>();
+            services.AddScoped<IAuthorizationHandler, ProjectRoleHandler>();
         }
 
         /// <summary>
@@ -153,8 +154,6 @@ namespace Goose.API
             services.AddAutoMapper(typeof(AutoMapping));
             
             services.AddSingleton<IDbContext, DbContext>();
-            services.AddScoped<IAuthorizationHandler, CompanyRoleHandler>();
-            services.AddScoped<IAuthorizationHandler, ProjectRoleHandler>();
 
             services.AddScoped<IIssueRepository, IssueRepository>();
             services.AddScoped<IUserRepository, UserRepository>();
@@ -186,15 +185,12 @@ namespace Goose.API
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            if (env.IsDevelopment())
-                app.UseDeveloperExceptionPage();
-            else
-                app.UseExceptionHandler("/error");
+            app.UseExceptionHandler("/error");
 
             app.UseSwagger();
             app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Goose.API v1"));
 
-            //! https will not be used for this project, one the one side it adds complexity and the server is only accessable via ip and an certificate cannot be applied without domain name.
+            //! https will not be used for this project, on the one side it adds complexity and the server is only accessable via ip and an certificate cannot be applied without domain name.
             //app.UseHttpsRedirection();
 
             app.UseCors("cors");

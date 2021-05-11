@@ -1,13 +1,10 @@
 ﻿using System;
-using System.IO;
 using System.Net.Http;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading.Tasks;
 using Goose.API.Utils;
 using MongoDB.Bson;
 using Newtonsoft.Json;
-using NUnit.Framework;
 
 namespace Goose.Tests.Application.IntegrationTests
 {
@@ -24,6 +21,11 @@ namespace Goose.Tests.Application.IntegrationTests
             return content;
         }
 
+        public static async Task<E> Parse<E>(this Task<HttpResponseMessage> message)
+        {
+            return await (await message).Content.Parse<E>();
+        }
+
         public static async Task<E> Parse<E>(this HttpResponseMessage message)
         {
             return await message.Content.Parse<E>();
@@ -31,25 +33,18 @@ namespace Goose.Tests.Application.IntegrationTests
 
         public static async Task<E> Parse<E>(this HttpContent content)
         {
-            var value = await content.ReadAsStringAsync();
-            return value.Parse<E>();
+            var json = await content.ReadAsStringAsync();
+            return json.ToObject<E>();
         }
 
-        public static E Parse<E>(this string json)
+        public static E ToObject<E>(this string json)
         {
             return JsonConvert.DeserializeObject<E>(json, new ObjectIdConverter());
         }
 
-        public static E DeepClone<E>(this E obj)
+        public static E Copy<E>(this E e)
         {
-            return obj.ToJson().Parse<E>();
-        }
-
-        public static void AssertEqualsJson(this object expected, object actual)
-        {
-            var expectedJson = expected.ToJson();
-            var actualJson = actual.ToJson();
-            Assert.AreEqual(expectedJson, actual.ToJson(), $"[{expectedJson}]\n does not equal [{actualJson}]");
+            return e.ToJson().ToObject<E>();
         }
     }
 
@@ -68,7 +63,7 @@ namespace Goose.Tests.Application.IntegrationTests
 
         public override bool CanConvert(Type objectType)
         {
-            return typeof(ObjectId).IsAssignableFrom(objectType);
+            return typeof(ObjectId?).IsAssignableFrom(objectType);
         }
     }
 }

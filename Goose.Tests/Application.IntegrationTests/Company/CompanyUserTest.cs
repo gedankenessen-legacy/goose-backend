@@ -1,72 +1,42 @@
-﻿using Goose.API;
-using Goose.API.Repositories;
-using Goose.Domain.DTOs;
-using Goose.Domain.Models.Auth;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-using NUnit.Framework;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
+using Goose.Domain.DTOs;
+using Goose.Domain.DTOs.Issues;
+using Goose.Domain.Models.Auth;
+using NUnit.Framework;
 
 namespace Goose.Tests.Application.IntegrationTests.Company
 {
     [TestFixture]
+    [Parallelizable(ParallelScope.All)]
     public class CompanyUserTest
     {
-        private HttpClient _client;
-        private WebApplicationFactory<Startup> _factory;
-        private ICompanyRepository _companyRepository;
-        private IUserRepository _userRepository;
-        private SignInResponse signInObject;
-
-        [OneTimeSetUp]
-        public void OneTimeSetUp()
+        private class SimpleTestHelperBuilderCompanyUser : SimpleTestHelperBuilder
         {
-            _factory = new WebApplicationFactory<Startup>();
-            _client = _factory.CreateClient();
-            var scopeFactory = _factory.Server.Services.GetService<IServiceScopeFactory>();
-
-            using (var scope = scopeFactory.CreateScope())
-            {
-                _companyRepository = scope.ServiceProvider.GetService<ICompanyRepository>();
-                _userRepository = scope.ServiceProvider.GetService<IUserRepository>();
-            }
-        }
-
-        [OneTimeTearDown]
-        public async Task OneTimeTearDown()
-        {
-            await TestHelper.Instance.ClearCompany();
-        }
-
-        [SetUp]
-        public async Task Setup()
-        {
-            await TestHelper.Instance.ClearCompany();
-            signInObject = await TestHelper.Instance.GenerateCompany(_client);
-            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signInObject.Token);
+            public override Task<ProjectDTO> CreateProject(HttpClient client, SimpleTestHelper helper) => null;
+            public override Task AddUserToProject(HttpClient client, SimpleTestHelper helper) => null;
+            public override Task<IssueDTO> CreateIssue(HttpClient client, SimpleTestHelper helper) => null;
         }
 
         [Test]
         public async Task CreateUserTrue()
         {
-            var company = await TestHelper.Instance.GetCompany();
-            var uri = $"api/companies/{company.Id}/users";
+            using var helper = await new SimpleTestHelperBuilderCompanyUser().Build();
+            var uri = $"api/companies/{helper.Company.Id}/users";
 
-            PropertyUserLoginDTO user = GetUser("Phillip", "Schmidt", "Test123456", new List<RoleDTO>() { new RoleDTO() { Name = "Mitarbeiter" } });
+            PropertyUserLoginDTO user = GetUser("Phillip", "Schmidt", "Test123456", new List<RoleDTO>() {new RoleDTO() {Name = "Mitarbeiter"}});
 
-            var response = await _client.PostAsync(uri, user.ToStringContent());
+            var response = await helper.client.PostAsync(uri, user.ToStringContent());
             var newUser = await response.Content.Parse<PropertyUserDTO>();
 
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
 
-            var uriUser = $"api/companies/{company.Id}/users/{newUser.User.Id}";
+            var uriUser = $"api/companies/{helper.Company.Id}/users/{newUser.User.Id}";
 
-            response = await _client.GetAsync(uriUser);
+            response = await helper.client.GetAsync(uriUser);
 
             var exists = await response.Content.Parse<PropertyUserDTO>() != null;
 
@@ -76,29 +46,29 @@ namespace Goose.Tests.Application.IntegrationTests.Company
         [Test]
         public async Task CreateUserWithOutCompanyRole()
         {
-            var company = await TestHelper.Instance.GetCompany();
-            var uri = $"api/companies/{company.Id}/users";
+            using var helper = await new SimpleTestHelperBuilderCompanyUser().Build();
+            var uri = $"api/companies/{helper.Company.Id}/users";
 
-            PropertyUserLoginDTO user = GetUser("Phillip", "Schmidt", "Test123456", new List<RoleDTO>() { new RoleDTO() { Name = "Mitarbeiter" } });
+            PropertyUserLoginDTO user = GetUser("Phillip", "Schmidt", "Test123456", new List<RoleDTO>() {new RoleDTO() {Name = "Mitarbeiter"}});
 
-            var response = await _client.PostAsync(uri, user.ToStringContent());
+            var response = await helper.client.PostAsync(uri, user.ToStringContent());
             var newUser = await response.Content.Parse<PropertyUserDTO>();
 
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
 
-            var uriUser = $"api/companies/{company.Id}/users/{newUser.User.Id}";
+            var uriUser = $"api/companies/{helper.Company.Id}/users/{newUser.User.Id}";
 
-            response = await _client.GetAsync(uriUser);
+            response = await helper.client.GetAsync(uriUser);
 
             var exists = await response.Content.Parse<PropertyUserDTO>() != null;
 
             Assert.IsTrue(exists);
 
-            var signInNewUser = await SignIn(newUser.User.Username, "Test123456");
+            var signInNewUser = await SignIn(helper.client, newUser.User.Username, "Test123456");
 
-            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signInNewUser.Token);
+            helper.client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signInNewUser.Token);
 
-            response = await _client.PostAsync(uri, user.ToStringContent());
+            response = await helper.client.PostAsync(uri, user.ToStringContent());
 
             Assert.IsFalse(response.IsSuccessStatusCode);
         }
@@ -106,12 +76,12 @@ namespace Goose.Tests.Application.IntegrationTests.Company
         [Test]
         public async Task CreateUserFirstNameFalse()
         {
-            var company = await TestHelper.Instance.GetCompany();
-            var uri = $"api/companies/{company.Id}/users";
+            using var helper = await new SimpleTestHelperBuilderCompanyUser().Build();
 
-            PropertyUserLoginDTO user = GetUser(" ", "Schmidt", "Test123456", new List<RoleDTO>() { new RoleDTO() { Name = "Mitarbeiter" } });
+            var uri = $"api/companies/{helper.Company.Id}/users";
 
-            var response = await _client.PostAsync(uri, user.ToStringContent());
+            PropertyUserLoginDTO user = GetUser(" ", "Schmidt", "Test123456", new List<RoleDTO>() {new RoleDTO() {Name = "Mitarbeiter"}});
+            var response = await helper.client.PostAsync(uri, user.ToStringContent());
 
             Assert.IsFalse(response.IsSuccessStatusCode);
         }
@@ -119,21 +89,21 @@ namespace Goose.Tests.Application.IntegrationTests.Company
         [Test]
         public async Task CreateUserLastNameFalse()
         {
-            var company = await TestHelper.Instance.GetCompany();
-            var uri = $"api/companies/{company.Id}/users";
+            using var helper = await new SimpleTestHelperBuilderCompanyUser().Build();
+            var uri = $"api/companies/{helper.Company.Id}/users";
 
-            PropertyUserLoginDTO user = GetUser("Phillip", " ", "Test123456", new List<RoleDTO>() { new RoleDTO() { Name = "Mitarbeiter" } });
+            PropertyUserLoginDTO user = GetUser("Phillip", " ", "Test123456", new List<RoleDTO>() {new RoleDTO() {Name = "Mitarbeiter"}});
 
-            var response = await _client.PostAsync(uri, user.ToStringContent());
+            var response = await helper.client.PostAsync(uri, user.ToStringContent());
 
             Assert.IsFalse(response.IsSuccessStatusCode);
         }
 
-        private async Task<SignInResponse> SignIn(string userName, string password)
+        private async Task<SignInResponse> SignIn(HttpClient client, string userName, string password)
         {
             var uri = "/api/auth/signIn";
-            SignInRequest signInRequest = new SignInRequest() { Username = userName, Password = password };
-            var response = await _client.PostAsync(uri, signInRequest.ToStringContent());
+            SignInRequest signInRequest = new SignInRequest() {Username = userName, Password = password};
+            var response = await client.PostAsync(uri, signInRequest.ToStringContent());
             return await response.Content.Parse<SignInResponse>();
         }
 
@@ -141,7 +111,6 @@ namespace Goose.Tests.Application.IntegrationTests.Company
         {
             return new PropertyUserLoginDTO()
             {
-
                 Firstname = firstname,
                 Lastname = lastname,
                 Password = password,

@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 namespace Goose.API.Controllers
 {
     [Route("api/projects/{projectId}/states")]
+    [ApiController]
     public class StateController : ControllerBase
     {
         private readonly IStateService _stateService;

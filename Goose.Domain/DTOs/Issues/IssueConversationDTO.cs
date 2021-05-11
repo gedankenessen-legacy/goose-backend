@@ -11,6 +11,7 @@ namespace Goose.Domain.DTOs.Issues
         public UserDTO Creator { get; set; }
         public string Type { get; set; }
         public string Data { get; set; }
+        public ObjectId? OtherTicketId { get; set; }
         public IList<string> Requirements { get; set; }
         public DateTime CreatedAt { get; set; }
 
@@ -22,6 +23,7 @@ namespace Goose.Domain.DTOs.Issues
             Creator = creator;
             Type = issueConversation.Type;
             Data = issueConversation.Data;
+            OtherTicketId = issueConversation.OtherTicketId;
             Requirements = issueConversation.Requirements;
             CreatedAt = issueConversation.CreatedAt;
         }

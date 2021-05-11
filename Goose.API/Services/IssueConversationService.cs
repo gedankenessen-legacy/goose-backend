@@ -81,7 +81,21 @@ namespace Goose.API.Services
 
         private async Task<IssueConversationDTO> MapIssueConversationDTOAsync(ObjectId issueId, IssueConversation ic)
         {
-            var creator = await _userService.GetUser(ic.CreatorUserId.Value);
+            var creator = await _userService.GetUser(ic.CreatorUserId);
+
+            if (ic.OtherTicketId is ObjectId otherTicketId) {
+                var otherIssue = await _issueRepository.GetAsync(otherTicketId);
+                var otherIssueName = otherIssue.IssueDetail.Name;
+
+                ic.Data = ic.Type switch
+                {
+                    IssueConversation.PredecessorAddedType => $"{otherIssueName} wurde als Vorgänger hinzugefügt.",
+                    IssueConversation.PredecessorRemovedType => $"{otherIssueName} wurde als Vorgänger entfernt.",
+                    IssueConversation.ChildIssueAddedType => $"{otherIssueName} wurde als Unterticket hinzugefügt.",
+                    IssueConversation.ChildIssueRemovedType => $"{otherIssueName} wurde als Unterticket entfernt.",
+                    _ => throw new HttpStatusException(StatusCodes.Status500InternalServerError, "Invalid conversation item")
+                };
+            }
 
             return new IssueConversationDTO(ic, creator);
         }
@@ -184,39 +198,41 @@ namespace Goose.API.Services
 
         private async Task AssertUserCanWriteConversation(ObjectId projectId)
         {
-            #if AUTHORISATION
+            
             var project = await _projectRepository.GetAsync(projectId);
 
             Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
             {
                 { ProjectRolesRequirement.EmployeeRequirement, "You need to be the employee with write-rights in this project, in order to write a conversation." },
                 { ProjectRolesRequirement.LeaderRequirement, "You need to be the leader in this project, in order to write a conversation." },
-                { ProjectRolesRequirement.CustomerRequirement, "You need to be the customer of this project, in order to write a conversation." }
+                { ProjectRolesRequirement.CustomerRequirement, "You need to be the customer of this project, in order to write a conversation." },
+                { CompanyRolesRequirement.CompanyOwner, "You need to be the ComponyOwner of the Company, in order to write a conversation to this Project" }
             };
 
             // validate requirements with the appropriate handlers.
             var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, project, requirementsWithErrors.Keys);
             authorizationResult.ThrowErrorIfAllFailed(requirementsWithErrors);
-            #endif
+            
         }
 
         private async Task AssertUserCanReadConversation(ObjectId projectId)
         {
-            #if AUTHORISATION
+            
             var project = await _projectRepository.GetAsync(projectId);
 
             Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
             {
-                { ProjectRolesRequirement.ReadonlyEmployeeRequirement, "You need to be the employee with read-rights in this project, in order to write a conversation." },
-                { ProjectRolesRequirement.EmployeeRequirement, "You need to be the employee with write-rights in this project, in order to write a conversation." },
-                { ProjectRolesRequirement.LeaderRequirement, "You need to be the leader in this project, in order to write a conversation." },
-                { ProjectRolesRequirement.CustomerRequirement, "You need to be the customer of this project, in order to write a conversation." }
+                { ProjectRolesRequirement.ReadonlyEmployeeRequirement, "You need to be the employee with read-rights in this project, in order to see a conversation." },
+                { ProjectRolesRequirement.EmployeeRequirement, "You need to be the employee with write-rights in this project, in order to see a conversation." },
+                { ProjectRolesRequirement.LeaderRequirement, "You need to be the leader in this project, in order to see a conversation." },
+                { ProjectRolesRequirement.CustomerRequirement, "You need to be the customer of this project, in order to see a conversation." },
+                { CompanyRolesRequirement.CompanyOwner, "You need to be the ComponyOwner of the Company, in order to see a conversation to this Project" }
             };
 
             // validate requirements with the appropriate handlers.
             var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, project, requirementsWithErrors.Keys);
             authorizationResult.ThrowErrorIfAllFailed(requirementsWithErrors);
-            #endif
+            
         }
     }
 }
