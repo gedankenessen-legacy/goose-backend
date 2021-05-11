@@ -6,6 +6,7 @@ using Goose.Domain.DTOs.Issues;
 using Goose.Domain.Models.Issues;
 using Goose.API.Utils;
 using Goose.API.Utils.Authentication;
+using Goose.API.Utils.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
@@ -17,7 +18,7 @@ namespace Goose.API.Services.Issues
         public Task<IList<IssueTimeSheetDTO>> GetAllOfIssueAsync(ObjectId issueId);
         public Task<IssueTimeSheetDTO> GetAsync(ObjectId issueId, ObjectId timeSheetId);
         public Task<IssueTimeSheetDTO> CreateAsync(ObjectId issueId, IssueTimeSheetDTO timeSheet);
-        public Task UpdateAsync(ObjectId issueId, IssueTimeSheetDTO timeSheetDto);
+        public Task UpdateAsync(ObjectId issueId, ObjectId id, IssueTimeSheetDTO timeSheetDto);
         public Task DeleteAsync(ObjectId issueId, ObjectId timeSheetId);
     }
 
@@ -50,8 +51,8 @@ namespace Goose.API.Services.Issues
         public async Task<IssueTimeSheetDTO> CreateAsync(ObjectId issueId, IssueTimeSheetDTO timeSheetDto)
         {
             var issue = await _issueRepo.GetAsync(issueId);
-            var timesheet = timeSheetDto.ToTimeSheet(); 
-            
+            var timesheet = timeSheetDto.ToTimeSheet();
+
             timesheet.Id = ObjectId.GenerateNewId();
             timesheet.UserId = _httpContextAccessor.HttpContext.User.GetUserId();
             issue.TimeSheets.Add(timesheet);
@@ -59,10 +60,14 @@ namespace Goose.API.Services.Issues
             return await GetAsync(issueId, timesheet.Id);
         }
 
-        public async Task UpdateAsync(ObjectId issueId, IssueTimeSheetDTO timeSheetDto)
+        public async Task UpdateAsync(ObjectId issueId, ObjectId id, IssueTimeSheetDTO timeSheetDto)
         {
             var issue = await _issueRepo.GetAsync(issueId);
-            issue.TimeSheets.Replace(it => it.Id == timeSheetDto.Id, timeSheetDto.ToTimeSheet());
+            var timeSheet = issue.TimeSheets.FirstOrDefault(it => it.Id.Equals(id));
+            if (timeSheet == null) throw new HttpStatusException(StatusCodes.Status400BadRequest, $"There is no timesheet with the id [{id}]");
+
+            timeSheet.Start = timeSheetDto.Start;
+            timeSheet.End = timeSheetDto.End;
             await _issueRepo.UpdateAsync(issue);
         }
 
