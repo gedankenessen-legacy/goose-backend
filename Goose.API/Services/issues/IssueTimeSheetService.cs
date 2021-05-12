@@ -118,8 +118,8 @@ namespace Goose.API.Services.Issues
 
             #region UserIsEmployee
 
-            if (await _authorizationService.HasAtLeastOneRequirement(user!, project,
-                ProjectRolesRequirement.EmployeeRequirement, ProjectRolesRequirement.LeaderRequirement, CompanyRolesRequirement.CompanyOwner))
+            if (await _authorizationService.HasAtLeastOneRequirement(user!, project, ProjectRolesRequirement.LeaderRequirement,
+                CompanyRolesRequirement.CompanyOwner))
             {
                 var timeSheet = issue.TimeSheets.FirstOrDefault(it => it.Id.Equals(id));
                 if (timeSheet == null) throw new HttpStatusException(StatusCodes.Status400BadRequest, $"There is no timesheet with the id [{id}]");
