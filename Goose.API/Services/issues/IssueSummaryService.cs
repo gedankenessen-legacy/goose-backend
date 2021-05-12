@@ -107,7 +107,7 @@ namespace Goose.API.Services.issues
                 throw new HttpStatusException(StatusCodes.Status400BadRequest, "You cannot create a summary outside of the negotiation phase");
 
             if (!await _authorizationService.HasAtLeastOneRequirement(_contextAccessor.HttpContext.User, await _projectRepository.GetAsync(issue.ProjectId),
-                CompanyRolesRequirement.CompanyOwner, ProjectRolesRequirement.EmployeeRequirement, ProjectRolesRequirement.LeaderRequirement))
+                CompanyRolesRequirement.CompanyOwner, ProjectRolesRequirement.LeaderRequirement))
                 throw new HttpStatusException(StatusCodes.Status403Forbidden,
                     $"the user {_contextAccessor.HttpContext.User.GetUserId()} is not a company or employee of this project");
 
