@@ -15,7 +15,6 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
-
 namespace Goose.Tests.Application.IntegrationTests
 {
     /// Dieser Typ wird verwendet, um mehrere Testdocumente zu speichern
@@ -346,6 +345,16 @@ namespace Goose.Tests.Application.IntegrationTests
             return await getResult.Content.Parse<IssueDTO>();
         }
 
+        public async Task<IssueDTO> GetIssueDTOAsync(HttpClient client, int issueIndex = 0)
+        {
+            var issueId = _testIssues[issueIndex];
+            var project = await GetProject();
+            var uri = $"api/projects/{project.Id}/issues/{issueId}";
+
+            var getResult = await client.GetAsync(uri);
+            return await getResult.Content.Parse<IssueDTO>();
+        }
+
         public async Task<User> GetUser()
         {
             var company = await GetCompany();
@@ -359,21 +368,6 @@ namespace Goose.Tests.Application.IntegrationTests
         {
             var users = await _userRepository.FilterByAsync(x => x.Id.Equals(Id));
             return users.FirstOrDefault();
-        }
-
-        #endregion
-
-        #region Update
-
-        public async Task<IssueDTO> UpdateIssueAsync(HttpClient client, IssueDTO issue, int index = 0)
-        {
-            var project = await GetProject();
-
-            var uri = $"api/projects/{project.Id}/issues/{issue.Id}";
-
-            await client.PutAsync(uri, issue.ToStringContent());
-
-            return await GetIssueDTOAsync(client, index);
         }
 
         #endregion
