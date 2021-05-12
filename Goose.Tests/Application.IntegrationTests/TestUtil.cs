@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Goose.API.Utils;
 using MongoDB.Bson;
 using Newtonsoft.Json;
+using NUnit.Framework;
 
 namespace Goose.Tests.Application.IntegrationTests
 {
@@ -46,6 +47,9 @@ namespace Goose.Tests.Application.IntegrationTests
         {
             return e.ToJson().ToObject<E>();
         }
+
+        public static void AssertEqualJson(this object obj, object other) => Assert.AreEqual(obj.ToJson(), other.ToJson());
+        public static void AssertNotEqualJson(this object obj, object other) => Assert.AreNotEqual(obj.ToJson(), other.ToJson());
     }
 
     public class ObjectIdConverter : JsonConverter

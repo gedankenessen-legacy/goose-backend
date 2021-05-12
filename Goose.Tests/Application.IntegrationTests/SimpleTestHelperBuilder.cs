@@ -55,7 +55,7 @@ namespace Goose.Tests.Application.IntegrationTests
 
         public virtual async Task<SignInResponse> CreateCompanyAndLogin(HttpClient client, SimpleTestHelper helper)
         {
-            var res = await helper.SignUp(_signUpRequest);
+            var res = await helper.SignUpAsCompany();
             var signIn = await res.Parse<SignInResponse>();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signIn.Token);
             return signIn;
@@ -69,7 +69,7 @@ namespace Goose.Tests.Application.IntegrationTests
 
         public virtual async Task AddUserToProject(HttpClient client, SimpleTestHelper helper)
         {
-            await helper.Helper.AddUserToProject(helper.Project.Id, helper.User.Id, Role.ProjectLeaderRole);
+            await helper.Helper.AddUserToProject(helper.Project.Id, helper.User.Id, Role.CompanyRole);
         }
 
         public virtual async Task<IssueDTO> CreateIssue(HttpClient client, SimpleTestHelper helper)

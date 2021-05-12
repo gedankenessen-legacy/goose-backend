@@ -17,8 +17,8 @@ namespace Goose.API.Services
     {
         public Task<IList<PropertyUserDTO>> GetCompanyUsersAsync(string companyId);
         public Task<PropertyUserDTO> GetCompanyUserAsync(string companyId, string userId);
-        public Task<PropertyUserDTO> CreateComapanyUserAsync(string companyId, PropertyUserLoginDTO user);
-        public Task<PropertyUserDTO> UpdateComapanyUserAsync(string companyId, string userId, PropertyUserLoginDTO user);
+        public Task<PropertyUserDTO> CreateCompanyUserAsync(string companyId, PropertyUserLoginDTO user);
+        public Task<PropertyUserDTO> UpdateCompanyUserAsync(string companyId, string userId, PropertyUserLoginDTO user);
     }
 
     public class CompanyUserService : ICompanyUserService
@@ -38,7 +38,7 @@ namespace Goose.API.Services
             _httpContextAccessor = httpContextAccessor;
         }
 
-        public async Task<PropertyUserDTO> CreateComapanyUserAsync(string companyId, PropertyUserLoginDTO user)
+        public async Task<PropertyUserDTO> CreateCompanyUserAsync(string companyId, PropertyUserLoginDTO user)
         {
             var company = await _companyRepository.GetCompanyByIdAsync(companyId);
 
@@ -143,7 +143,7 @@ namespace Goose.API.Services
             return new PropertyUserDTO() {User = user, Roles = roles};
         }
 
-        public async Task<PropertyUserDTO> UpdateComapanyUserAsync(string companyId, string userId, PropertyUserLoginDTO user)
+        public async Task<PropertyUserDTO> UpdateCompanyUserAsync(string companyId, string userId, PropertyUserLoginDTO user)
         {
             if (!userId.Equals(user.UserId))
                 throw new HttpStatusException(400, "Die angegebene UserID stimmt nicht mit dem User Überein");

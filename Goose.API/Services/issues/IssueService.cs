@@ -143,6 +143,69 @@ namespace Goose.API.Services.Issues
             return await Get(id);
         }
 
+        private async Task<Issue> GetUpdatedIssue2(Issue old, IssueDTO updated)
+        {
+            var project = await _projectRepository.GetAsync(old.ProjectId);
+            var user = _httpContextAccessor.HttpContext.User;
+            if (await _authorizationService.HasAtLeastOneRequirement(user, project, ProjectRolesRequirement.CustomerRequirement))
+            {
+                old.IssueDetail.Name = updated.IssueDetail.Name;
+                old.IssueDetail.Priority = updated.IssueDetail.Priority;
+                old.IssueDetail.Description = updated.IssueDetail.Description;
+                return old;
+            }
+
+            if (await _authorizationService.HasAtLeastOneRequirement(user, project,
+                ProjectRolesRequirement.EmployeeRequirement, ProjectRolesRequirement.LeaderRequirement, CompanyRolesRequirement.CompanyOwner))
+            {
+                #region UpdateState
+
+                if (updated.State != null)
+                {
+                    var oldStateId = old.StateId;
+                    var newStateId = updated.State.Id;
+
+                    if (oldStateId != newStateId)
+                    {
+                        // State wird aktualisiert
+                        old.StateId = newStateId;
+
+                        var oldState = await _stateService.GetState(old.ProjectId, oldStateId);
+                        var newState = await _stateService.GetState(old.ProjectId, newStateId);
+
+                        old.ConversationItems.Add(new IssueConversation()
+                        {
+                            Id = ObjectId.GenerateNewId(),
+                            CreatorUserId = _httpContextAccessor.HttpContext.User.GetUserId(),
+                            Type = IssueConversation.StateChangeType,
+                            Data = $"Status von {oldState.Name} zu {newState.Name} geändert.",
+                        });
+                    }
+                }
+
+                #endregion
+
+                #region UpdateDetails
+
+                old.IssueDetail.Name = updated.IssueDetail.Name;
+                old.IssueDetail.Priority = updated.IssueDetail.Priority;
+                old.IssueDetail.Description = updated.IssueDetail.Description;
+                old.IssueDetail.Progress = updated.IssueDetail.Progress;
+                old.IssueDetail.ExpectedTime = updated.IssueDetail.ExpectedTime;
+                if ((await _stateService.GetState(old.ProjectId, old.StateId)).Phase.Equals(State.NegotiationPhase))
+                {
+                    old.IssueDetail.StartDate = updated.IssueDetail.StartDate;
+                    old.IssueDetail.EndDate = updated.IssueDetail.EndDate;
+                }
+
+                #endregion
+
+                return old;
+            }
+
+            throw new HttpStatusException(StatusCodes.Status403Forbidden, "the user does not have a role in this project");
+        }
+
         private async Task<Issue> GetUpdatedIssue(Issue old, IssueDTO updated)
         {
             if (updated.State != null)

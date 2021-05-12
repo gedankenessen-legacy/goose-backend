@@ -39,7 +39,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         public async Task CreateIssueAsWriteEmployee()
         {
             using var helper = await new SimpleTestHelperBuilderIssueRights().Build();
-            await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.EmployeeRole);
+            await helper.GenerateUserAndSetToProject(Role.EmployeeRole);
             var postResult = await helper.CreateIssue();
 
             Assert.IsTrue(postResult.IsSuccessStatusCode);
@@ -50,7 +50,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         public async Task CreateIssueAsCustomer()
         {
             using var helper = await new SimpleTestHelperBuilderIssueRights().Build();
-            await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.CustomerRole);
+            await helper.GenerateUserAndSetToProject(Role.CustomerRole);
             var postResult = await helper.CreateIssue();
 
             Assert.IsTrue(postResult.IsSuccessStatusCode);
@@ -61,7 +61,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         public async Task CreateIssueAsReadOnlyEmployee()
         {
             using var helper = await new SimpleTestHelperBuilderIssueRights().Build();
-            await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.ReadonlyEmployeeRole);
+            await helper.GenerateUserAndSetToProject(Role.ReadonlyEmployeeRole);
             var postResult = await helper.CreateIssue();
 
             Assert.IsFalse(postResult.IsSuccessStatusCode);
@@ -72,7 +72,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         public async Task UpdateIssueAsEmployee()
         {
             using var helper = await new SimpleTestHelperBuilderIssueRights().Build();
-            await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.EmployeeRole);
+            await helper.GenerateUserAndSetToProject(Role.EmployeeRole);
 
             var issue = helper.Issue.Copy();
             issue.IssueDetail.Priority = 9;
@@ -90,7 +90,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         public async Task UpdateIssueAsCustomer()
         {
             using var helper = await new SimpleTestHelperBuilderIssueRights().Build();
-            await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.CustomerRole);
+            await helper.GenerateUserAndSetToProject(Role.CustomerRole);
 
             var issue = helper.Issue.Copy();
             issue.IssueDetail.Priority = 9;
@@ -108,7 +108,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         public async Task UpdateIssueAsReadOnlyEmployee()
         {
             using var helper = await new SimpleTestHelperBuilderIssueRights().Build();
-            await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.ReadonlyEmployeeRole);
+            await helper.GenerateUserAndSetToProject(Role.ReadonlyEmployeeRole);
 
             var issue = helper.Issue.Copy();
             issue.IssueDetail.Priority = 9;
@@ -125,7 +125,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         public async Task UpdateStateOfIssueAsEmployee()
         {
             using var helper = await new SimpleTestHelperBuilderIssueRights().Build();
-            await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.EmployeeRole);
+            await helper.GenerateUserAndSetToProject(Role.EmployeeRole);
 
             var copy = helper.Issue.Copy();
             copy.State = await helper.Helper.GetStateByNameAsync(copy.Project.Id, State.WaitingState);
@@ -142,7 +142,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         public async Task UpdateStateOfIssueAsCustomer()
         {
             using var helper = await new SimpleTestHelperBuilderIssueRights().Build();
-            await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.CustomerRole);
+            await helper.GenerateUserAndSetToProject(Role.CustomerRole);
 
             var copy = helper.Issue.Copy();
             copy.State = await helper.Helper.GetStateByNameAsync(copy.Project.Id, State.WaitingState);
@@ -158,7 +158,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         public async Task UpdateStateOfIssueAsReadOnlyEmployee()
         {
             using var helper = await new SimpleTestHelperBuilderIssueRights().Build();
-            await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.ReadonlyEmployeeRole);
+            await helper.GenerateUserAndSetToProject(Role.ReadonlyEmployeeRole);
 
             var copy = helper.Issue.Copy();
             copy.State = await helper.Helper.GetStateByNameAsync(copy.Project.Id, State.WaitingState);
@@ -186,7 +186,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         public async Task GetIssueAsEmployee()
         {
             using var helper = await new SimpleTestHelperBuilderIssueRights().Build();
-            await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.EmployeeRole);
+            await helper.GenerateUserAndSetToProject(Role.EmployeeRole);
             var uri = $"api/projects/{helper.Project.Id}/issues";
             var response = await helper.client.GetAsync(uri);
             var list = await response.Content.Parse<IList<IssueDTO>>();
@@ -198,7 +198,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         public async Task GetIssueAsCustomer()
         {
             using var helper = await new SimpleTestHelperBuilderIssueRights().Build();
-            await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.CustomerRole);
+            await helper.GenerateUserAndSetToProject(Role.CustomerRole);
             var uri = $"api/projects/{helper.Project.Id}/issues";
             var response = await helper.client.GetAsync(uri);
             var list = await response.Content.Parse<IList<IssueDTO>>();
@@ -210,7 +210,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         public async Task GetIssueAsReadOnlyEmployee()
         {
             using var helper = await new SimpleTestHelperBuilderIssueRights().Build();
-            await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.EmployeeRole);
+            await helper.GenerateUserAndSetToProject(Role.EmployeeRole);
             var uri = $"api/projects/{helper.Project.Id}/issues";
             var response = await helper.client.GetAsync(uri);
             var list = await response.Content.Parse<IList<IssueDTO>>();
@@ -245,7 +245,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         public async Task WriteMessageAsEmployee()
         {
             using var helper = await new SimpleTestHelperBuilderIssueRights().Build();
-            var userId = await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.EmployeeRole);
+            var userId = await helper.GenerateUserAndSetToProject(Role.EmployeeRole);
 
             var newItem = new IssueConversationDTO()
             {
@@ -270,7 +270,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         public async Task WriteMessageAsCustomer()
         {
             using var helper = await new SimpleTestHelperBuilderIssueRights().Build();
-            var userId = await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.CustomerRole);
+            var userId = await helper.GenerateUserAndSetToProject(Role.CustomerRole);
 
             var newItem = new IssueConversationDTO()
             {
@@ -295,7 +295,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         public async Task WriteMessageAsReadOnlyEmployee()
         {
             using var helper = await new SimpleTestHelperBuilderIssueRights().Build();
-            await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.ReadonlyEmployeeRole);
+            await helper.GenerateUserAndSetToProject(Role.ReadonlyEmployeeRole);
 
             var newItem = new IssueConversationDTO()
             {

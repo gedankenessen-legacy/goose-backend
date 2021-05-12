@@ -178,6 +178,7 @@ namespace Goose.API
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<ICompanyUserService, CompanyUserService>();
             services.AddScoped<IIssueSummaryService, IssueSummaryService>();
+            services.AddScoped<IIssueSuccessorService, IssueSuccessorService>();
 
             services.AddHttpContextAccessor();
         }

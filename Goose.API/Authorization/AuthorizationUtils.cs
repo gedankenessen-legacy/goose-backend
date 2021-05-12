@@ -21,19 +21,22 @@ namespace Goose.API.Authorization
             // for each failied req. throw an error if served, else throw generic error. 
             foreach (var failedRequirement in authorizationResult.Failure.FailedRequirements)
             {
-                if (errorMap.TryGetValue(failedRequirement, out string errorMessage))          
+                if (errorMap.TryGetValue(failedRequirement, out string errorMessage))
                     throw new HttpStatusException(StatusCodes.Status403Forbidden, errorMessage);
-          
+
                 // fallback error message.
-                throw new HttpStatusException(StatusCodes.Status403Forbidden, "You are missing one or more requirements, in order to process this request.");    
+                throw new HttpStatusException(StatusCodes.Status403Forbidden, "You are missing one or more requirements, in order to process this request.");
             }
         }
 
-        public static async Task<bool> HasAtLeastOneRequirement(this IAuthorizationService authorizationService, ClaimsPrincipal user, object resource, params IAuthorizationRequirement[] req)
+        public static async Task<bool> HasAtLeastOneRequirement(this IAuthorizationService authorizationService, ClaimsPrincipal user, object resource,
+            params IAuthorizationRequirement[] req)
         {
             var res = await authorizationService.AuthorizeAsync(user, resource, req);
+            if (res.Failure == null) return true;
             return res.Failure!.FailedRequirements.Count() < req.Length;
         }
+
         public static void ThrowErrorIfAllFailed(this AuthorizationResult authorizationResult, Dictionary<IAuthorizationRequirement, string> errorMap)
         {
             if (authorizationResult.Succeeded)

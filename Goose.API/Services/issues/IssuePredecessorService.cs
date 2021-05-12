@@ -1,11 +1,14 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Goose.API.Authorization;
+using Goose.API.Authorization.Requirements;
 using Goose.API.Repositories;
 using Goose.API.Utils.Authentication;
 using Goose.API.Utils.Exceptions;
 using Goose.Domain.DTOs.Issues;
 using Goose.Domain.Models.Issues;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
 
@@ -24,20 +27,34 @@ namespace Goose.API.Services.Issues
 
         //TODO wie bekommt man am besten alle issues in einem vorgänger baum? phil fragen?
         private readonly IIssueRepository _issueRepo;
+        private readonly IProjectRepository _projectRepository;
         private readonly IIssueService _issueService;
+        private readonly IHttpContextAccessor _contextAccessor;
+        private readonly IAuthorizationService _authorizationService;
 
         private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public IssuePredecessorService(IIssueRepository issueRepo, IIssueService issueService, IHttpContextAccessor httpContextAccessor)
+        public IssuePredecessorService(IIssueRepository issueRepo, IIssueService issueService, IHttpContextAccessor httpContextAccessor,
+            IAuthorizationService authorizationService, IHttpContextAccessor contextAccessor, IProjectRepository projectRepository)
         {
             _issueRepo = issueRepo;
             _httpContextAccessor = httpContextAccessor;
+            _authorizationService = authorizationService;
+            _contextAccessor = contextAccessor;
+            _projectRepository = projectRepository;
             _issueService = issueService;
         }
 
         public async Task<IList<IssueDTO>> GetAll(ObjectId issueId)
         {
             var issue = await _issueRepo.GetAsync(issueId);
+            var project = await _projectRepository.GetAsync(issue.ProjectId);
+            if (!await _authorizationService.HasAtLeastOneRequirement(_contextAccessor.HttpContext.User, project,
+                CompanyRolesRequirement.CompanyOwner, ProjectRolesRequirement.CustomerRequirement, ProjectRolesRequirement.EmployeeRequirement,
+                ProjectRolesRequirement.ReadonlyEmployeeRequirement, ProjectRolesRequirement.LeaderRequirement))
+                throw new HttpStatusException(StatusCodes.Status403Forbidden,
+                    $"the user {_contextAccessor.HttpContext.User.GetUserId()} does not have a role in this project");
+
             return await Task.WhenAll(issue.PredecessorIssueIds.Select(it => _issueService.Get(it)));
         }
 
@@ -45,6 +62,15 @@ namespace Goose.API.Services.Issues
         {
             var successor = await _issueRepo.GetAsync(successorId);
             var predecessor = await _issueRepo.GetAsync(predecessorId);
+            if (!successor.ProjectId.Equals(predecessor.ProjectId))
+                throw new HttpStatusException(StatusCodes.Status400BadRequest, $"issue {successorId} and {predecessorId} do not belong to the same project");
+
+            var project = await _projectRepository.GetAsync(successor.ProjectId);
+            if (!await _authorizationService.HasAtLeastOneRequirement(_contextAccessor.HttpContext.User, project,
+                CompanyRolesRequirement.CompanyOwner, ProjectRolesRequirement.CustomerRequirement, ProjectRolesRequirement.EmployeeRequirement
+                , ProjectRolesRequirement.LeaderRequirement))
+                throw new HttpStatusException(StatusCodes.Status403Forbidden,
+                    $"the user {_contextAccessor.HttpContext.User.GetUserId()} does not have a role in this project");
 
             if (successor.ProjectId != predecessor.ProjectId)
             {
@@ -71,6 +97,15 @@ namespace Goose.API.Services.Issues
         {
             var successor = await _issueRepo.GetAsync(successorId);
             var predecessor = await _issueRepo.GetAsync(predecessorId);
+            if (!successor.ProjectId.Equals(predecessor.ProjectId))
+                throw new HttpStatusException(StatusCodes.Status400BadRequest, $"issue {successorId} and {predecessorId} do not belong to the same project");
+
+            var project = await _projectRepository.GetAsync(successor.ProjectId);
+            if (!await _authorizationService.HasAtLeastOneRequirement(_contextAccessor.HttpContext.User, project,
+                CompanyRolesRequirement.CompanyOwner, ProjectRolesRequirement.EmployeeRequirement
+                , ProjectRolesRequirement.LeaderRequirement))
+                throw new HttpStatusException(StatusCodes.Status403Forbidden,
+                    $"the user {_contextAccessor.HttpContext.User.GetUserId()} does not have a role in this project");
 
             if (successor.PredecessorIssueIds.Remove(predecessorId) ||
                 predecessor.SuccessorIssueIds.Remove(successorId))

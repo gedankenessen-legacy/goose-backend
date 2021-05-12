@@ -31,14 +31,12 @@ namespace Goose.Tests.Application.IntegrationTests
         private List<ObjectId> _issues = new();
 
 
-        public ICompanyRepository CompanyRepository { get; }
-        public IUserRepository UserRepository { get; }
-        public IIssueRepository IssueRepository { get; }
-        public IRoleRepository RoleRepository { get; }
-        public IProjectRepository ProjectRepository { get; }
-        public IIssueRequirementService IssueRequirementService { get; }
-
-        public ICompanyRepository MyProperty { get; set; }
+        private ICompanyRepository CompanyRepository { get; }
+        private IUserRepository UserRepository { get; }
+        private IIssueRepository IssueRepository { get; }
+        private IRoleRepository RoleRepository { get; }
+        private IProjectRepository ProjectRepository { get; }
+        private IIssueRequirementService IssueRequirementService { get; }
 
         public NewTestHelper(HttpClient client)
         {
@@ -81,6 +79,14 @@ namespace Goose.Tests.Application.IntegrationTests
         public async Task<HttpResponseMessage> GenerateProject(ObjectId companyId, ProjectDTO projectDto)
         {
             return await CreateProject(companyId, projectDto);
+        }
+
+        public async Task<HttpResponseMessage> GenerateTimeSheet(ObjectId issueId, ObjectId userId)
+        {
+            return await CreateTimeSheet(issueId, new IssueTimeSheetDTO()
+            {
+                User = new UserDTO() {Id = userId}
+            });
         }
 
         public async Task AddUserToProject(ObjectId projectId, ObjectId userId, params Role[] roles)
@@ -167,9 +173,14 @@ namespace Goose.Tests.Application.IntegrationTests
             return res;
         }
 
+        public async Task<HttpResponseMessage> CreateTimeSheet(ObjectId issueId, IssueTimeSheetDTO dto)
+        {
+            var uri = $"api/issues/{issueId}/timesheets/";
+            return await _client.PostAsync(uri, dto.ToStringContent());
+        }
+
         public async Task<SignInResponse> CreateUserForCompany(PropertyUserLoginDTO login, ObjectId companyId)
         {
-            // NOTE: Customer gets cleaned up in `ClearCompany(...)`
             var company = await CompanyRepository.GetAsync(companyId);
             var uri = $"/api/companies/{company.Id}/users";
             var response = await _client.PostAsync(uri, login.ToStringContent());
@@ -189,6 +200,12 @@ namespace Goose.Tests.Application.IntegrationTests
             }
 
             return res;
+        }
+
+        public async Task<HttpResponseMessage> CreateRequirement(ObjectId issueId, IssueRequirement requirement)
+        {
+            var uri = $"/api/issues/{issueId}/requirements/";
+            return await _client.PostAsync(uri, requirement.ToStringContent());
         }
 
         public async Task<SignInResponse> SignIn(SignInRequest signInRequest)

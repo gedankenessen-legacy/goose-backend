@@ -33,17 +33,15 @@ namespace Goose.API.Services.Issues
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IAuthorizationService _authorizationService;
         private readonly IProjectRepository _projectRepository;
-        private readonly ICompanyRepository _companyRepository;
 
         public IssueTimeSheetService(IIssueRepository issueRepo, IUserRepository userRepo, IAuthorizationService authorizationService,
-            IHttpContextAccessor httpContextAccessor, IProjectRepository projectRepository, ICompanyRepository companyRepository)
+            IHttpContextAccessor httpContextAccessor, IProjectRepository projectRepository)
         {
             _issueRepo = issueRepo;
             _userRepo = userRepo;
             _authorizationService = authorizationService;
             _httpContextAccessor = httpContextAccessor;
             _projectRepository = projectRepository;
-            _companyRepository = companyRepository;
         }
 
         public async Task<IList<IssueTimeSheetDTO>> GetAllOfIssueAsync(ObjectId issueId)
@@ -51,21 +49,13 @@ namespace Goose.API.Services.Issues
             var user = _httpContextAccessor.HttpContext?.User;
             var issue = await _issueRepo.GetAsync(issueId);
             var project = await _projectRepository.GetAsync(issue.ProjectId);
-            var company = _companyRepository.GetAsync(project.CompanyId);
-
-            #region UserIsEmployee
 
             if (await _authorizationService.HasAtLeastOneRequirement(user, project, ProjectRolesRequirement.EmployeeRequirement,
-                    ProjectRolesRequirement.LeaderRequirement,
-                    ProjectRolesRequirement.ReadonlyEmployeeRequirement) ||
-                await _authorizationService.HasAtLeastOneRequirement(user, await company, CompanyRolesRequirement.CompanyOwner))
+                ProjectRolesRequirement.LeaderRequirement, CompanyRolesRequirement.CompanyOwner))
             {
                 var timeSheets = (await _issueRepo.GetAsync(issueId)).TimeSheets;
                 return (await Task.WhenAll(timeSheets.Select(MapToTimeSheetDTO))).ToList();
             }
-
-            #endregion
-
 
             throw new HttpStatusException(StatusCodes.Status403Forbidden,
                 $"User [{user.GetUserId()}] is not an project employee or company owner");
@@ -76,16 +66,11 @@ namespace Goose.API.Services.Issues
             var user = _httpContextAccessor.HttpContext?.User;
             var issue = await _issueRepo.GetAsync(issueId);
             var project = await _projectRepository.GetAsync(issue.ProjectId);
-            var company = _companyRepository.GetAsync(project.CompanyId);
 
             #region UserIsEmployee
 
             if (await _authorizationService.HasAtLeastOneRequirement(user!, project,
-                    ProjectRolesRequirement.EmployeeRequirement, ProjectRolesRequirement.LeaderRequirement,
-                    ProjectRolesRequirement.ReadonlyEmployeeRequirement
-                )
-                || await _authorizationService.HasAtLeastOneRequirement(user!, await company,
-                    CompanyRolesRequirement.CompanyOwner))
+                ProjectRolesRequirement.EmployeeRequirement, ProjectRolesRequirement.LeaderRequirement, CompanyRolesRequirement.CompanyOwner))
             {
                 var timeSheet = (await _issueRepo.GetAsync(issueId)).TimeSheets.First(it => it.Id.Equals(timeSheetId));
                 return await MapToTimeSheetDTO(timeSheet);
@@ -103,13 +88,11 @@ namespace Goose.API.Services.Issues
             var user = _httpContextAccessor.HttpContext?.User;
             var issue = await _issueRepo.GetAsync(issueId);
             var project = await _projectRepository.GetAsync(issue.ProjectId);
-            var company = _companyRepository.GetAsync(project.CompanyId);
 
             #region UserIsEmployee
 
             if (await _authorizationService.HasAtLeastOneRequirement(user!, project,
-                    ProjectRolesRequirement.EmployeeRequirement, ProjectRolesRequirement.LeaderRequirement)
-                || await _authorizationService.HasAtLeastOneRequirement(user, await company, CompanyRolesRequirement.CompanyOwner))
+                ProjectRolesRequirement.EmployeeRequirement, ProjectRolesRequirement.LeaderRequirement, CompanyRolesRequirement.CompanyOwner))
             {
                 var timesheet = timeSheetDto.ToTimeSheet();
 
@@ -132,22 +115,18 @@ namespace Goose.API.Services.Issues
             var user = _httpContextAccessor.HttpContext?.User;
             var issue = await _issueRepo.GetAsync(issueId);
             var project = await _projectRepository.GetAsync(issue.ProjectId);
-            var company = _companyRepository.GetAsync(project.CompanyId);
 
             #region UserIsEmployee
 
             if (await _authorizationService.HasAtLeastOneRequirement(user!, project,
-                    ProjectRolesRequirement.EmployeeRequirement, ProjectRolesRequirement.LeaderRequirement)
-                || await _authorizationService.HasAtLeastOneRequirement(user!, await company,
-                    CompanyRolesRequirement.CompanyOwner))
+                ProjectRolesRequirement.EmployeeRequirement, ProjectRolesRequirement.LeaderRequirement, CompanyRolesRequirement.CompanyOwner))
             {
-                
                 var timeSheet = issue.TimeSheets.FirstOrDefault(it => it.Id.Equals(id));
                 if (timeSheet == null) throw new HttpStatusException(StatusCodes.Status400BadRequest, $"There is no timesheet with the id [{id}]");
 
                 timeSheet.Start = timeSheetDto.Start;
                 timeSheet.End = timeSheetDto.End;
-                
+
                 await _issueRepo.UpdateAsync(issue);
             }
 
@@ -163,24 +142,15 @@ namespace Goose.API.Services.Issues
             var user = _httpContextAccessor.HttpContext?.User;
             var issue = await _issueRepo.GetAsync(issueId);
             var project = await _projectRepository.GetAsync(issue.ProjectId);
-            var company = _companyRepository.GetAsync(project.CompanyId);
 
-            #region UserIsEmployee
+            if (!await _authorizationService.HasAtLeastOneRequirement(user!, project,
+                ProjectRolesRequirement.LeaderRequirement, CompanyRolesRequirement.CompanyOwner))
+                throw new HttpStatusException(StatusCodes.Status403Forbidden,
+                    $"User [{user.GetUserId()}] is not a project leader of company of this project");
 
-            if (await _authorizationService.HasAtLeastOneRequirement(user!, project,
-                    ProjectRolesRequirement.LeaderRequirement)
-                || await _authorizationService.HasAtLeastOneRequirement(user!, await company,
-                    CompanyRolesRequirement.CompanyOwner))
-            {
-                var timeSheet = issue.TimeSheets.First(it => it.Id.Equals(timeSheetId));
-                issue.TimeSheets.Remove(timeSheet);
-                await _issueRepo.UpdateAsync(issue);
-            }
-
-            #endregion
-
-            throw new HttpStatusException(StatusCodes.Status403Forbidden,
-                $"User [{user.GetUserId()}] does not have a role in this project");
+            var timeSheet = issue.TimeSheets.First(it => it.Id.Equals(timeSheetId));
+            issue.TimeSheets.Remove(timeSheet);
+            await _issueRepo.UpdateAsync(issue);
         }
 
         private async Task<IssueTimeSheetDTO> MapToTimeSheetDTO(TimeSheet timeSheet)

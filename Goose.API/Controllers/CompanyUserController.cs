@@ -43,7 +43,7 @@ namespace Goose.API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<PropertyUserDTO>> CreateCompanyUser([FromRoute] string companyId, PropertyUserLoginDTO user)
         {
-            var newUser = await _companyUserService.CreateComapanyUserAsync(companyId, user);
+            var newUser = await _companyUserService.CreateCompanyUserAsync(companyId, user);
             return Ok(newUser);
         }
 
@@ -53,7 +53,7 @@ namespace Goose.API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<PropertyUserDTO>> UpdateCompanyUser([FromRoute] string companyId, string userId, PropertyUserLoginDTO user)
         {
-            var updatedUser = await _companyUserService.UpdateComapanyUserAsync(companyId, userId, user);
+            var updatedUser = await _companyUserService.UpdateCompanyUserAsync(companyId, userId, user);
             return Ok(updatedUser);
         }
     }

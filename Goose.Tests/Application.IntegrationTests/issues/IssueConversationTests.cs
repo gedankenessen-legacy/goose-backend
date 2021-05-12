@@ -6,6 +6,7 @@ using Goose.API;
 using Goose.API.Services.Issues;
 using Goose.Domain.DTOs;
 using Goose.Domain.DTOs.Issues;
+using Goose.Domain.Models.Identity;
 using Goose.Domain.Models.Issues;
 using Goose.Domain.Models.Projects;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -158,7 +159,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             using var helper = await new SimpleTestHelperBuilder().Build();
             var issue = helper.Issue;
             IssueRequirement issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen"};
-            await helper.Helper.IssueRequirementService.CreateAsync(issue.Id, issueRequirement);
+            await helper.Helper.CreateRequirement(issue.Id, issueRequirement);
 
             // Create a summary
             var uri = $"/api/issues/{issue.Id}/summaries";
@@ -173,6 +174,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             Assert.AreEqual(latestConversationItem.Requirements.Single(), issueRequirement.Requirement);
 
             // Accept the summary
+            var customerId = await helper.GenerateUserAndSetToProject(Role.CustomerRole);
             uri = $"/api/issues/{issue.Id}/summaries?accept=true";
             response = await helper.client.PutAsync(uri, null);
             Assert.IsTrue(response.IsSuccessStatusCode);
@@ -181,13 +183,13 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             newIssue = await helper.GetIssueAsync(issue.Id);
             latestConversationItem = newIssue.ConversationItems[newIssue.ConversationItems.Count - 2];
             Assert.IsTrue(latestConversationItem is not null);
-            Assert.AreEqual(latestConversationItem.CreatorUserId, helper.User.Id);
+            Assert.AreEqual(latestConversationItem.CreatorUserId, customerId);
             Assert.AreEqual(latestConversationItem.Type, IssueConversation.SummaryAcceptedType);
             Assert.AreEqual(latestConversationItem.Requirements.Single(), issueRequirement.Requirement);
 
             latestConversationItem = newIssue.ConversationItems[newIssue.ConversationItems.Count - 1];
             Assert.IsTrue(latestConversationItem is not null);
-            Assert.AreEqual(latestConversationItem.CreatorUserId, helper.User.Id);
+            Assert.AreEqual(latestConversationItem.CreatorUserId, customerId);
             Assert.AreEqual(latestConversationItem.Type, IssueConversation.StateChangeType);
             Assert.AreEqual(latestConversationItem.Data, $"Status von {State.NegotiationState} zu {State.WaitingState} geändert.");
         }
@@ -200,7 +202,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             var issue = helper.Issue;
 
             IssueRequirement issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen"};
-            issueRequirement = await helper.Helper.IssueRequirementService.CreateAsync(issue.Id, issueRequirement);
+            issueRequirement = await helper.Helper.CreateRequirement(issue.Id, issueRequirement).Parse<IssueRequirement>();
 
             // Create a summary
             var uri = $"/api/issues/{issue.Id}/summaries";
@@ -215,6 +217,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             Assert.AreEqual(latestConversationItem.Requirements.Single(), issueRequirement.Requirement);
 
             // Decline the summary
+            var customerId = await helper.GenerateUserAndSetToProject(Role.CustomerRole);
             uri = $"/api/issues/{issue.Id}/summaries?accept=false";
             response = await helper.client.PutAsync(uri, null);
             Assert.IsTrue(response.IsSuccessStatusCode);
@@ -222,7 +225,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             // Test if the SummaryDeclined Conversation Item is there
             newIssue = await helper.Helper.GetIssueAsync(issue.Id);
             latestConversationItem = newIssue.ConversationItems.Last();
-            Assert.AreEqual(latestConversationItem.CreatorUserId, user.Id);
+            Assert.AreEqual(latestConversationItem.CreatorUserId, customerId);
             Assert.AreEqual(latestConversationItem.Type, IssueConversation.SummaryDeclinedType);
             Assert.AreEqual(latestConversationItem.Requirements.Single(), issueRequirement.Requirement);
         }
