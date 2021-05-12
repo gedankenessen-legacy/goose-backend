@@ -23,7 +23,7 @@ namespace Goose.API.Authorization.Handlers
                 context.Fail();
 
             // if user complies the required role.
-            if (reqestedUser.RoleIds.Any(ri => ri.Equals(requiredRoleId)))
+            if (reqestedUser is not null && reqestedUser.RoleIds.Any(ri => ri.Equals(requiredRoleId)))
             {
                 context.Succeed(requirement);
             }

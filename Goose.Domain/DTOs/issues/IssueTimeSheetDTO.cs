@@ -20,8 +20,6 @@ namespace Goose.Domain.DTOs.Issues
             User = new UserDTO(user);
         }
 
-        public IssueTimeSheetDTO() { }
-
         public TimeSheet ToTimeSheet()
         {
             return new()

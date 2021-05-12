@@ -193,7 +193,7 @@ namespace Goose.Tests.Application.IntegrationTests
             });
 
             //Add User to Project with Role
-            await AddUserToProject(client, userSignUp.User.Id, role.Name);
+            await AddUserToProject(client, userSignUp.User.Id, role);
 
             //Sign In with new User
             var signInResult = await SignIn(client, new SignInRequest
@@ -335,16 +335,6 @@ namespace Goose.Tests.Application.IntegrationTests
             var result = await _client.GetAsync(uri);
             return await result.Content.Parse<IssueDTODetailed>();
         }
-        public async Task<IssueDTO> GetIssueDTOAsync(HttpClient client, int issueIndex = 0)
-        {
-            var issueId = _testIssues[issueIndex];
-            var project = await GetProject();
-            var uri = $"api/projects/{project.Id}/issues/{issueId}";
-
-            var getResult = await client.GetAsync(uri);
-            return await getResult.Content.Parse<IssueDTO>();
-        }
-
         public async Task<IssueDTO> GetIssueDTOAsync(HttpClient client, int issueIndex = 0)
         {
             var issueId = _testIssues[issueIndex];
