@@ -6,6 +6,8 @@ using Goose.Domain.DTOs.Issues;
 using Goose.Domain.Models.Issues;
 using Goose.API.Utils;
 using MongoDB.Bson;
+using System;
+using Goose.Domain.Models;
 
 namespace Goose.API.Services.Issues
 {
@@ -23,11 +25,15 @@ namespace Goose.API.Services.Issues
     {
         private readonly IIssueRepository _issueRepo;
         private readonly IUserRepository _userRepo;
+        private readonly IMessageService _messageService;
+        private readonly IProjectRepository _projectRepository;
 
-        public IssueTimeSheetService(IIssueRepository issueRepo, IUserRepository userRepo)
+        public IssueTimeSheetService(IIssueRepository issueRepo, IUserRepository userRepo, IMessageService messageService, IProjectRepository projectRepository)
         {
             _issueRepo = issueRepo;
             _userRepo = userRepo;
+            _messageService = messageService;
+            _projectRepository = projectRepository;
         }
 
         public async Task<IList<IssueTimeSheetDTO>> GetAllOfIssueAsync(ObjectId issueId)
@@ -49,6 +55,7 @@ namespace Goose.API.Services.Issues
             timeSheetDto.Id = ObjectId.GenerateNewId();
             issue.TimeSheets.Add(timeSheetDto.ToTimeSheet());
             await _issueRepo.UpdateAsync(issue);
+            await CreateTimeExccededMessage(issueId, timeSheetDto);
             return timeSheetDto;
         }
 
@@ -57,6 +64,7 @@ namespace Goose.API.Services.Issues
             var issue = await _issueRepo.GetAsync(issueId);
             issue.TimeSheets.Replace(it => it.Id == timeSheetDto.Id, timeSheetDto.ToTimeSheet());
             await _issueRepo.UpdateAsync(issue);
+            await CreateTimeExccededMessage(issueId, timeSheetDto);
         }
 
         public async Task DeleteAsync(ObjectId issueId, ObjectId timeSheetId)
@@ -71,6 +79,33 @@ namespace Goose.API.Services.Issues
         {
             var user = await _userRepo.GetAsync(timeSheet.UserId);
             return new IssueTimeSheetDTO(timeSheet, user);
+        }
+
+        private async Task CreateTimeExccededMessage(ObjectId issueId, IssueTimeSheetDTO timeSheetDto)
+        {
+            if (timeSheetDto.End == default(DateTime))
+                return;
+
+            var updatedIssue = await _issueRepo.GetAsync(issueId);
+            var timesheets = updatedIssue.TimeSheets.Where(x => !x.End.Equals(default(DateTime)));
+
+            TimeSpan? diffrence = new TimeSpan();
+
+            foreach (var timesheet in timesheets)
+                diffrence += timesheet.End - timesheet.Start;
+
+            if (updatedIssue.IssueDetail.ExpectedTime is null || TimeSpan.FromSeconds((double)updatedIssue.IssueDetail.ExpectedTime * 3600) > diffrence)
+                return;
+
+            await _messageService.CreateMessageAsync(new Message()
+            {
+                CompanyId = (await _projectRepository.GetAsync(updatedIssue.ProjectId)).CompanyId,
+                ProjectId = updatedIssue.ProjectId,
+                IssueId = updatedIssue.Id,
+                ReceiverUserId = updatedIssue.ClientId,
+                Type = MessageType.TimeExceeded,
+                Consented = false,
+            });
         }
     }
 }

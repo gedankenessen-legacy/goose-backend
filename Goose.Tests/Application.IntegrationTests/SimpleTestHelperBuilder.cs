@@ -27,7 +27,7 @@ namespace Goose.Tests.Application.IntegrationTests
             Name = $"{new Random().NextDouble()}"
         };
 
-        private IssueDTO _issueDto = new IssueDTO
+        protected IssueDTO _issueDto = new IssueDTO
         {
             Author = null,
             Client = null,

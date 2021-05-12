@@ -22,9 +22,6 @@ namespace Goose.API.Authorization.Handlers
 
             PropertyUser reqestedUser = propertyUsers?.FirstOrDefault(pu => pu.UserId.Equals(userId));
 
-            if (reqestedUser is null)
-                context.Fail();
-
             // if user complies the required role.
             if (reqestedUser is not null && reqestedUser.RoleIds.Any(ri => ri.Equals(requiredRoleId)))
             {
