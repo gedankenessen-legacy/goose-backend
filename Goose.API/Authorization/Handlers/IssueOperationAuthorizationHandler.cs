@@ -1,5 +1,6 @@
 ﻿using Goose.API.Authorization.Requirements;
 using Goose.API.Repositories;
+using Goose.API.Utils;
 using Goose.API.Utils.Authentication;
 using Goose.Domain.Models;
 using Goose.Domain.Models.Companies;
@@ -55,12 +56,15 @@ namespace Goose.API.Authorization.Handlers
                 return Task.CompletedTask;
 
             PropertyUser projectUser = issueProject.Users.FirstOrDefault(usr => usr.UserId.Equals(userId));
-            PropertyUser companyUser = issueProject.Users.FirstOrDefault(usr => usr.UserId.Equals(userId));
+            PropertyUser companyUser = issueCompany.Users.FirstOrDefault(usr => usr.UserId.Equals(userId));
 
-            if (projectUser is null || companyUser is null)
-                return Task.CompletedTask;
+            IList<ObjectId> userRoles = new List<ObjectId>();
 
-            IList<ObjectId> userRoles = projectUser.RoleIds.Concat(companyUser.RoleIds).ToList();
+            if (projectUser is not null)
+                userRoles = userRoles.ConcatOrSkip(projectUser.RoleIds);
+
+            if (companyUser is not null)
+                userRoles = userRoles.ConcatOrSkip(companyUser.RoleIds);
 
             switch (currentIssueState.Phase)
             {
@@ -90,7 +94,7 @@ namespace Goose.API.Authorization.Handlers
                 },
                 {
                     IssueOperationRequirments.EditState,
-                    x => x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
+                    x => x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
                 },
                 {
                     IssueOperationRequirments.EditAllTimeSheets,
@@ -100,6 +104,10 @@ namespace Goose.API.Authorization.Handlers
                     IssueOperationRequirments.AddSubTicket,
                     x => x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
                 },
+                {
+                    IssueOperationRequirments.CreateOwnTimeSheets,
+                    x => x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
+                }
             };
 
             if (ValidateUserPermissions[requirement](userRoles))
@@ -141,6 +149,10 @@ namespace Goose.API.Authorization.Handlers
                     IssueOperationRequirments.EditAllTimeSheets,
                     x => x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
                 },
+                {
+                    IssueOperationRequirments.CreateOwnTimeSheets,
+                    x => x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
+                }
             };
 
             if (ValidateUserPermissions[requirement](userRoles))
@@ -171,6 +183,10 @@ namespace Goose.API.Authorization.Handlers
                     IssueOperationRequirments.EditAllTimeSheets,
                     x => x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
                 },
+                {
+                    IssueOperationRequirments.CreateOwnTimeSheets,
+                    x => x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
+                }
             };
 
             if (ValidateUserPermissions[requirement](userRoles))

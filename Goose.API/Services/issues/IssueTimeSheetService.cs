@@ -59,6 +59,9 @@ namespace Goose.API.Services.Issues
         public async Task<IssueTimeSheetDTO> CreateAsync(ObjectId issueId, IssueTimeSheetDTO timeSheetDto)
         {
             var issue = await _issueRepo.GetAsync(issueId);
+
+            if ((await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, issue, IssueOperationRequirments.CreateOwnTimeSheets)).Succeeded is false)
+                throw new HttpStatusException(StatusCodes.Status403Forbidden, "You are not allowed to create a time sheet.");
             var timesheet = timeSheetDto.ToTimeSheet();
 
             timesheet.Id = ObjectId.GenerateNewId();

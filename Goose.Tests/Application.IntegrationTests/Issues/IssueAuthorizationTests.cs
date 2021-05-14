@@ -80,10 +80,13 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
         public async Task CustomerCanceledIssueTestAsync()
         {
             _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", companyClientSignIn.Token);
-            issue.State = await TestHelper.Instance.GetStateByName(_client, (await TestHelper.Instance.GetProject()).Id, State.ProcessingState);
-            issue = await TestHelper.Instance.UpdateIssueAsync(_client, issue);
+            
+            var project = await TestHelper.Instance.GetProject();
 
-            Assert.True(issue.State.Name.Equals(State.ProcessingState));
+            issue.State = await TestHelper.Instance.GetStateByName(_client, project.Id, State.CancelledState);
+            var res = await TestHelper.Instance.UpdateIssueAsync(_client, issue);
+
+            Assert.AreEqual(HttpStatusCode.NoContent, res.Status);
         }
 
         [Test, Order(1)]
@@ -240,7 +243,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             // set issue phase to in edit.
             issue = await TestHelper.Instance.GetIssueDTOAsync(_client);
             issue.State = await TestHelper.Instance.GetStateByName(_client, (await TestHelper.Instance.GetProject()).Id, State.ProcessingState);
-            issue = await TestHelper.Instance.UpdateIssueAsync(_client, issue);
+            issue = (await TestHelper.Instance.UpdateIssueAsync(_client, issue)).Response ?? issue;
         }
     }
 }

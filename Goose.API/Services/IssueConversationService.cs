@@ -198,7 +198,6 @@ namespace Goose.API.Services
 
         private async Task AssertUserCanWriteConversation(Issue issue)
         {
-            var project = await _projectRepository.GetAsync(issue.ProjectId);
 
             Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
             {
@@ -206,7 +205,7 @@ namespace Goose.API.Services
             };
 
             // validate requirements with the appropriate handlers.
-            var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, project, requirementsWithErrors.Keys);
+            var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, issue, requirementsWithErrors.Keys);
             authorizationResult.ThrowErrorForFailedRequirements(requirementsWithErrors);
         }
 

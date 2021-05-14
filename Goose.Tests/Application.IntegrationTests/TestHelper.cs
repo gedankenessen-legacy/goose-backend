@@ -6,12 +6,14 @@ using Goose.Domain.Models.Auth;
 using Goose.Domain.Models.Identity;
 using Goose.Domain.Models.Issues;
 using Goose.Domain.Models.Projects;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Bson;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
@@ -364,17 +366,27 @@ namespace Goose.Tests.Application.IntegrationTests
 
         #region Update
 
-        public async Task<IssueDTO> UpdateIssueAsync(HttpClient client, IssueDTO issue, int index = 0)
+        public async Task<HttpResponse<IssueDTO>> UpdateIssueAsync(HttpClient client, IssueDTO issue, int index = 0)
         {
             var project = await GetProject();
 
             var uri = $"api/projects/{project.Id}/issues/{issue.Id}";
 
-            await client.PutAsync(uri, issue.ToStringContent());
+            var res = await client.PutAsync(uri, issue.ToStringContent());
 
-            return await GetIssueDTOAsync(client, index);
+            return new HttpResponse<IssueDTO>()
+            {
+                Status = res.StatusCode,
+                Response = await res.Content.Parse<IssueDTO>() // await GetIssueDTOAsync(client, index);
+            };
         }
 
         #endregion
+
+        public class HttpResponse<T>
+        {
+            public HttpStatusCode Status { get; set; }
+            public T Response { get; set; }
+        }
     }
 }

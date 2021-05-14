@@ -109,7 +109,7 @@ namespace Goose.API.Services.Issues
                 ProjectId = dto.Project.Id,
                 ClientId = dto.Client.Id,
                 AuthorId = dto.Author.Id,
-                IssueDetail = await CreateValidIssueDetail(dto.IssueDetail),
+                IssueDetail = CreateValidIssueDetail(dto.IssueDetail),
                 ConversationItems = new List<IssueConversation>(),
                 TimeSheets = new List<TimeSheet>(),
                 AssignedUserIds = new List<ObjectId>(),
@@ -121,7 +121,7 @@ namespace Goose.API.Services.Issues
             return issue;
         }
 
-        private async Task<IssueDetail> CreateValidIssueDetail(IssueDetail detail)
+        private IssueDetail CreateValidIssueDetail(IssueDetail detail)
         {
             //TODO more validation
             detail.Requirements = new List<IssueRequirement>();
