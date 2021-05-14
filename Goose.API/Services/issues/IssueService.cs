@@ -164,6 +164,9 @@ namespace Goose.API.Services.Issues
                     else
                         await UserCanChangeStatus(old);
 
+                    // State wird aktualisiert
+                    old.StateId = newStateId;
+
                     old.ConversationItems.Add(new IssueConversation()
                     {
                         Id = ObjectId.GenerateNewId(),
