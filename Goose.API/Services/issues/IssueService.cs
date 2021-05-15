@@ -330,6 +330,10 @@ namespace Goose.API.Services.Issues
                 { IssueOperationRequirments.EditState, "Your are not allowed to edit the state of the issue." }
             };
 
+            // add additional req. for internal issues.
+            if (issue.IssueDetail.Visibility is false)
+                requirementsWithErrors.Add(IssueOperationRequirments.EditStateOfInternal, "Your are not allowed to edit the state of an internal issue.");
+
             // validate requirements with the appropriate handlers.
             var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, issue, requirementsWithErrors.Keys);
             authorizationResult.ThrowErrorForFailedRequirements(requirementsWithErrors);
@@ -341,6 +345,10 @@ namespace Goose.API.Services.Issues
             {
                 { IssueOperationRequirments.DiscardTicket, "Your are not allowed to discard the issue." }
             };
+
+            // add additional req. for internal issues.
+            if (issue.IssueDetail.Visibility is false)
+                requirementsWithErrors.Add(IssueOperationRequirments.EditStateOfInternal, "Your are not allowed to edit the state of an internal issue.");
 
             var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, issue, requirementsWithErrors.Keys);
             authorizationResult.ThrowErrorForFailedRequirements(requirementsWithErrors);

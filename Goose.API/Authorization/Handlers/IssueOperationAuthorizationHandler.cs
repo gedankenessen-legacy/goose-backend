@@ -90,6 +90,10 @@ namespace Goose.API.Authorization.Handlers
                     x => x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
                 },
                 {
+                    IssueOperationRequirments.EditStateOfInternal,
+                    x => x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
+                },
+                {
                     IssueOperationRequirments.EditAllTimeSheets,
                     x => x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
                 },
@@ -131,6 +135,10 @@ namespace Goose.API.Authorization.Handlers
                     x => x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
                 },
                 {
+                    IssueOperationRequirments.EditStateOfInternal,
+                    x => x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
+                },
+                {
                     IssueOperationRequirments.AddSubTicket,
                     x => x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
                 },
@@ -166,6 +174,10 @@ namespace Goose.API.Authorization.Handlers
                 },
                 {
                     IssueOperationRequirments.EditState,
+                    x => x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
+                },
+                {
+                    IssueOperationRequirments.EditStateOfInternal,
                     x => x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
                 },
                 {

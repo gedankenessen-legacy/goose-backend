@@ -15,6 +15,7 @@ namespace Goose.API.Authorization.Requirements
         public readonly static OperationAuthorizationRequirement ReadMessages = new() { Name = nameof(ReadMessages) };
         public readonly static OperationAuthorizationRequirement DiscardTicket = new() { Name = nameof(DiscardTicket) };
         public readonly static OperationAuthorizationRequirement EditState = new() { Name = nameof(EditState) };
+        public readonly static OperationAuthorizationRequirement EditStateOfInternal = new() { Name = nameof(EditStateOfInternal) };
         public readonly static OperationAuthorizationRequirement CreateOwnTimeSheets = new() { Name = nameof(CreateOwnTimeSheets) };
         public readonly static OperationAuthorizationRequirement EditOwnTimeSheets = new() { Name = nameof(EditOwnTimeSheets) };
         public readonly static OperationAuthorizationRequirement EditAllTimeSheets = new() { Name = nameof(EditAllTimeSheets) };

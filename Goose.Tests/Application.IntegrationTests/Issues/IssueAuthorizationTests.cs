@@ -30,6 +30,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
         private SignInResponse companyEmployeeSignIn;
         private ProjectDTO createdProject;
         private IssueDTO issue;
+        private IssueDTO internalIssue;
 
         [OneTimeSetUp]
         public void OneTimeSetUp()
@@ -87,6 +88,20 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             var res = await TestHelper.Instance.UpdateIssueAsync(_client, issue);
 
             Assert.AreEqual(HttpStatusCode.NoContent, res.Status);
+        }
+
+        [Test, Order(9)]
+        // issue is in cancelled state after this test.
+        public async Task CustomerCannotCancelInternalIssueTestAsync()
+        {
+            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", companyClientSignIn.Token);
+
+            var project = await TestHelper.Instance.GetProject();
+
+            internalIssue.State = await TestHelper.Instance.GetStateByName(_client, project.Id, State.CancelledState);
+            var res = await TestHelper.Instance.UpdateIssueAsync(_client, internalIssue);
+
+            Assert.AreEqual(HttpStatusCode.Forbidden, res.Status);
         }
 
         [Test, Order(1)]
@@ -238,12 +253,17 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
                 }
             });
 
-            await TestHelper.Instance.GenerateIssue(_client);
+            await TestHelper.Instance.GenerateIssue(_client, visibility: true);
+            await TestHelper.Instance.GenerateIssue(_client, index: 1);
 
             // set issue phase to in edit.
             issue = await TestHelper.Instance.GetIssueDTOAsync(_client);
             issue.State = await TestHelper.Instance.GetStateByName(_client, (await TestHelper.Instance.GetProject()).Id, State.ProcessingState);
             issue = (await TestHelper.Instance.UpdateIssueAsync(_client, issue)).Response ?? issue;
+
+            internalIssue = await TestHelper.Instance.GetIssueDTOAsync(_client, 1);
+            internalIssue.State = await TestHelper.Instance.GetStateByName(_client, (await TestHelper.Instance.GetProject()).Id, State.ProcessingState);
+            internalIssue = (await TestHelper.Instance.UpdateIssueAsync(_client, internalIssue, 1)).Response ?? internalIssue;
         }
     }
 }
