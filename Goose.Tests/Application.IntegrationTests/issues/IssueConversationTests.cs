@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 
-namespace Goose.Tests.Application.IntegrationTests.issues
+namespace Goose.Tests.Application.IntegrationTests.Issues
 {
     [TestFixture]
     [Parallelizable(ParallelScope.All)]

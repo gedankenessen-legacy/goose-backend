@@ -37,8 +37,8 @@ namespace Goose.Tests.Application.IntegrationTests
             {
                 Name = $"{new Random().NextDouble()}",
                 Type = Issue.TypeFeature,
-                StartDate = default,
-                EndDate = default,
+                StartDate = DateTime.Now,
+                EndDate = DateTime.Now.AddHours(1),
                 ExpectedTime = 0,
                 Progress = 0,
                 Description = null,
@@ -72,16 +72,24 @@ namespace Goose.Tests.Application.IntegrationTests
             await helper.Helper.AddUserToProject(helper.Project.Id, helper.User.Id, Role.ProjectLeaderRole);
         }
 
+        public virtual IssueDTO GetIssueDTOCopy(HttpClient client, SimpleTestHelper helper)
+        {
+            _issueDto.Author = helper.User;
+            _issueDto.Client = helper.User;
+            _issueDto.Project = helper.Project;
+            return _issueDto.Copy();
+        }
+
         public virtual async Task<IssueDTO> CreateIssue(HttpClient client, SimpleTestHelper helper)
         {
             _issueDto.Author = helper.User;
             _issueDto.Client = helper.User;
             _issueDto.Project = helper.Project;
-            return await helper.CreateIssue(_issueDto).Parse<IssueDTO>();
+            return await helper.CreateIssue(GetIssueDTOCopy(client, helper)).Parse<IssueDTO>();
         }
 
 
-        public async Task<SimpleTestHelper> Build()
+        public virtual async Task<SimpleTestHelper> Build()
         {
             var factory = new WebApplicationFactory<Startup>();
             var client = factory.CreateClient();

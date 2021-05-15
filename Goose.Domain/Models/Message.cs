@@ -21,6 +21,7 @@ namespace Goose.Domain.Models
         TimeExceeded,
         IssueCancelled,
         RecordedTimeChanged,
-        NewConversationItem
+        NewConversationItem, 
+        DeadLineReached
     }
 }

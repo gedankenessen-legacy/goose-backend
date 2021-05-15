@@ -1,9 +1,3 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Threading.Tasks;
 using Goose.API;
 using Goose.API.Repositories;
 using Goose.Domain.DTOs;
@@ -12,10 +6,17 @@ using Goose.Domain.Models.Auth;
 using Goose.Domain.Models.Identity;
 using Goose.Domain.Models.Issues;
 using Goose.Domain.Models.Projects;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Bson;
-
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Threading.Tasks;
 namespace Goose.Tests.Application.IntegrationTests
 {
     /// Dieser Typ wird verwendet, um mehrere Testdocumente zu speichern
@@ -154,10 +155,10 @@ namespace Goose.Tests.Application.IntegrationTests
             await AddUserToProject(client, user, role.Name);
         }
 
-        public async Task AddUserToProject(HttpClient client, ObjectId id, string roleName)
+        public async Task AddUserToProject(HttpClient client, ObjectId id, Role role)
         {
             var user = await GetUserByUserId(id);
-            await AddUserToProject(client, user, roleName);
+            await AddUserToProject(client, user, role.Name);
         }
 
         public async Task AddUserToProject(HttpClient client, User user, string roleName)
@@ -194,7 +195,7 @@ namespace Goose.Tests.Application.IntegrationTests
             });
 
             //Add User to Project with Role
-            await AddUserToProject(client, userSignUp.User.Id, role.Name);
+            await AddUserToProject(client, userSignUp.User.Id, role);
 
             //Sign In with new User
             var signInResult = await SignIn(client, new SignInRequest
@@ -283,7 +284,6 @@ namespace Goose.Tests.Application.IntegrationTests
         }
         #endregion
 
-
         #region Getting
         private async Task<IList<StateDTO>> GetStateList(HttpClient client, ObjectId projectId)
         {
@@ -337,6 +337,15 @@ namespace Goose.Tests.Application.IntegrationTests
             var result = await _client.GetAsync(uri);
             return await result.Content.Parse<IssueDTODetailed>();
         }
+        public async Task<IssueDTO> GetIssueDTOAsync(HttpClient client, int issueIndex = 0)
+        {
+            var issueId = _testIssues[issueIndex];
+            var project = await GetProject();
+            var uri = $"api/projects/{project.Id}/issues/{issueId}";
+
+            var getResult = await client.GetAsync(uri);
+            return await getResult.Content.Parse<IssueDTO>();
+        }
 
         public async Task<User> GetUser()
         {
@@ -354,5 +363,30 @@ namespace Goose.Tests.Application.IntegrationTests
         }
 
         #endregion
+
+        #region Update
+
+        public async Task<HttpResponse<IssueDTO>> UpdateIssueAsync(HttpClient client, IssueDTO issue, int index = 0)
+        {
+            var project = await GetProject();
+
+            var uri = $"api/projects/{project.Id}/issues/{issue.Id}";
+
+            var res = await client.PutAsync(uri, issue.ToStringContent());
+
+            return new HttpResponse<IssueDTO>()
+            {
+                Status = res.StatusCode,
+                Response = await res.Content.Parse<IssueDTO>() // await GetIssueDTOAsync(client, index);
+            };
+        }
+
+        #endregion
+
+        public class HttpResponse<T>
+        {
+            public HttpStatusCode Status { get; set; }
+            public T Response { get; set; }
+        }
     }
 }

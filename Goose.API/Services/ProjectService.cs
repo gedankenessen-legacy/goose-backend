@@ -11,7 +11,6 @@ using MongoDB.Bson;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using System;
 using Goose.API.Authorization;
 using Goose.API.Utils.Authentication;
 using Goose.Domain.Models.Identity;
@@ -80,7 +79,6 @@ namespace Goose.API.Services
             Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
             {
                 { CompanyRolesRequirement.CompanyOwner, "You need to be the owner of this company, in order to create a project."},
-                //{ new ProjectHasClientRequirement(), "Your company is missing a client, in order to create a project." }
             };
 
             // validate requirements with the appropriate handlers.

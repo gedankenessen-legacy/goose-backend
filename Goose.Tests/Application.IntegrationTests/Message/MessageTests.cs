@@ -10,6 +10,7 @@ using Goose.Domain.Models;
 using Goose.Domain.DTOs;
 using Goose.Domain.Models.Projects;
 using Goose.Domain.Models.Issues;
+using Goose.Domain.Models.Identity;
 
 namespace Goose.Tests.Application.IntegrationTests.Message
 {
@@ -19,13 +20,14 @@ namespace Goose.Tests.Application.IntegrationTests.Message
     {
         private class SimpleTestHelperBuilderMessage : SimpleTestHelperBuilder
         {
-            public override async Task<IssueDTO> CreateIssue(HttpClient client, SimpleTestHelper helper)
+            public override IssueDTO GetIssueDTOCopy(HttpClient client, SimpleTestHelper helper)
             {
-                _issueDto.Author = helper.User;
-                _issueDto.Client = helper.User;
-                _issueDto.Project = helper.Project;
-                _issueDto.IssueDetail.ExpectedTime = 1;
-                return await helper.CreateIssue(_issueDto).Parse<IssueDTO>();
+                IssueDTO issueCopy = base.GetIssueDTOCopy(client, helper);
+                issueCopy.IssueDetail.ExpectedTime = 1;
+                issueCopy.IssueDetail.RequirementsNeeded = false;
+                issueCopy.IssueDetail.StartDate = DateTime.Now;
+                issueCopy.IssueDetail.EndDate = DateTime.Now.AddSeconds(2);
+                return issueCopy;
             }
         }
 
@@ -100,7 +102,7 @@ namespace Goose.Tests.Application.IntegrationTests.Message
             IssueTimeSheetDTO timeSheetDTO = new IssueTimeSheetDTO()
             {
                 User = helper.User,
-                Start = new DateTime(2021, 5, 13, 12, 29, 00)
+                Start = DateTime.Now
             };
 
             var uri = $"/api/issues/{helper.Issue.Id}/timesheets";
@@ -113,7 +115,7 @@ namespace Goose.Tests.Application.IntegrationTests.Message
             Assert.IsTrue(responce.IsSuccessStatusCode);
             var createdSheet = await responce.Parse<IssueTimeSheetDTO>();
 
-            createdSheet.End = new DateTime(2021, 5, 13, 14, 29, 00);
+            createdSheet.End = DateTime.Now.AddHours(2);
             responce = await helper.client.PutAsync(uri, createdSheet.ToStringContent());
             Assert.IsTrue(responce.IsSuccessStatusCode);
 
@@ -134,7 +136,7 @@ namespace Goose.Tests.Application.IntegrationTests.Message
             IssueTimeSheetDTO timeSheetDTO = new IssueTimeSheetDTO()
             {
                 User = helper.User,
-                Start = new DateTime(2021, 5, 13, 12, 30, 00)
+                Start = DateTime.Now
             };
 
             var uri = $"/api/issues/{helper.Issue.Id}/timesheets";
@@ -147,7 +149,7 @@ namespace Goose.Tests.Application.IntegrationTests.Message
             Assert.IsTrue(responce.IsSuccessStatusCode);
             var createdSheet = await responce.Parse<IssueTimeSheetDTO>();
 
-            createdSheet.End = new DateTime(2021, 5, 13, 13, 00, 00);
+            createdSheet.End = DateTime.Now.AddMinutes(30);
             responce = await helper.client.PutAsync(uri, createdSheet.ToStringContent());
             Assert.IsTrue(responce.IsSuccessStatusCode);
 
@@ -162,7 +164,7 @@ namespace Goose.Tests.Application.IntegrationTests.Message
             var timeSheetDTO2 = new IssueTimeSheetDTO()
             {
                 User = helper.User,
-                Start = new DateTime(2021, 5, 13, 13, 30, 00)
+                Start = DateTime.Now.AddHours(2)
             };
 
             uri = $"/api/issues/{helper.Issue.Id}/timesheets";
@@ -175,7 +177,7 @@ namespace Goose.Tests.Application.IntegrationTests.Message
             Assert.IsTrue(responce.IsSuccessStatusCode);
             var createdSheet2 = await responce.Parse<IssueTimeSheetDTO>();
 
-            createdSheet2.End = new DateTime(2021, 5, 13, 14, 30, 00);
+            createdSheet2.End = DateTime.Now.AddHours(4);
             responce = await helper.client.PutAsync(uri, createdSheet2.ToStringContent());
             Assert.IsTrue(responce.IsSuccessStatusCode);
 
@@ -194,8 +196,8 @@ namespace Goose.Tests.Application.IntegrationTests.Message
             IssueTimeSheetDTO timeSheetDTO = new IssueTimeSheetDTO()
             {
                 User = helper.User,
-                Start = new DateTime(2021, 5, 13, 12, 29, 00),
-                End = new DateTime(2021, 5, 13, 14, 29, 00)
+                Start = DateTime.Now,
+                End = DateTime.Now.AddHours(2)
             };
 
             var uri = $"/api/issues/{helper.Issue.Id}/timesheets";
@@ -203,6 +205,42 @@ namespace Goose.Tests.Application.IntegrationTests.Message
             Assert.IsTrue(responce.IsSuccessStatusCode);
 
             uri = $"/api/messages/{helper.User.Id}";
+            responce = await helper.client.GetAsync(uri);
+            Assert.IsTrue(responce.IsSuccessStatusCode);
+            var messageList = await responce.Parse<IList<MessageDTO>>();
+
+            Assert.IsTrue(messageList.Count == 1);
+        }
+
+        [Test]
+        public async Task TimeSheetMessageTest4()
+        {
+            using var helper = await new SimpleTestHelperBuilderMessage().Build();
+            var newUserId = await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.EmployeeRole);
+
+            IssueTimeSheetDTO timeSheetDTO = new IssueTimeSheetDTO()
+            {
+                User = new UserDTO(await helper.Helper.UserRepository.GetAsync(newUserId)),
+                Start = DateTime.Now
+            };
+
+            var uri = $"/api/issues/{helper.Issue.Id}/timesheets";
+            var responce = await helper.client.PostAsync(uri, timeSheetDTO.ToStringContent());
+            Assert.IsTrue(responce.IsSuccessStatusCode);
+            var result = await responce.Parse<IssueTimeSheetDTO>();
+
+            helper.Helper.SetAuth(helper.SignIn);
+
+            uri = $"/api/issues/{helper.Issue.Id}/timesheets/{result.Id}";
+            responce = await helper.client.GetAsync(uri);
+            Assert.IsTrue(responce.IsSuccessStatusCode);
+            var createdSheet = await responce.Parse<IssueTimeSheetDTO>();
+
+            createdSheet.End = DateTime.Now.AddMinutes(30);
+            responce = await helper.client.PutAsync(uri, createdSheet.ToStringContent());
+            Assert.IsTrue(responce.IsSuccessStatusCode);
+
+            uri = $"/api/messages/{newUserId}";
             responce = await helper.client.GetAsync(uri);
             Assert.IsTrue(responce.IsSuccessStatusCode);
             var messageList = await responce.Parse<IList<MessageDTO>>();
@@ -235,9 +273,9 @@ namespace Goose.Tests.Application.IntegrationTests.Message
         }
 
         [Test]
-        public async Task PostConversation()
+        public async Task IssueConversationTest()
         {
-            using var helper = await new SimpleTestHelperBuilder().Build();
+            using var helper = await new SimpleTestHelperBuilderMessage().Build();
 
             var newItem = new IssueConversationDTO()
             {
@@ -262,7 +300,20 @@ namespace Goose.Tests.Application.IntegrationTests.Message
             var messageList = await response.Parse<IList<MessageDTO>>();
 
             Assert.IsTrue(messageList.Count == 1);
+        }
 
+        [Test]
+        public async Task IssueDeadLineTest()
+        {
+            using var helper = await new SimpleTestHelperBuilderMessage().Build();
+            await Task.Delay(2000);
+
+            var uri = $"/api/messages/{helper.User.Id}";
+            var response = await helper.client.GetAsync(uri);
+            Assert.IsTrue(response.IsSuccessStatusCode);
+            var messageList = await response.Parse<IList<MessageDTO>>();
+
+            Assert.IsTrue(messageList.Count == 2);
         }
 
         private Domain.Models.Message GetValidMessage(SimpleTestHelper helper)

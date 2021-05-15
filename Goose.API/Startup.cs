@@ -130,6 +130,7 @@ namespace Goose.API
         {
             services.AddScoped<IAuthorizationHandler, CompanyRoleHandler>();
             services.AddScoped<IAuthorizationHandler, ProjectRoleHandler>();
+            services.AddScoped<IAuthorizationHandler, IssueOperationAuthorizationHandler>();
         }
 
         /// <summary>

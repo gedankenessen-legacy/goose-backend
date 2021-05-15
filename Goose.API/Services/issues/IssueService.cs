@@ -15,6 +15,8 @@ using Microsoft.AspNetCore.Authorization;
 using Goose.API.Authorization.Requirements;
 using Goose.API.Authorization;
 using Goose.Domain.Models;
+using Goose.API.EventHandler;
+using System;
 
 namespace Goose.API.Services.Issues
 {
@@ -99,6 +101,10 @@ namespace Goose.API.Services.Issues
 
             var issue = await CreateValidIssue(issueDto);
             await _issueRepo.CreateAsync(issue);
+
+            if(issue.IssueDetail.EndDate is not null && issue.IssueDetail.EndDate != default(DateTime))
+                await Scheduler.AddEvent(new TicketDeadlineEvent(await _projectRepository.GetAsync(issue.ProjectId), issue, _messageService));
+
             return await Get(issue.Id);
         }
 
@@ -113,7 +119,7 @@ namespace Goose.API.Services.Issues
                 ProjectId = dto.Project.Id,
                 ClientId = dto.Client.Id,
                 AuthorId = dto.Author.Id,
-                IssueDetail = await CreateValidIssueDetail(dto.IssueDetail),
+                IssueDetail = CreateValidIssueDetail(dto.IssueDetail),
                 ConversationItems = new List<IssueConversation>(),
                 TimeSheets = new List<TimeSheet>(),
                 AssignedUserIds = new List<ObjectId>(),
@@ -125,7 +131,7 @@ namespace Goose.API.Services.Issues
             return issue;
         }
 
-        private async Task<IssueDetail> CreateValidIssueDetail(IssueDetail detail)
+        private IssueDetail CreateValidIssueDetail(IssueDetail detail)
         {
             //TODO more validation
             detail.Requirements = new List<IssueRequirement>();
@@ -159,15 +165,20 @@ namespace Goose.API.Services.Issues
 
                 if (oldStateId != newStateId)
                 {
-                    await UserCanChangeStatus(old.ProjectId);
-                    // State wird aktualisiert
-                    old.StateId = newStateId;
-
                     var oldState = await _stateService.GetState(old.ProjectId, oldStateId);
                     var newState = await _stateService.GetState(old.ProjectId, newStateId);
 
+                    // if changing the state to cancelled, we need to validate the user requirments.
                     if (newState.Name.Equals(State.CancelledState))
+                    {
+                        await UserCanDiscardIssue(old);
                         await CreateCanceledMessage(old);
+                    }
+                    else
+                        await UserCanChangeStatus(old);
+
+                    // State wird aktualisiert
+                    old.StateId = newStateId;
 
                     old.ConversationItems.Add(new IssueConversation()
                     {
@@ -213,15 +224,17 @@ namespace Goose.API.Services.Issues
             details.Description = updated.Description;
             details.Progress = updated.Progress;
             details.ExpectedTime = updated.ExpectedTime;
+            details.RelevantDocuments = updated.RelevantDocuments ?? details.RelevantDocuments;
             //nur in vorbereitungsphase
             var state = await _stateService.GetState(old.ProjectId, old.StateId);
             if (state.Phase.Equals(State.NegotiationPhase))
             {
                 details.StartDate = updated.StartDate;
                 details.EndDate = updated.EndDate;
-            }
 
-            details.RelevantDocuments = updated.RelevantDocuments ?? details.RelevantDocuments;
+                if (details.EndDate is not null && details.EndDate != default(DateTime))
+                    await Scheduler.AddEvent(new TicketDeadlineEvent(await _projectRepository.GetAsync(old.ProjectId), old, _messageService));
+            }
 
             return old.IssueDetail;
         }
@@ -241,6 +254,9 @@ namespace Goose.API.Services.Issues
         public async Task SetParent(ObjectId issueId, ObjectId parentId)
         {
             var issue = await _issueRepo.GetAsync(issueId);
+
+            await UserCanAddParent(issue);
+
             var parent = await _issueRepo.GetAsync(parentId);
 
             if (issue.ProjectId != parent.ProjectId)
@@ -285,7 +301,6 @@ namespace Goose.API.Services.Issues
                 await _issueRepo.UpdateAsync(parent);
             }
         }
-
 
         private async Task<StateDTO> GetState(ObjectId projectId, string stateName)
         {
@@ -344,19 +359,38 @@ namespace Goose.API.Services.Issues
             return authorizationResult.Failure.FailedRequirements.Count() < requirements.Count;
         }
 
-        private async Task UserCanChangeStatus(ObjectId projectId)
+        private async Task UserCanChangeStatus(Issue issue)
         {
-            var project = await _projectRepository.GetAsync(projectId);
             Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
             {
-                { ProjectRolesRequirement.EmployeeRequirement, "You need to be the employee with write-rights in this project, in order to change the state" },
-                { ProjectRolesRequirement.LeaderRequirement, "You need to be the leader in this project, in order to change the state." },
-                { CompanyRolesRequirement.CompanyOwner, "You need to be a Owner of the Company, in order to change the state" }
+                { IssueOperationRequirments.EditState, "Your are not allowed to edit the state of the issue." }
             };
 
             // validate requirements with the appropriate handlers.
-            var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, project, requirementsWithErrors.Keys);
-            authorizationResult.ThrowErrorIfAllFailed(requirementsWithErrors);
+            var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, issue, requirementsWithErrors.Keys);
+            authorizationResult.ThrowErrorForFailedRequirements(requirementsWithErrors);
+        }
+
+        private async Task UserCanDiscardIssue(Issue issue)
+        {
+            Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
+            {
+                { IssueOperationRequirments.DiscardTicket, "Your are not allowed to discard the issue." }
+            };
+
+            var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, issue, requirementsWithErrors.Keys);
+            authorizationResult.ThrowErrorForFailedRequirements(requirementsWithErrors);
+        }
+
+        private async Task UserCanAddParent(Issue issue)
+        {
+            Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
+            {
+                { IssueOperationRequirments.AddSubTicket, "Your are not allowed to add a parent to this issue." }
+            };
+
+            var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, issue, requirementsWithErrors.Keys);
+            authorizationResult.ThrowErrorForFailedRequirements(requirementsWithErrors);
         }
 
         private async Task UserCanCreateOrUpdateIssue(ObjectId projectId)
