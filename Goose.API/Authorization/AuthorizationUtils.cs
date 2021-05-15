@@ -1,6 +1,9 @@
+using Goose.API.Utils;
 using Goose.API.Utils.Exceptions;
+using Goose.Domain.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using MongoDB.Bson;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -58,5 +61,20 @@ namespace Goose.API.Authorization
 
             throw new HttpStatusException(StatusCodes.Status403Forbidden, errorMsg);
         }
+
+        public static IList<ObjectId> RolesOfUser(params PropertyUser[] propertyUsers)
+        {
+            IList<ObjectId> roles = new List<ObjectId>();
+
+            foreach (var propertyUser in propertyUsers)
+            {
+                if (propertyUser is not null)
+                    roles = roles.ConcatOrSkip(propertyUser.RoleIds);
+            }
+
+            return roles;
+        }
+    
+        
     }
 }

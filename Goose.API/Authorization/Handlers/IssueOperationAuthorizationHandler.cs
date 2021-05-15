@@ -1,6 +1,5 @@
 ﻿using Goose.API.Authorization.Requirements;
 using Goose.API.Repositories;
-using Goose.API.Utils;
 using Goose.API.Utils.Authentication;
 using Goose.Domain.Models;
 using Goose.Domain.Models.Companies;
@@ -37,12 +36,12 @@ namespace Goose.API.Authorization.Handlers
 
             Project issueProject = await _projectRepository.GetAsync(issue.ProjectId);
 
-            if (issueProject is null || issueProject.Users.Count < 1)
+            if (issueProject is null)
                 return Task.CompletedTask;
 
             Company issueCompany = await _companyRepository.GetAsync(issueProject.CompanyId);
 
-            if (issueCompany is null || issueCompany.Users.Count < 1)
+            if (issueCompany is null)
                 return Task.CompletedTask;
 
             IEnumerable<State> projectStates = issueProject.States;
@@ -55,16 +54,10 @@ namespace Goose.API.Authorization.Handlers
             if (currentIssueState is null)
                 return Task.CompletedTask;
 
-            PropertyUser projectUser = issueProject.Users.FirstOrDefault(usr => usr.UserId.Equals(userId));
-            PropertyUser companyUser = issueCompany.Users.FirstOrDefault(usr => usr.UserId.Equals(userId));
+            PropertyUser projectUser = issueProject.Users?.FirstOrDefault(usr => usr.UserId.Equals(userId));
+            PropertyUser companyUser = issueCompany.Users?.FirstOrDefault(usr => usr.UserId.Equals(userId));
 
-            IList<ObjectId> userRoles = new List<ObjectId>();
-
-            if (projectUser is not null)
-                userRoles = userRoles.ConcatOrSkip(projectUser.RoleIds);
-
-            if (companyUser is not null)
-                userRoles = userRoles.ConcatOrSkip(companyUser.RoleIds);
+            IList<ObjectId> userRoles = AuthorizationUtils.RolesOfUser(projectUser, companyUser);
 
             switch (currentIssueState.Phase)
             {
