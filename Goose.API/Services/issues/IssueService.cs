@@ -14,6 +14,7 @@ using Goose.API.Utils.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Goose.API.Authorization.Requirements;
 using Goose.API.Authorization;
+using Goose.Domain.Models;
 
 namespace Goose.API.Services.Issues
 {
@@ -45,6 +46,7 @@ namespace Goose.API.Services.Issues
 
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IAuthorizationService _authorizationService;
+        private readonly IMessageService _messageService;
 
         public IssueService(
             IIssueRepository issueRepo,
@@ -53,7 +55,8 @@ namespace Goose.API.Services.Issues
             IUserRepository userRepository,
             IIssueRequestValidator issueValidator,
             IHttpContextAccessor httpContextAccessor,
-            IAuthorizationService authorizationService)
+            IAuthorizationService authorizationService,
+            IMessageService messageService)
         {
             _issueRepo = issueRepo;
             _stateService = stateService;
@@ -62,6 +65,7 @@ namespace Goose.API.Services.Issues
             _issueValidator = issueValidator;
             _httpContextAccessor = httpContextAccessor;
             _authorizationService = authorizationService;
+            _messageService = messageService;
         }
 
         public async Task<IList<IssueDTO>> GetAll()
@@ -162,6 +166,9 @@ namespace Goose.API.Services.Issues
                     var oldState = await _stateService.GetState(old.ProjectId, oldStateId);
                     var newState = await _stateService.GetState(old.ProjectId, newStateId);
 
+                    if (newState.Name.Equals(State.CancelledState))
+                        await CreateCanceledMessage(old);
+
                     old.ConversationItems.Add(new IssueConversation()
                     {
                         Id = ObjectId.GenerateNewId(),
@@ -174,6 +181,27 @@ namespace Goose.API.Services.Issues
 
             old.IssueDetail = await GetUpdatedIssueDetail(old, updated.IssueDetail);
             return old;
+        }
+
+        private async Task CreateCanceledMessage(Issue issue)
+        {
+            var project = await _projectRepository.GetAsync(issue.ProjectId);
+            await CreateCanceledMessage(project.CompanyId, project.Id, issue.Id, issue.AuthorId);
+            await CreateCanceledMessage(project.CompanyId, project.Id, issue.Id, issue.ClientId);
+            await Task.WhenAll(issue.AssignedUserIds.Select(x => CreateCanceledMessage(project.CompanyId, project.Id, issue.Id, x)));
+        }
+
+        private async Task CreateCanceledMessage(ObjectId companyId, ObjectId projectId, ObjectId issueId, ObjectId userId)
+        {
+            await _messageService.CreateMessageAsync(new Message()
+            {
+                CompanyId = companyId,
+                ProjectId = projectId,
+                IssueId = issueId,
+                ReceiverUserId = userId,
+                Type = MessageType.IssueCancelled,
+                Consented = false
+            });
         }
 
         private async Task<IssueDetail> GetUpdatedIssueDetail(Issue old, IssueDetail updated)

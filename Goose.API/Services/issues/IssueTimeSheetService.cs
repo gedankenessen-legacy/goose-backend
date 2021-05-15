@@ -8,6 +8,8 @@ using Goose.API.Utils;
 using MongoDB.Bson;
 using System;
 using Goose.Domain.Models;
+using Goose.API.Utils.Exceptions;
+using Microsoft.AspNetCore.Http;
 
 namespace Goose.API.Services.Issues
 {
@@ -16,7 +18,7 @@ namespace Goose.API.Services.Issues
         public Task<IList<IssueTimeSheetDTO>> GetAllOfIssueAsync(ObjectId issueId);
         public Task<IssueTimeSheetDTO> GetAsync(ObjectId issueId, ObjectId timeSheetId);
         public Task<IssueTimeSheetDTO> CreateAsync(ObjectId issueId, IssueTimeSheetDTO timeSheet);
-        public Task UpdateAsync(ObjectId issueId, IssueTimeSheetDTO timeSheetDto);
+        public Task UpdateAsync(ObjectId issueId, ObjectId id, IssueTimeSheetDTO timeSheetDto);
         public Task DeleteAsync(ObjectId issueId, ObjectId timeSheetId);
     }
 
@@ -59,10 +61,14 @@ namespace Goose.API.Services.Issues
             return timeSheetDto;
         }
 
-        public async Task UpdateAsync(ObjectId issueId, IssueTimeSheetDTO timeSheetDto)
+        public async Task UpdateAsync(ObjectId issueId, ObjectId id, IssueTimeSheetDTO timeSheetDto)
         {
             var issue = await _issueRepo.GetAsync(issueId);
-            issue.TimeSheets.Replace(it => it.Id == timeSheetDto.Id, timeSheetDto.ToTimeSheet());
+            var timeSheet = issue?.TimeSheets?.FirstOrDefault(it => it.Id.Equals(id));
+            if (timeSheet == null) throw new HttpStatusException(StatusCodes.Status400BadRequest, $"There is no timesheet with the id [{id}]");
+
+            timeSheet.Start = timeSheetDto.Start;
+            timeSheet.End = timeSheetDto.End;
             await _issueRepo.UpdateAsync(issue);
             await CreateTimeExccededMessage(issueId, timeSheetDto);
         }

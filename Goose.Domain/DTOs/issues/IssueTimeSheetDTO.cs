@@ -7,6 +7,11 @@ namespace Goose.Domain.DTOs.Issues
 {
     public class IssueTimeSheetDTO
     {
+        public IssueTimeSheetDTO()
+        {
+
+        }
+
         public IssueTimeSheetDTO(TimeSheet timeSheet, User user)
         {
             Id = timeSheet.Id;
