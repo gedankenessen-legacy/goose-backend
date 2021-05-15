@@ -66,6 +66,8 @@ namespace Goose.API.Authorization
         {
             IList<ObjectId> roles = new List<ObjectId>();
 
+            if (propertyUsers is null) return roles;
+
             foreach (var propertyUser in propertyUsers)
             {
                 if (propertyUser is not null)
@@ -75,6 +77,5 @@ namespace Goose.API.Authorization
             return roles;
         }
     
-        
     }
 }
