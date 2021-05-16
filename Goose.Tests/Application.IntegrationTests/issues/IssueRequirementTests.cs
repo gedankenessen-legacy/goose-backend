@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Goose.Domain.Models.Issues;
 using NUnit.Framework;
 
-namespace Goose.Tests.Application.IntegrationTests.issues
+namespace Goose.Tests.Application.IntegrationTests.Issues
 {
     [TestFixture]
     [Parallelizable(ParallelScope.All)]

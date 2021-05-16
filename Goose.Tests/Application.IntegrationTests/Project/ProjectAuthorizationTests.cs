@@ -23,6 +23,7 @@ namespace Goose.Tests.Application.IntegrationTests.Project
         private WebApplicationFactory<Startup> _factory;
 
         private ICompanyRepository _companyRepository;
+
         private SignInResponse companyOwnerSignIn;
         private SignInResponse companyClientSignIn;
         private SignInResponse companyEmployeeSignIn;
@@ -61,9 +62,7 @@ namespace Goose.Tests.Application.IntegrationTests.Project
         public async Task AssignCustomerToProjektAsCustomerTest()
         {
             _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", companyClientSignIn.Token);
-
             var response = await AssignUserToProjectAsync($"api/projects/{createdProject.Id}/users/{companyClientSignIn.User.Id}");
-
             Assert.AreEqual(HttpStatusCode.Forbidden, response.StatusCode, "Customer was able to create a customer for a project!");
         }
 
@@ -154,7 +153,7 @@ namespace Goose.Tests.Application.IntegrationTests.Project
         }
 
         #endregion
-
+        
         private async Task<HttpResponseMessage> AssignUserToProjectAsync(string uri, PropertyUserDTO? propertyUser = null)
         {
             propertyUser ??= new PropertyUserDTO()
