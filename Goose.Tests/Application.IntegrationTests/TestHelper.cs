@@ -1,22 +1,22 @@
-﻿using Goose.API.Repositories;
+using Goose.API;
+using Goose.API.Repositories;
 using Goose.Domain.DTOs;
 using Goose.Domain.DTOs.Issues;
 using Goose.Domain.Models.Auth;
-using Goose.Domain.Models.Projects;
+using Goose.Domain.Models.Identity;
 using Goose.Domain.Models.Issues;
+using Goose.Domain.Models.Projects;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
+using MongoDB.Bson;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Goose.API;
-using Microsoft.Extensions.DependencyInjection;
-using Goose.Domain.Models.Identity;
 using System.Net.Http.Headers;
-using MongoDB.Bson;
-
+using System.Threading.Tasks;
 namespace Goose.Tests.Application.IntegrationTests
 {
     /// Dieser Typ wird verwendet, um mehrere Testdocumente zu speichern
@@ -123,25 +123,42 @@ namespace Goose.Tests.Application.IntegrationTests
             return await response.Content.Parse<SignInResponse>();
         }
 
-        public async Task GenerateProject(HttpClient client)
+        public async Task<SignInResponse> GenerateUserForCompany(HttpClient client, ICompanyRepository companyRepository, PropertyUserLoginDTO login)
+        {
+            // NOTE: Customer gets cleaned up in `ClearCompany(...)`
+            var company = (await companyRepository.FilterByAsync(x => x.Name.Equals(FirmenName))).FirstOrDefault();
+            var uri = $"/api/companies/{company.Id}/users";
+            var response = await client.PostAsync(uri, login.ToStringContent());
+            return await response.Content.Parse<SignInResponse>();
+        }
+
+        public async Task<SignInResponse> SignIn(HttpClient client, SignInRequest signInRequest)
+        {
+            var uri = "/api/auth/signIn";
+            var response = await client.PostAsync(uri, signInRequest.ToStringContent());
+            return await response.Content.Parse<SignInResponse>();
+        }
+
+        public async Task<ProjectDTO> GenerateProject(HttpClient client)
         {
             var company = (await _companyRepository.FilterByAsync(x => x.Name.Equals(FirmenName))).FirstOrDefault();
             var uri = $"api/companies/{company.Id}/projects";
             var newProject = new ProjectDTO() { Name = ProjektName };
-            await client.PostAsync(uri, newProject.ToStringContent());
+            var response = await client.PostAsync(uri, newProject.ToStringContent());
+            return await response.Content.Parse<ProjectDTO>();
         }
 
-        public async Task AddUserToProject(HttpClient client, string roleName)
+        public async Task AddUserToProject(HttpClient client, Role role)
         {
             // add user to company
             var user = await GetUser();
-            await AddUserToProject(client, user, roleName);
+            await AddUserToProject(client, user, role.Name);
         }
 
-        public async Task AddUserToProject(HttpClient client, ObjectId id, string roleName)
+        public async Task AddUserToProject(HttpClient client, ObjectId id, Role role)
         {
             var user = await GetUserByUserId(id);
-            await AddUserToProject(client, user, roleName);
+            await AddUserToProject(client, user, role.Name);
         }
 
         public async Task AddUserToProject(HttpClient client, User user, string roleName)
@@ -160,7 +177,7 @@ namespace Goose.Tests.Application.IntegrationTests
             var respones = await client.PutAsync(uri, addRequest.ToStringContent());
         }
 
-        public async Task<ObjectId> GenerateUserAndSetToProject(HttpClient client, string role)
+        public async Task<ObjectId> GenerateUserAndSetToProject(HttpClient client, Role role)
         {
             //get Project
             var project = await GetProject();
@@ -174,7 +191,7 @@ namespace Goose.Tests.Application.IntegrationTests
                 Firstname = "MyGoose",
                 Lastname = "MyLastname",
                 Password = "Test12345",
-                Roles = new[] { roles.First(it => it.Name.Equals(role)) }
+                Roles = new[] { roles.First(it => it.Name.Equals(role.Name)) }
             });
 
             //Add User to Project with Role
@@ -250,13 +267,6 @@ namespace Goose.Tests.Application.IntegrationTests
             return await response.Content.Parse<SignInResponse>();
         }
 
-        public async Task<SignInResponse> SignIn(HttpClient client, SignInRequest signInRequest)
-        {
-            var uri = "/api/auth/signIn";
-            var response = await client.PostAsync(uri, signInRequest.ToStringContent());
-            return await response.Content.Parse<SignInResponse>();
-        }
-
         /// <summary>
         /// Generates a Test Company, User, Project and Issue.
         /// These objects can be retrieved from the DB via the Get???() methods.
@@ -273,7 +283,6 @@ namespace Goose.Tests.Application.IntegrationTests
             await GenerateIssue(client);
         }
         #endregion
-
 
         #region Getting
         private async Task<IList<StateDTO>> GetStateList(HttpClient client, ObjectId projectId)
@@ -300,7 +309,7 @@ namespace Goose.Tests.Application.IntegrationTests
             return companies.FirstOrDefault();
         }
 
-        public async Task<Project> GetProject()
+        public async Task<Domain.Models.Projects.Project> GetProject()
         {
             var projects = await _projectRepository.FilterByAsync(x => x.ProjectDetail.Name == ProjektName);
             return projects.FirstOrDefault();
@@ -328,6 +337,15 @@ namespace Goose.Tests.Application.IntegrationTests
             var result = await _client.GetAsync(uri);
             return await result.Content.Parse<IssueDTODetailed>();
         }
+        public async Task<IssueDTO> GetIssueDTOAsync(HttpClient client, int issueIndex = 0)
+        {
+            var issueId = _testIssues[issueIndex];
+            var project = await GetProject();
+            var uri = $"api/projects/{project.Id}/issues/{issueId}";
+
+            var getResult = await client.GetAsync(uri);
+            return await getResult.Content.Parse<IssueDTO>();
+        }
 
         public async Task<User> GetUser()
         {
@@ -345,5 +363,30 @@ namespace Goose.Tests.Application.IntegrationTests
         }
 
         #endregion
+
+        #region Update
+
+        public async Task<HttpResponse<IssueDTO>> UpdateIssueAsync(HttpClient client, IssueDTO issue, int index = 0)
+        {
+            var project = await GetProject();
+
+            var uri = $"api/projects/{project.Id}/issues/{issue.Id}";
+
+            var res = await client.PutAsync(uri, issue.ToStringContent());
+
+            return new HttpResponse<IssueDTO>()
+            {
+                Status = res.StatusCode,
+                Response = await res.Content.Parse<IssueDTO>() // await GetIssueDTOAsync(client, index);
+            };
+        }
+
+        #endregion
+
+        public class HttpResponse<T>
+        {
+            public HttpStatusCode Status { get; set; }
+            public T Response { get; set; }
+        }
     }
 }

@@ -1,7 +1,9 @@
-﻿using Goose.API.Utils.Exceptions;
+using Goose.API.Utils;
+using Goose.API.Utils.Exceptions;
+using Goose.Domain.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
-using System;
+using MongoDB.Bson;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -18,11 +20,11 @@ namespace Goose.API.Authorization
             // for each failied req. throw an error if served, else throw generic error. 
             foreach (var failedRequirement in authorizationResult.Failure.FailedRequirements)
             {
-                if (errorMap.TryGetValue(failedRequirement, out string errorMessage))
+                if (errorMap.TryGetValue(failedRequirement, out string errorMessage))          
                     throw new HttpStatusException(StatusCodes.Status403Forbidden, errorMessage);
-
+          
                 // fallback error message.
-                throw new HttpStatusException(StatusCodes.Status403Forbidden, "You are missing one or more requirements, in order to process this request.");
+                throw new HttpStatusException(StatusCodes.Status403Forbidden, "You are missing one or more requirements, in order to process this request.");    
             }
         }
 
@@ -42,7 +44,7 @@ namespace Goose.API.Authorization
 
             var errorMsg = "";
 
-            foreach(var failedRequirement in authorizationResult.Failure.FailedRequirements)
+            foreach (var failedRequirement in authorizationResult.Failure.FailedRequirements)
             {
                 if (errorMap.TryGetValue(failedRequirement, out string errorMessage))
                 {
@@ -59,5 +61,21 @@ namespace Goose.API.Authorization
 
             throw new HttpStatusException(StatusCodes.Status403Forbidden, errorMsg);
         }
+
+        public static IList<ObjectId> RolesOfUser(params PropertyUser[] propertyUsers)
+        {
+            IList<ObjectId> roles = new List<ObjectId>();
+
+            if (propertyUsers is null) return roles;
+
+            foreach (var propertyUser in propertyUsers)
+            {
+                if (propertyUser is not null)
+                    roles = roles.ConcatOrSkip(propertyUser.RoleIds);
+            }
+
+            return roles;
+        }
+    
     }
 }

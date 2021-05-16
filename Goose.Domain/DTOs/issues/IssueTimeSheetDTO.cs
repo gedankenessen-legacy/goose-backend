@@ -7,6 +7,11 @@ namespace Goose.Domain.DTOs.Issues
 {
     public class IssueTimeSheetDTO
     {
+        public IssueTimeSheetDTO()
+        {
+
+        }
+
         public IssueTimeSheetDTO(TimeSheet timeSheet, User user)
         {
             Id = timeSheet.Id;
@@ -14,8 +19,6 @@ namespace Goose.Domain.DTOs.Issues
             End = timeSheet.End;
             User = new UserDTO(user);
         }
-
-        public IssueTimeSheetDTO() { }
 
         public TimeSheet ToTimeSheet()
         {

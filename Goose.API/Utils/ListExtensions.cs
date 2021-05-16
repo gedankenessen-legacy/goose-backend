@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Goose.API.Utils
 {
@@ -79,6 +80,15 @@ namespace Goose.API.Utils
                 }
             }
             return -1;
+        }
+    
+        public static IList<T> ConcatOrSkip<T>(this IList<T> list, IList<T> concatee)
+        {
+            if (list is null)
+                list = new List<T>();
+            if (concatee is null)
+                return list;
+            return list.Concat(concatee).ToList();
         }
     }
 }
