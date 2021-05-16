@@ -11,8 +11,10 @@ namespace Goose.Domain.DTOs.Issues
         public UserDTO Creator { get; set; }
         public string Type { get; set; }
         public string Data { get; set; }
+        public StateChangeDTO? StateChange { get; set; }
         public ObjectId? OtherTicketId { get; set; }
         public IList<string> Requirements { get; set; }
+        public double? ExpectedTime { get; set; }
         public DateTime CreatedAt { get; set; }
 
         public IssueConversationDTO() { }
@@ -25,7 +27,24 @@ namespace Goose.Domain.DTOs.Issues
             Data = issueConversation.Data;
             OtherTicketId = issueConversation.OtherTicketId;
             Requirements = issueConversation.Requirements;
+            ExpectedTime = issueConversation.ExpectedTime;
             CreatedAt = issueConversation.CreatedAt;
+            if (issueConversation.StateChange is StateChange stateChange)
+            {
+                StateChange = new StateChangeDTO(stateChange);
+            }
         }
+    }
+
+    public struct StateChangeDTO
+    {
+        public StateChangeDTO(StateChange stateChange)
+        {
+            Before = stateChange.Before;
+            After = stateChange.After;
+        }
+
+        public string Before { get; set; }
+        public string After { get; set; }
     }
 }
