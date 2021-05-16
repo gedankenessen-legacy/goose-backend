@@ -63,6 +63,11 @@ namespace Goose.Tests.Application.IntegrationTests
             return await Helper.GetIssueAsync(issueId);
         }
 
+        public async Task<HttpResponseMessage> AddIssueChild(ObjectId childId)
+        {
+            return await Helper.SetParentIssue(Issue.Id, childId);
+        }
+
 
         public void Dispose()
         {

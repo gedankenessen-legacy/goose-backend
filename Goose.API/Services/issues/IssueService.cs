@@ -26,10 +26,6 @@ namespace Goose.API.Services.Issues
         public Task<IssueDTO> Create(IssueDTO issueDto);
         public Task<IssueDTO> Update(IssueDTO issueDto, ObjectId id);
         public Task<bool> Delete(ObjectId id);
-        public Task<IssueDTO?> GetParent(ObjectId issueId);
-        public Task SetParent(ObjectId issueId, ObjectId parentId);
-        public Task RemoveParent(ObjectId issueId);
-
         public Task AssertNotArchived(Issue issue);
         Task<bool> UserCanSeeInternTicket(ObjectId projectId);
     }
@@ -114,6 +110,7 @@ namespace Goose.API.Services.Issues
                 TimeSheets = new List<TimeSheet>(),
                 AssignedUserIds = new List<ObjectId>(),
                 ParentIssueId = null,
+                ChildrenIssueIds = new List<ObjectId>(),
                 PredecessorIssueIds = new List<ObjectId>(),
                 SuccessorIssueIds = new List<ObjectId>()
             };
@@ -135,7 +132,7 @@ namespace Goose.API.Services.Issues
         {
             var issue = await _issueRepo.GetAsync(id);
 
-            if(issue is null)
+            if (issue is null)
                 throw new HttpStatusException(StatusCodes.Status400BadRequest, $"Das angeforderte Ticket mit der id {id} konnte nicht gefunden werden");
 
             await UserCanCreateOrUpdateIssue(issue.ProjectId);
@@ -203,62 +200,6 @@ namespace Goose.API.Services.Issues
             return (await _issueRepo.DeleteAsync(id)).DeletedCount > 0;
         }
 
-        public async Task<IssueDTO?> GetParent(ObjectId issueId)
-        {
-            var parentId = (await _issueRepo.GetAsync(issueId)).ParentIssueId;
-            if (parentId == null) return null;
-            return await Get(issueId);
-        }
-
-        public async Task SetParent(ObjectId issueId, ObjectId parentId)
-        {
-            var issue = await _issueRepo.GetAsync(issueId);
-            var parent = await _issueRepo.GetAsync(parentId);
-
-            if (issue.ProjectId != parent.ProjectId)
-            {
-                throw new HttpStatusException(StatusCodes.Status400BadRequest, "Issues müssen im selben Projekt sein");
-            }
-
-            issue.ParentIssueId = parentId;
-            await _issueRepo.UpdateAsync(issue);
-
-            // ConversationItem im Oberticket hinzufügen
-            parent.ConversationItems.Add(new IssueConversation()
-            {
-                Id = ObjectId.GenerateNewId(),
-                CreatorUserId = _httpContextAccessor.HttpContext.User.GetUserId(),
-                Type = IssueConversation.ChildIssueAddedType,
-                Data = null,
-                OtherTicketId = issueId,
-            });
-            await _issueRepo.UpdateAsync(parent);
-        }
-
-        public async Task RemoveParent(ObjectId issueId)
-        {
-            var issue = await _issueRepo.GetAsync(issueId);
-            var mightBeParentId = issue.ParentIssueId;
-            issue.ParentIssueId = null;
-            await _issueRepo.UpdateAsync(issue);
-
-            if (mightBeParentId is ObjectId parentId)
-            {
-                // ConversationItem im Oberticket hinzufügen
-                var parent = await _issueRepo.GetAsync(parentId);
-                parent.ConversationItems.Add(new IssueConversation()
-                {
-                    Id = ObjectId.GenerateNewId(),
-                    CreatorUserId = _httpContextAccessor.HttpContext.User.GetUserId(),
-                    Type = IssueConversation.ChildIssueRemovedType,
-                    Data = null,
-                    OtherTicketId = issueId,
-                });
-                await _issueRepo.UpdateAsync(parent);
-            }
-        }
-
-
         private async Task<StateDTO> GetState(ObjectId projectId, string stateName)
         {
             var states = await _stateService.GetStates(projectId);
@@ -308,7 +249,7 @@ namespace Goose.API.Services.Issues
                 ProjectRolesRequirement.ReadonlyEmployeeRequirement,
                 CompanyRolesRequirement.CompanyOwner
             };
-            
+
 
             // validate requirements with the appropriate handlers.
             var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, project, requirements);
@@ -321,9 +262,9 @@ namespace Goose.API.Services.Issues
             var project = await _projectRepository.GetAsync(projectId);
             Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
             {
-                { ProjectRolesRequirement.EmployeeRequirement, "You need to be the employee with write-rights in this project, in order to change the state" },
-                { ProjectRolesRequirement.LeaderRequirement, "You need to be the leader in this project, in order to change the state." },
-                { CompanyRolesRequirement.CompanyOwner, "You need to be a Owner of the Company, in order to change the state" }
+                {ProjectRolesRequirement.EmployeeRequirement, "You need to be the employee with write-rights in this project, in order to change the state"},
+                {ProjectRolesRequirement.LeaderRequirement, "You need to be the leader in this project, in order to change the state."},
+                {CompanyRolesRequirement.CompanyOwner, "You need to be a Owner of the Company, in order to change the state"}
             };
 
             // validate requirements with the appropriate handlers.
@@ -336,10 +277,13 @@ namespace Goose.API.Services.Issues
             var project = await _projectRepository.GetAsync(projectId);
             Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
             {
-                { ProjectRolesRequirement.EmployeeRequirement, "You need to be the employee with write-rights in this project, in order to create or update a issue." },
-                { ProjectRolesRequirement.LeaderRequirement, "You need to be the leader in this project, in order to create or update a issue." },
-                { ProjectRolesRequirement.CustomerRequirement, "You need to be a customer in this project, in order to create or update a issue." },
-                { CompanyRolesRequirement.CompanyOwner, "You need to be a Owner of the Company, in order to create or update a issue"}
+                {
+                    ProjectRolesRequirement.EmployeeRequirement,
+                    "You need to be the employee with write-rights in this project, in order to create or update a issue."
+                },
+                {ProjectRolesRequirement.LeaderRequirement, "You need to be the leader in this project, in order to create or update a issue."},
+                {ProjectRolesRequirement.CustomerRequirement, "You need to be a customer in this project, in order to create or update a issue."},
+                {CompanyRolesRequirement.CompanyOwner, "You need to be a Owner of the Company, in order to create or update a issue"}
             };
 
             // validate requirements with the appropriate handlers.

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Goose.API.Services.Issues;
 using Goose.Domain.DTOs.Issues;
-using Goose.API.Utils;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
@@ -34,12 +33,12 @@ namespace Goose.API.Controllers.IssuesControllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<IList<IssueDTODetailed>>> GetAll([FromRoute] ObjectId projectId,
             [FromQuery] bool getAssignedUsers = false, [FromQuery] bool getConversations = false,
-            [FromQuery] bool getTimeSheets = false, [FromQuery] bool getParent = false,
+            [FromQuery] bool getTimeSheets = false, [FromQuery] bool getParent = false, [FromQuery] bool getChildren = false,
             [FromQuery] bool getPredecessors = false, [FromQuery] bool getSuccessors = false,
             [FromQuery] bool getAll = false)
         {
             var res = _issueDetailedService.GetAllOfProject(projectId, getAssignedUsers, getConversations,
-                getTimeSheets, getParent, getPredecessors, getSuccessors, getAll);
+                getTimeSheets, getParent, getChildren, getPredecessors, getSuccessors, getAll);
             return Ok(await res);
         }
 
@@ -54,12 +53,12 @@ namespace Goose.API.Controllers.IssuesControllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<IssueDTODetailed>> Get([FromRoute] ObjectId projectId, [FromRoute] ObjectId id,
             [FromQuery] bool getAssignedUsers = false, [FromQuery] bool getConversations = false,
-            [FromQuery] bool getTimeSheets = false, [FromQuery] bool getParent = false,
+            [FromQuery] bool getTimeSheets = false, [FromQuery] bool getParent = false, [FromQuery] bool getChildren = false,
             [FromQuery] bool getPredecessors = false, [FromQuery] bool getSuccessors = false,
             [FromQuery] bool getAll = false)
         {
             var res = await _issueDetailedService.Get(projectId, id, getAssignedUsers,
-                getConversations, getTimeSheets, getParent, getPredecessors, getSuccessors, getAll);
+                getConversations, getTimeSheets, getParent, getChildren, getPredecessors, getSuccessors, getAll);
             return res == null ? NotFound() : Ok(res);
         }
 
