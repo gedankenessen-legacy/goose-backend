@@ -25,8 +25,6 @@ namespace Goose.Tests.Application.IntegrationTests.Message
                 IssueDTO issueCopy = base.GetIssueDTOCopy(client, helper);
                 issueCopy.IssueDetail.ExpectedTime = 1;
                 issueCopy.IssueDetail.RequirementsNeeded = false;
-                issueCopy.IssueDetail.StartDate = DateTime.Now;
-                issueCopy.IssueDetail.EndDate = DateTime.Now.AddSeconds(2);
                 return issueCopy;
             }
         }
@@ -324,20 +322,6 @@ namespace Goose.Tests.Application.IntegrationTests.Message
             var messageList = await response.Parse<IList<MessageDTO>>();
 
             Assert.IsTrue(messageList.Count == 1);
-        }
-
-        [Test]
-        public async Task IssueDeadLineTest()
-        {
-            using var helper = await new SimpleTestHelperBuilderMessage().Build();
-            await Task.Delay(2000);
-
-            var uri = $"/api/messages/{helper.User.Id}";
-            var response = await helper.client.GetAsync(uri);
-            Assert.IsTrue(response.IsSuccessStatusCode);
-            var messageList = await response.Parse<IList<MessageDTO>>();
-
-            Assert.IsTrue(messageList.Count == 2);
         }
 
         private Domain.Models.Message GetValidMessage(SimpleTestHelper helper)
