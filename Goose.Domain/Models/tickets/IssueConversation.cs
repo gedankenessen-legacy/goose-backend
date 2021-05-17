@@ -39,7 +39,7 @@ namespace Goose.Domain.Models.Issues
         public const string ChildIssueRemovedType = "Unterticket entfernt";
     }
 
-    public struct StateChange
+    public class StateChange
     {
         public string Before { get; set; }
         public string After { get; set; }

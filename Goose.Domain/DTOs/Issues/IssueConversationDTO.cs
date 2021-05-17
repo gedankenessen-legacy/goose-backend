@@ -11,7 +11,7 @@ namespace Goose.Domain.DTOs.Issues
         public UserDTO Creator { get; set; }
         public string Type { get; set; }
         public string Data { get; set; }
-        public StateChangeDTO? StateChange { get; set; }
+        public StateChangeDTO StateChange { get; set; }
         public ObjectId? OtherTicketId { get; set; }
         public IList<string> Requirements { get; set; }
         public double? ExpectedTime { get; set; }
@@ -36,7 +36,7 @@ namespace Goose.Domain.DTOs.Issues
         }
     }
 
-    public struct StateChangeDTO
+    public class StateChangeDTO
     {
         public StateChangeDTO(StateChange stateChange)
         {
