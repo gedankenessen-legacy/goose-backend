@@ -61,12 +61,6 @@ namespace Goose.API.EventHandler
             {
                 _runningDeadlines.Remove(Issue.Id);
             }
-
-            // TODO
-            // Look for Ticket in DB:
-            // Is the deadline still the same?
-
-            // If yes, stop the ticket, generate messages
             await CreateDeadLineReachedMessage();
         }
 
