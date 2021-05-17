@@ -13,9 +13,11 @@ using MongoDB.Bson;
 using System;
 using Microsoft.AspNetCore.Authorization;
 using Goose.API.Authorization.Requirements;
-using Microsoft.AspNetCore.Http;
 using Goose.API.Authorization;
 using Goose.API.Utils.Authentication;
+using Goose.Domain.Models;
+using Goose.API.Utils.Exceptions;
+using Microsoft.AspNetCore.Http;
 
 namespace Goose.API.Services.Issues
 {
@@ -33,13 +35,17 @@ namespace Goose.API.Services.Issues
     {
         private readonly IIssueRepository _issueRepo;
         private readonly IUserRepository _userRepo;
+        private readonly IMessageService _messageService;
+        private readonly IProjectRepository _projectRepository;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IAuthorizationService _authorizationService;
 
-        public IssueTimeSheetService(IIssueRepository issueRepo, IUserRepository userRepo, IHttpContextAccessor httpContextAccessor, IAuthorizationService authorizationService)
+        public IssueTimeSheetService(IIssueRepository issueRepo, IUserRepository userRepo, IMessageService messageService, IProjectRepository projectRepository, IHttpContextAccessor httpContextAccessor, IAuthorizationService authorizationService)
         {
             _issueRepo = issueRepo;
             _userRepo = userRepo;
+            _messageService = messageService;
+            _projectRepository = projectRepository;
             _httpContextAccessor = httpContextAccessor;
             _authorizationService = authorizationService;
         }
@@ -68,6 +74,7 @@ namespace Goose.API.Services.Issues
             timesheet.UserId = _httpContextAccessor.HttpContext.User.GetUserId();
             issue.TimeSheets.Add(timesheet);
             await _issueRepo.UpdateAsync(issue);
+            await CreateTimeExccededMessage(issueId, timeSheetDto);
             return await GetAsync(issueId, timesheet.Id);
         }
 
@@ -77,12 +84,20 @@ namespace Goose.API.Services.Issues
 
             // updating own timesheets require other requirements.
             if (_httpContextAccessor.HttpContext.User.GetUserId().Equals(timeSheetDto.User.Id))
-                await CanUserUpdateOwnTimeSheetAsync(issue); 
+            {
+                await CanUserUpdateOwnTimeSheetAsync(issue);
+            }
             else
+            {
                 await CanUserUpdateTimeSheetAsync(issue);
+                // Send Message to User
+                await CreateTimeChangedMessage(issue, timeSheetDto);
+            }
+                
 
             issue.TimeSheets.Replace(it => it.Id == timeSheetDto.Id, timeSheetDto.ToTimeSheet());
             await _issueRepo.UpdateAsync(issue);
+            await CreateTimeExccededMessage(issueId, timeSheetDto);
         }
 
         private async Task CanUserUpdateTimeSheetAsync(Issue issue)
@@ -119,6 +134,46 @@ namespace Goose.API.Services.Issues
         {
             var user = await _userRepo.GetAsync(timeSheet.UserId);
             return new IssueTimeSheetDTO(timeSheet, user);
+        }
+
+        private async Task CreateTimeExccededMessage(ObjectId issueId, IssueTimeSheetDTO timeSheetDto)
+        {
+            if (timeSheetDto.End == default(DateTime))
+                return;
+
+            var updatedIssue = await _issueRepo.GetAsync(issueId);
+            var timesheets = updatedIssue.TimeSheets.Where(x => !x.End.Equals(default(DateTime)));
+
+            TimeSpan? diffrence = new TimeSpan();
+
+            foreach (var timesheet in timesheets)
+                diffrence += timesheet.End - timesheet.Start;
+
+            if (updatedIssue.IssueDetail.ExpectedTime is null || TimeSpan.FromSeconds((double)updatedIssue.IssueDetail.ExpectedTime * 3600) > diffrence)
+                return;
+
+            await _messageService.CreateMessageAsync(new Message()
+            {
+                CompanyId = (await _projectRepository.GetAsync(updatedIssue.ProjectId)).CompanyId,
+                ProjectId = updatedIssue.ProjectId,
+                IssueId = updatedIssue.Id,
+                ReceiverUserId = updatedIssue.ClientId,
+                Type = MessageType.TimeExceeded,
+                Consented = false,
+            });
+        }
+
+        private async Task CreateTimeChangedMessage(Issue issue, IssueTimeSheetDTO timeSheetDto)
+        {
+            await _messageService.CreateMessageAsync(new Message()
+            {
+                CompanyId = (await _projectRepository.GetAsync(issue.ProjectId)).CompanyId,
+                ProjectId = issue.ProjectId,
+                IssueId = issue.Id,
+                ReceiverUserId = timeSheetDto.User.Id,
+                Type = MessageType.RecordedTimeChanged,
+                Consented = false,
+            });
         }
     }
 }

@@ -36,10 +36,10 @@ namespace Goose.API.Controllers.IssuesControllers
             return Ok(await _timeSheetService.GetAsync(issueId, id));
         }
 
-        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [HttpPost]
-        public async Task<ActionResult<IList<IssueTimeSheetDTO>>> Post([FromRoute] ObjectId issueId,
+        public async Task<ActionResult<IssueTimeSheetDTO>> Post([FromRoute] ObjectId issueId,
             [FromBody] IssueTimeSheetDTO timeSheetDto)
         {
             var res = await _timeSheetService.CreateAsync(issueId, timeSheetDto);
@@ -49,7 +49,7 @@ namespace Goose.API.Controllers.IssuesControllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [HttpPut("{id}")]
-        public async Task<ActionResult<IList<IssueTimeSheetDTO>>> Put([FromRoute] ObjectId issueId, [FromRoute] ObjectId id,
+        public async Task<ActionResult> Put([FromRoute] ObjectId issueId, [FromRoute] ObjectId id,
             [FromBody] IssueTimeSheetDTO timeSheetDto)
         {
             await _timeSheetService.UpdateAsync(issueId, id, timeSheetDto);

@@ -6,6 +6,7 @@ using Goose.Domain.Models.Companies;
 using Goose.Domain.Models.Projects;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Goose.Domain.Models;
 using MongoDB.Bson;
 using System.Collections.Generic;
 using System.Linq;

@@ -6,6 +6,7 @@ using Goose.API.Utils.Authentication;
 using Goose.API.Utils.Exceptions;
 using Goose.API.Utils.Validators;
 using Goose.Domain.DTOs.Issues;
+using Goose.Domain.Models;
 using Goose.Domain.Models.Identity;
 using Goose.Domain.Models.Issues;
 using Microsoft.AspNetCore.Authorization;
@@ -35,6 +36,7 @@ namespace Goose.API.Services
         private readonly IRoleRepository _roleRepository;
         private readonly IAuthorizationService _authorizationService;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IMessageService _messageService;
 
         public IssueConversationService(
             IIssueRepository issueRepository,
@@ -43,7 +45,8 @@ namespace Goose.API.Services
             IProjectRepository projectRepository,
             IRoleRepository roleRepository,
             IAuthorizationService authorizationService,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            IMessageService messageService)
         {
             _issueRepository = issueRepository;
             _issueService = issueService;
@@ -52,6 +55,7 @@ namespace Goose.API.Services
             _roleRepository = roleRepository;
             _authorizationService = authorizationService;
             _httpContextAccessor = httpContextAccessor;
+            _messageService = messageService;
         }
 
         /// <summary>
@@ -160,6 +164,9 @@ namespace Goose.API.Services
             // append the conversationItems with the new conversation item.
             conversationItems.Add(newConversation);
 
+            // send Message to Author
+            await CreateMessageForAuthor(issue);
+
             // update the issue and the conversationItems withit.
             await _issueRepository.UpdateAsync(issue);
 
@@ -221,6 +228,21 @@ namespace Goose.API.Services
             var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, issue, requirementsWithErrors.Keys);
             authorizationResult.ThrowErrorIfAllFailed(requirementsWithErrors);
             
+        }
+
+        private async Task CreateMessageForAuthor(Issue issue)
+        {
+            var project = await _projectRepository.GetAsync(issue.ProjectId);
+
+            await _messageService.CreateMessageAsync(new Message()
+            {
+                CompanyId = project.CompanyId,
+                ProjectId = project.Id,
+                IssueId = issue.Id,
+                ReceiverUserId = issue.AuthorId,
+                Type = MessageType.NewConversationItem,
+                Consented = false,
+            });
         }
     }
 }

@@ -14,6 +14,9 @@ using Goose.API.Utils.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Goose.API.Authorization.Requirements;
 using Goose.API.Authorization;
+using Goose.Domain.Models;
+using Goose.API.EventHandler;
+using System;
 
 namespace Goose.API.Services.Issues
 {
@@ -45,6 +48,7 @@ namespace Goose.API.Services.Issues
 
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IAuthorizationService _authorizationService;
+        private readonly IMessageService _messageService;
 
         public IssueService(
             IIssueRepository issueRepo,
@@ -53,7 +57,8 @@ namespace Goose.API.Services.Issues
             IUserRepository userRepository,
             IIssueRequestValidator issueValidator,
             IHttpContextAccessor httpContextAccessor,
-            IAuthorizationService authorizationService)
+            IAuthorizationService authorizationService,
+            IMessageService messageService)
         {
             _issueRepo = issueRepo;
             _stateService = stateService;
@@ -62,6 +67,7 @@ namespace Goose.API.Services.Issues
             _issueValidator = issueValidator;
             _httpContextAccessor = httpContextAccessor;
             _authorizationService = authorizationService;
+            _messageService = messageService;
         }
 
         public async Task<IList<IssueDTO>> GetAll()
@@ -95,6 +101,10 @@ namespace Goose.API.Services.Issues
 
             var issue = await CreateValidIssue(issueDto);
             await _issueRepo.CreateAsync(issue);
+
+            if(issue.IssueDetail.EndDate is not null && issue.IssueDetail.EndDate != default(DateTime))
+                await Scheduler.AddEvent(new IssueDeadlineEvent(await _projectRepository.GetAsync(issue.ProjectId), issue, _messageService, _issueRepo));
+
             return await Get(issue.Id);
         }
 
@@ -160,7 +170,10 @@ namespace Goose.API.Services.Issues
 
                     // if changing the state to cancelled, we need to validate the user requirments.
                     if (newState.Name.Equals(State.CancelledState))
-                        await UserCanDiscardIssue(old); 
+                    {
+                        await UserCanDiscardIssue(old);
+                        await CreateCanceledMessage(old);
+                    }
                     else
                         await UserCanChangeStatus(old);
 
@@ -186,6 +199,27 @@ namespace Goose.API.Services.Issues
             return old;
         }
 
+        private async Task CreateCanceledMessage(Issue issue)
+        {
+            var project = await _projectRepository.GetAsync(issue.ProjectId);
+            await CreateCanceledMessage(project.CompanyId, project.Id, issue.Id, issue.AuthorId);
+            await CreateCanceledMessage(project.CompanyId, project.Id, issue.Id, issue.ClientId);
+            await Task.WhenAll(issue.AssignedUserIds.Select(x => CreateCanceledMessage(project.CompanyId, project.Id, issue.Id, x)));
+        }
+
+        private async Task CreateCanceledMessage(ObjectId companyId, ObjectId projectId, ObjectId issueId, ObjectId userId)
+        {
+            await _messageService.CreateMessageAsync(new Message()
+            {
+                CompanyId = companyId,
+                ProjectId = projectId,
+                IssueId = issueId,
+                ReceiverUserId = userId,
+                Type = MessageType.IssueCancelled,
+                Consented = false
+            });
+        }
+
         private async Task<IssueDetail> GetUpdatedIssueDetail(Issue old, IssueDetail updated)
         {
             var details = old.IssueDetail;
@@ -195,15 +229,19 @@ namespace Goose.API.Services.Issues
             details.Description = updated.Description;
             details.Progress = updated.Progress;
             details.ExpectedTime = updated.ExpectedTime;
+            details.RelevantDocuments = updated.RelevantDocuments ?? details.RelevantDocuments;
             //nur in vorbereitungsphase
             var state = await _stateService.GetState(old.ProjectId, old.StateId);
             if (state.Phase.Equals(State.NegotiationPhase))
             {
                 details.StartDate = updated.StartDate;
                 details.EndDate = updated.EndDate;
-            }
 
-            details.RelevantDocuments = updated.RelevantDocuments ?? details.RelevantDocuments;
+                if (details.EndDate is not null && details.EndDate != default(DateTime))
+                    await Scheduler.AddEvent(new IssueDeadlineEvent(await _projectRepository.GetAsync(old.ProjectId), old, _messageService, _issueRepo));
+                else
+                    await IssueDeadlineEvent.CancelDeadLine(old.Id);
+            }
 
             return old.IssueDetail;
         }

@@ -6,6 +6,7 @@ using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using Goose.API;
 using Goose.API.Repositories;
+using Goose.API.Services;
 using Goose.API.Services.Issues;
 using Goose.Domain.DTOs;
 using Goose.Domain.DTOs.Issues;
@@ -36,9 +37,12 @@ namespace Goose.Tests.Application.IntegrationTests
         public IIssueRepository IssueRepository { get; }
         public IRoleRepository RoleRepository { get; }
         public IProjectRepository ProjectRepository { get; }
-        public IIssueRequirementService IssueRequirementService { get; }
 
-        public ICompanyRepository MyProperty { get; set; }
+
+        public IIssueRequirementService IssueRequirementService { get; }
+        public IMessageService MessageService { get; }
+
+        public string UsedPasswordForTests => "Test12345";
 
         public NewTestHelper(HttpClient client)
         {
@@ -54,6 +58,7 @@ namespace Goose.Tests.Application.IntegrationTests
             RoleRepository = scope.ServiceProvider.GetService<IRoleRepository>();
             IssueRepository = scope.ServiceProvider.GetService<IIssueRepository>();
             IssueRequirementService = scope.ServiceProvider.GetService<IIssueRequirementService>();
+            MessageService = scope.ServiceProvider.GetService<IMessageService>();
         }
 
         #region Generate
@@ -62,8 +67,10 @@ namespace Goose.Tests.Application.IntegrationTests
         {
             SignUpRequest signUpRequest = new SignUpRequest()
             {
-                Firstname = $"{new Random().NextDouble()}", Lastname = $"{new Random().NextDouble()}", CompanyName = $"{new Random().NextDouble()}",
-                Password = "Test12345"
+                Firstname = $"{new Random().NextDouble()}",
+                Lastname = $"{new Random().NextDouble()}",
+                CompanyName = $"{new Random().NextDouble()}",
+                Password = UsedPasswordForTests
             };
             return await GenerateCompany(signUpRequest);
         }
@@ -75,7 +82,7 @@ namespace Goose.Tests.Application.IntegrationTests
 
         public async Task<HttpResponseMessage> GenerateProject(ObjectId companyId)
         {
-            return await GenerateProject(companyId, new ProjectDTO {Name = $"{new Random().NextDouble()}"});
+            return await GenerateProject(companyId, new ProjectDTO { Name = $"{new Random().NextDouble()}" });
         }
 
         public async Task<HttpResponseMessage> GenerateProject(ObjectId companyId, ProjectDTO projectDto)
@@ -83,13 +90,13 @@ namespace Goose.Tests.Application.IntegrationTests
             return await CreateProject(companyId, projectDto);
         }
 
-        public async Task AddUserToProject(ObjectId projectId, ObjectId userId, params Role[] roles)
+        public async Task<HttpResponseMessage> AddUserToProject(ObjectId projectId, ObjectId userId, params Role[] roles)
         {
             var user = await UserRepository.GetAsync(userId);
-            await AddUserToProject(projectId, user, roles);
+            return await AddUserToProject(projectId, user, roles);
         }
 
-        private async Task AddUserToProject(ObjectId projectId, User user, params Role[] roles)
+        private async Task<HttpResponseMessage> AddUserToProject(ObjectId projectId, User user, params Role[] roles)
         {
             var uri = $"api/projects/{projectId}/users/{user.Id}";
             var addRequest = new PropertyUserDTO()
@@ -97,7 +104,7 @@ namespace Goose.Tests.Application.IntegrationTests
                 User = new UserDTO(user),
                 Roles = roles.Select(it => new RoleDTO(it)).ToList()
             };
-            await _client.PutAsync(uri, addRequest.ToStringContent());
+            return await _client.PutAsync(uri, addRequest.ToStringContent());
         }
 
 
@@ -108,7 +115,7 @@ namespace Goose.Tests.Application.IntegrationTests
             {
                 Firstname = $"{new Random().NextDouble()}",
                 Lastname = $"{new Random().NextDouble()}",
-                Password = "Test12345",
+                Password = UsedPasswordForTests,
                 Roles = roles.Select(it => new RoleDTO(it)).ToList()
             };
             return await GenerateUserAndSetToProject(companyId, projectId, login, roles);
@@ -176,6 +183,24 @@ namespace Goose.Tests.Application.IntegrationTests
             return await response.Content.Parse<SignInResponse>();
         }
 
+        public async Task<SignInResponse> CreateUserForCompany(ObjectId companyId, params Role[] roles)
+        {
+            var roleList = new List<RoleDTO>();
+
+            roleList.AddRange(roles.Select(x => new RoleDTO(x)));
+
+            if (roleList.Count == 0)
+                roleList.Add(new RoleDTO(Role.CustomerRole));
+
+            return await CreateUserForCompany(new PropertyUserLoginDTO()
+            {
+                Firstname = $"{new Random().NextDouble()}",
+                Lastname = $"{new Random().NextDouble()}",
+                Password = UsedPasswordForTests,
+                Roles = roleList
+            }, companyId);
+        }
+
         public async Task<HttpResponseMessage> CreateIssue(ObjectId projectId, IssueDTO issue)
         {
             var uri = $"api/projects/{projectId}/issues/";
@@ -189,6 +214,27 @@ namespace Goose.Tests.Application.IntegrationTests
             }
 
             return res;
+        }
+
+        public async Task<HttpResponseMessage> CreateStateInProject(ObjectId projectId, string stateName = "TestState", StateDTO newState = null)
+        {
+            newState ??= new StateDTO()
+            {
+                Name = stateName,
+                Phase = State.NegotiationPhase
+            };
+
+            return await _client.PostAsync($"api/projects/{projectId}/states", newState.ToStringContent());
+        }
+
+        public async Task<HttpResponseMessage> EditStateInProject(ObjectId projectId, StateDTO stateEdited)
+        {
+            return await _client.PutAsync($"api/projects/{projectId}/states/{stateEdited.Id}", stateEdited.ToStringContent());
+        }
+
+        public async Task<HttpResponseMessage> RemoveStateInProject(ObjectId projectId, StateDTO stateToDelete)
+        {
+            return await _client.DeleteAsync($"api/projects/{projectId}/states/{stateToDelete.Id}");
         }
 
         public async Task<SignInResponse> SignIn(SignInRequest signInRequest)
@@ -238,6 +284,15 @@ namespace Goose.Tests.Application.IntegrationTests
 
         #endregion
 
+        #region Set
+
+        public void SetAuth(SignInResponse signIn)
+        {
+            _client.Auth(signIn);
+        }
+
+        #endregion
+
         #region Utils
 
         public async Task<IssueDTO> CreateDefaultIssue(UserDTO user, ProjectDTO projectDto)
@@ -277,6 +332,7 @@ namespace Goose.Tests.Application.IntegrationTests
             var company = await CompanyRepository.GetAsync(companyId);
             if (company != null)
             {
+                await Task.WhenAll(company.Users.Select(it => MessageService.DeleteAllUserMessage(it.UserId)));
                 await Task.WhenAll(company.Users.Select(it => UserRepository.DeleteAsync(it.UserId)));
                 await CompanyRepository.DeleteAsync(company.Id);
             }
