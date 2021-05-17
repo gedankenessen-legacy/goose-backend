@@ -273,6 +273,30 @@ namespace Goose.Tests.Application.IntegrationTests.Message
         }
 
         [Test]
+        public async Task IssueCanceledMesageTest2()
+        {
+            using var helper = await new SimpleTestHelperBuilderMessage().Build();
+            var user = helper.User;
+            var project = helper.Project;
+
+            var issue = await helper.Helper.GetIssueAsync(helper.Issue.Id);
+            var uri = $"/api/projects/{project.Id}/issues/{issue.Id}";
+
+            var newState = await helper.Helper.GetStateByNameAsync(issue.ProjectId, State.BlockedState);
+            var issueDTO = new IssueDTO(issue, newState, project, user, user);
+
+            var response = await helper.client.PutAsync(uri, issueDTO.ToStringContent());
+            Assert.IsTrue(response.IsSuccessStatusCode);
+
+            uri = $"/api/messages/{helper.User.Id}";
+            response = await helper.client.GetAsync(uri);
+            Assert.IsTrue(response.IsSuccessStatusCode);
+            var messageList = await response.Parse<IList<MessageDTO>>();
+
+            Assert.IsTrue(messageList.Count == 0);
+        }
+
+        [Test]
         public async Task IssueConversationTest()
         {
             using var helper = await new SimpleTestHelperBuilderMessage().Build();

@@ -1,4 +1,5 @@
-﻿using Goose.API.Services;
+﻿using Goose.API.Repositories;
+using Goose.API.Services;
 using Goose.Domain.Models;
 using Goose.Domain.Models.Issues;
 using Goose.Domain.Models.Projects;
@@ -10,22 +11,25 @@ using System.Threading.Tasks;
 
 namespace Goose.API.EventHandler
 {
-    public sealed class TicketDeadlineEvent : IEvent
+    public sealed class IssueDeadlineEvent : IEvent
     {
         private static readonly object _runningDeadlinesLock = new object();
         private static readonly Dictionary<ObjectId, EventCanceller> _runningDeadlines = new Dictionary<ObjectId, EventCanceller>();
-        private IMessageService _messageService;
+        private readonly IIssueRepository _issueRepository;
+        private readonly IMessageService _messageService;
+        
 
         public Issue Issue { get; }
         public Project Project { get; }
         public DateTime Time { get; }
 
-        public TicketDeadlineEvent(Project project, Issue issue, IMessageService messageService)
+        public IssueDeadlineEvent(Project project, Issue issue, IMessageService messageService, IIssueRepository issueRepository)
         {
             Project = project;
             Time = (DateTime)issue.IssueDetail.EndDate;
             Issue = issue;
             _messageService = messageService;
+            _issueRepository = issueRepository;
         }
 
         public async Task OnStarted(EventExecutor executor)
@@ -76,10 +80,30 @@ namespace Goose.API.EventHandler
             return Task.CompletedTask;
         }
 
+        public static async Task CancelDeadLine(ObjectId issueId)
+        {
+            EventCanceller? oldCanceller;
+
+            lock (_runningDeadlinesLock)
+            {
+                _runningDeadlines.TryGetValue(issueId, out oldCanceller);
+            }
+
+            // old canceller cannot be awaited in the lock
+            if (oldCanceller != null)
+                await oldCanceller.Cancel();
+        }
+
         private async Task CreateDeadLineReachedMessage()
         {
-            await CreateDeadLineReachedMessage(Project.CompanyId, Project.Id, Issue.Id, Issue.AuthorId);
-            await CreateDeadLineReachedMessage(Project.CompanyId, Project.Id, Issue.Id, Issue.ClientId);
+            var issue = await _issueRepository.GetAsync(Issue.Id);
+
+            if (issue is null)
+                return;
+
+            await CreateDeadLineReachedMessage(Project.CompanyId, Project.Id, Issue.Id, issue.AuthorId);
+            await CreateDeadLineReachedMessage(Project.CompanyId, Project.Id, Issue.Id, issue.ClientId);
+            await Task.WhenAll(issue.AssignedUserIds.Select(x => CreateDeadLineReachedMessage(Project.CompanyId, Project.Id, Issue.Id, x)));
         }
 
         private async Task CreateDeadLineReachedMessage(ObjectId companyId, ObjectId projectId, ObjectId issueId, ObjectId userId)

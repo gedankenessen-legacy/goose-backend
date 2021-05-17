@@ -103,7 +103,7 @@ namespace Goose.API.Services.Issues
             await _issueRepo.CreateAsync(issue);
 
             if(issue.IssueDetail.EndDate is not null && issue.IssueDetail.EndDate != default(DateTime))
-                await Scheduler.AddEvent(new TicketDeadlineEvent(await _projectRepository.GetAsync(issue.ProjectId), issue, _messageService));
+                await Scheduler.AddEvent(new IssueDeadlineEvent(await _projectRepository.GetAsync(issue.ProjectId), issue, _messageService, _issueRepo));
 
             return await Get(issue.Id);
         }
@@ -233,7 +233,9 @@ namespace Goose.API.Services.Issues
                 details.EndDate = updated.EndDate;
 
                 if (details.EndDate is not null && details.EndDate != default(DateTime))
-                    await Scheduler.AddEvent(new TicketDeadlineEvent(await _projectRepository.GetAsync(old.ProjectId), old, _messageService));
+                    await Scheduler.AddEvent(new IssueDeadlineEvent(await _projectRepository.GetAsync(old.ProjectId), old, _messageService, _issueRepo));
+                else
+                    await IssueDeadlineEvent.CancelDeadLine(old.Id);
             }
 
             return old.IssueDetail;
