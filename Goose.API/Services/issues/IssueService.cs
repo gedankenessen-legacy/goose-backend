@@ -173,6 +173,11 @@ namespace Goose.API.Services.Issues
                         CreatorUserId = _httpContextAccessor.HttpContext.User.GetUserId(),
                         Type = IssueConversation.StateChangeType,
                         Data = $"Status von {oldState.Name} zu {newState.Name} geändert.",
+                        StateChange = new StateChange()
+                        {
+                            Before = oldState.Name,
+                            After = newState.Name,
+                        }
                     });
                 }
             }

@@ -71,6 +71,7 @@ namespace Goose.API.Services.issues
                 Type = IssueConversation.SummaryAcceptedType,
                 Data = "",
                 Requirements = issue.IssueDetail.Requirements.Select(x => x.Requirement).ToList(),
+                ExpectedTime = issue.IssueDetail.ExpectedTime
             });
 
             issue.ConversationItems.Add(new IssueConversation()
@@ -79,6 +80,11 @@ namespace Goose.API.Services.issues
                 CreatorUserId = _httpContextAccessor.HttpContext.User.GetUserId(),
                 Type = IssueConversation.StateChangeType,
                 Data = $"Status von {State.NegotiationState} zu {State.WaitingState} geändert.",
+                StateChange = new()
+                {
+                    Before = State.NegotiationState,
+                    After = State.WaitingState
+                }
             });
             await _issueRepository.UpdateAsync(issue);
         }
@@ -104,6 +110,7 @@ namespace Goose.API.Services.issues
                 Type = IssueConversation.SummaryCreatedType,
                 Data = "",
                 Requirements = issue.IssueDetail.Requirements.Select(x => x.Requirement).ToList(),
+                ExpectedTime = issue.IssueDetail.ExpectedTime
             });
             await _issueRepository.UpdateAsync(issue);
 
@@ -131,6 +138,7 @@ namespace Goose.API.Services.issues
                 Type = IssueConversation.SummaryDeclinedType,
                 Data = "",
                 Requirements = issue.IssueDetail.Requirements.Select(x => x.Requirement).ToList(),
+                ExpectedTime = issue.IssueDetail.ExpectedTime
             });
             await _issueRepository.UpdateAsync(issue);
         }
