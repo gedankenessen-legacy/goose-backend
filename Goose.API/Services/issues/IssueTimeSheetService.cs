@@ -100,6 +100,17 @@ namespace Goose.API.Services.Issues
             await CreateTimeExccededMessage(issueId, timeSheetDto);
         }
 
+        private async Task CanUserReadTimeSheetsAsync(Issue issue)
+        {
+            var requirementsWithErrors = new Dictionary<IAuthorizationRequirement, string>()
+            {
+                { IssueOperationRequirments.ReadTimeSheets, "You are not allowed to read timesheets" }
+            };
+
+            var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, issue, requirementsWithErrors.Keys);
+            authorizationResult.ThrowErrorForFailedRequirements(requirementsWithErrors);
+        }
+
         private async Task CanUserUpdateTimeSheetAsync(Issue issue)
         {
             Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
@@ -138,7 +149,7 @@ namespace Goose.API.Services.Issues
 
         private async Task CreateTimeExccededMessage(ObjectId issueId, IssueTimeSheetDTO timeSheetDto)
         {
-            if (timeSheetDto.End == default(DateTime))
+            if (timeSheetDto.End == default)
                 return;
 
             var updatedIssue = await _issueRepo.GetAsync(issueId);
