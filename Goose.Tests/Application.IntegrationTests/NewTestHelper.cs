@@ -26,10 +26,9 @@ namespace Goose.Tests.Application.IntegrationTests
     {
         private readonly HttpClient _client;
 
-        private SignInResponse LoggedInUser { get; set; }
-        private List<ObjectId> _companies = new();
-        private List<ObjectId> _projects = new();
-        private List<ObjectId> _issues = new();
+        private readonly List<ObjectId> _companies = new();
+        private readonly List<ObjectId> _projects = new();
+        private readonly List<ObjectId> _issues = new();
 
 
         public ICompanyRepository CompanyRepository { get; }
