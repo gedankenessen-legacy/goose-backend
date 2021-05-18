@@ -9,6 +9,7 @@ using MongoDB.Driver;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System;
 
 namespace Goose.API.Repositories
 {
@@ -19,6 +20,7 @@ namespace Goose.API.Repositories
         public Task<Issue> GetIssueByIdAsync(string issueId);
         public Task CreateOrUpdateConversationItemAsync(string issueId, IssueConversation issueConversation);
         public Task<IssueRequirement> GetRequirementByIdAsync(ObjectId issueId, ObjectId requirementId);
+        public Task StopAllTimeSheetsOfUserAsync(ObjectId userId);
     }
 
     public class IssueRepository : Repository<Issue>, IIssueRepository
@@ -100,6 +102,22 @@ namespace Goose.API.Repositories
                 throw new HttpStatusException(StatusCodes.Status404NotFound, $"No Requirement found with Id={requirementId}.");
 
             return req;
+        }
+
+        public async Task StopAllTimeSheetsOfUserAsync(ObjectId userId)
+        {
+            // I can't think of a better way right now that just checking all timesheets.
+
+            var update = Builders<Issue>.Update.Set("timeSheets.$[matches].end", DateTime.Now);
+
+            ArrayFilterDefinition<BsonDocument> filter = new BsonDocument("matches.userId", userId);
+
+            var options = new UpdateOptions()
+            {
+                ArrayFilters = new[] { filter },
+            };
+
+            await _dbCollection.UpdateManyAsync(_ => true, update, options);
         }
     }
 }

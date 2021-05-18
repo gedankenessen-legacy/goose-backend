@@ -74,13 +74,18 @@ namespace Goose.API.Services.Issues
         {
             var issue = await _issueRepo.GetAsync(issueId);
 
-            if ((await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, issue, IssueOperationRequirments.CreateOwnTimeSheets)).Succeeded is false)
+            var user = _httpContextAccessor.HttpContext.User;
+            var userId = user.GetUserId();
+
+            if ((await _authorizationService.AuthorizeAsync(user, issue, IssueOperationRequirments.CreateOwnTimeSheets)).Succeeded is false)
                 throw new HttpStatusException(StatusCodes.Status403Forbidden, "You are not allowed to create a time sheet.");
             var timesheet = timeSheetDto.ToTimeSheet();
 
             timesheet.Id = ObjectId.GenerateNewId();
-            timesheet.UserId = _httpContextAccessor.HttpContext.User.GetUserId();
+            timesheet.UserId = userId;
             issue.TimeSheets.Add(timesheet);
+
+            await _issueRepo.StopAllTimeSheetsOfUserAsync(userId);
             await _issueRepo.UpdateAsync(issue);
             await CreateTimeExccededMessage(issueId, timeSheetDto);
             return await GetAsync(issueId, timesheet.Id);
