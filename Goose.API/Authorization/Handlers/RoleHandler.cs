@@ -1,11 +1,8 @@
 ﻿using Goose.API.Authorization.Requirements;
 using Goose.API.Utils.Authentication;
 using Goose.Domain.Models;
-using Goose.Domain.Models.Companies;
-using Goose.Domain.Models.Projects;
 using Microsoft.AspNetCore.Authorization;
 using MongoDB.Bson;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -21,9 +18,6 @@ namespace Goose.API.Authorization.Handlers
             IList<PropertyUser> propertyUsers = resource.Users;
 
             PropertyUser reqestedUser = propertyUsers?.FirstOrDefault(pu => pu.UserId.Equals(userId));
-
-            if (reqestedUser is null)
-                context.Fail();
 
             // if user complies the required role.
             if (reqestedUser is not null && reqestedUser.RoleIds.Any(ri => ri.Equals(requiredRoleId)))

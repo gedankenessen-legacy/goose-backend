@@ -6,6 +6,7 @@ using Goose.API.Utils.Authentication;
 using Goose.API.Utils.Exceptions;
 using Goose.API.Utils.Validators;
 using Goose.Domain.DTOs.Issues;
+using Goose.Domain.Models;
 using Goose.Domain.Models.Identity;
 using Goose.Domain.Models.Issues;
 using Microsoft.AspNetCore.Authorization;
@@ -35,6 +36,7 @@ namespace Goose.API.Services
         private readonly IRoleRepository _roleRepository;
         private readonly IAuthorizationService _authorizationService;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IMessageService _messageService;
 
         public IssueConversationService(
             IIssueRepository issueRepository,
@@ -43,7 +45,8 @@ namespace Goose.API.Services
             IProjectRepository projectRepository,
             IRoleRepository roleRepository,
             IAuthorizationService authorizationService,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            IMessageService messageService)
         {
             _issueRepository = issueRepository;
             _issueService = issueService;
@@ -52,6 +55,7 @@ namespace Goose.API.Services
             _roleRepository = roleRepository;
             _authorizationService = authorizationService;
             _httpContextAccessor = httpContextAccessor;
+            _messageService = messageService;
         }
 
         /// <summary>
@@ -62,7 +66,7 @@ namespace Goose.API.Services
         public async Task<IList<IssueConversationDTO>> GetConversationsFromIssueAsync(string issueId)
         {
             var issue = await _issueRepository.GetIssueByIdAsync(issueId);
-            await AssertUserCanReadConversation(issue.ProjectId);
+            await AssertUserCanReadConversation(issue);
             var conversationItems = issue.ConversationItems;
 
             // if property is null, set default value => empty array of conversations which do not be saved to the database.
@@ -112,7 +116,7 @@ namespace Goose.API.Services
             ObjectId conversationOid = Validators.ValidateObjectId(conversationId, "Cannot parse conversation string id to a valid object id.");
 
             var issue = await _issueRepository.GetIssueByIdAsync(issueId);
-            await AssertUserCanReadConversation(issue.ProjectId);
+            await AssertUserCanReadConversation(issue);
 
             var conversationItems = issue.ConversationItems;
 
@@ -136,7 +140,7 @@ namespace Goose.API.Services
         public async Task<IssueConversationDTO> CreateNewIssueConversationAsync(string issueId, IssueConversationDTO conversationItem)
         {
             var issue = await _issueRepository.GetIssueByIdAsync(issueId);
-            await AssertUserCanWriteConversation(issue.ProjectId);
+            await AssertUserCanWriteConversation(issue);
 
             await _issueService.AssertNotArchived(issue);
 
@@ -160,6 +164,9 @@ namespace Goose.API.Services
             // append the conversationItems with the new conversation item.
             conversationItems.Add(newConversation);
 
+            // send Message to Author
+            await CreateMessageForAuthor(issue);
+
             // update the issue and the conversationItems withit.
             await _issueRepository.UpdateAsync(issue);
 
@@ -177,7 +184,7 @@ namespace Goose.API.Services
             ObjectId conversationItemOid = Validators.ValidateObjectId(conversationItemId, "Provided conversation id is no valid ObjectId.");
 
             var issue = await _issueRepository.GetIssueByIdAsync(issueId);
-            await AssertUserCanWriteConversation(issue.ProjectId);
+            await AssertUserCanWriteConversation(issue);
 
             if (conversationItemOid.Equals(conversationItem.Id) is false)
                 throw new HttpStatusException(StatusCodes.Status400BadRequest, "Id missmatch.");
@@ -196,43 +203,46 @@ namespace Goose.API.Services
             await _issueRepository.CreateOrUpdateConversationItemAsync(issueId, issueConversationModel);
         }
 
-        private async Task AssertUserCanWriteConversation(ObjectId projectId)
+        private async Task AssertUserCanWriteConversation(Issue issue)
         {
-            
-            var project = await _projectRepository.GetAsync(projectId);
 
             Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
             {
-                { ProjectRolesRequirement.EmployeeRequirement, "You need to be the employee with write-rights in this project, in order to write a conversation." },
-                { ProjectRolesRequirement.LeaderRequirement, "You need to be the leader in this project, in order to write a conversation." },
-                { ProjectRolesRequirement.CustomerRequirement, "You need to be the customer of this project, in order to write a conversation." },
-                { CompanyRolesRequirement.CompanyOwner, "You need to be the ComponyOwner of the Company, in order to write a conversation to this Project" }
+                { IssueOperationRequirments.WriteMessage, "Your are not allowed to write a message." }
             };
 
             // validate requirements with the appropriate handlers.
-            var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, project, requirementsWithErrors.Keys);
+            var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, issue, requirementsWithErrors.Keys);
+            authorizationResult.ThrowErrorForFailedRequirements(requirementsWithErrors);
+        }
+
+        private async Task AssertUserCanReadConversation(Issue issue)
+        {
+
+            Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
+            {
+                { IssueOperationRequirments.ReadMessages, "Your are not allowed to read a message." }
+            };
+
+            // validate requirements with the appropriate handlers.
+            var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, issue, requirementsWithErrors.Keys);
             authorizationResult.ThrowErrorIfAllFailed(requirementsWithErrors);
             
         }
 
-        private async Task AssertUserCanReadConversation(ObjectId projectId)
+        private async Task CreateMessageForAuthor(Issue issue)
         {
-            
-            var project = await _projectRepository.GetAsync(projectId);
+            var project = await _projectRepository.GetAsync(issue.ProjectId);
 
-            Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
+            await _messageService.CreateMessageAsync(new Message()
             {
-                { ProjectRolesRequirement.ReadonlyEmployeeRequirement, "You need to be the employee with read-rights in this project, in order to see a conversation." },
-                { ProjectRolesRequirement.EmployeeRequirement, "You need to be the employee with write-rights in this project, in order to see a conversation." },
-                { ProjectRolesRequirement.LeaderRequirement, "You need to be the leader in this project, in order to see a conversation." },
-                { ProjectRolesRequirement.CustomerRequirement, "You need to be the customer of this project, in order to see a conversation." },
-                { CompanyRolesRequirement.CompanyOwner, "You need to be the ComponyOwner of the Company, in order to see a conversation to this Project" }
-            };
-
-            // validate requirements with the appropriate handlers.
-            var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, project, requirementsWithErrors.Keys);
-            authorizationResult.ThrowErrorIfAllFailed(requirementsWithErrors);
-            
+                CompanyId = project.CompanyId,
+                ProjectId = project.Id,
+                IssueId = issue.Id,
+                ReceiverUserId = issue.AuthorId,
+                Type = MessageType.NewConversationItem,
+                Consented = false,
+            });
         }
     }
 }

@@ -9,7 +9,7 @@ using Goose.Domain.Models.Projects;
 using MongoDB.Bson;
 using NUnit.Framework;
 
-namespace Goose.Tests.Application.IntegrationTests.issues
+namespace Goose.Tests.Application.IntegrationTests.Issues
 {
     [TestFixture]
     [Parallelizable(ParallelScope.All)]

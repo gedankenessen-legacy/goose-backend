@@ -111,10 +111,6 @@ namespace Goose.API.Services
 
             var companyDTO = (CompanyDTO)company;
 
-            //! @Madara789: CompanyDTO does not have property Users, please check
-            //companyDTO.User = (await _companyUserService.GetCompanyUsersAsync(company.Id.ToString()))
-            //        .FirstOrDefault(x => x.Roles.FirstOrDefault(companyRole => companyRole.Name.Equals("Firma")) is not null);
-
             return companyDTO;
         }
 

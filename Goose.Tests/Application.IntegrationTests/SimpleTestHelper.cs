@@ -5,6 +5,7 @@ using Goose.API;
 using Goose.Domain.DTOs;
 using Goose.Domain.DTOs.Issues;
 using Goose.Domain.Models.Auth;
+using Goose.Domain.Models.Identity;
 using Goose.Domain.Models.Issues;
 using Microsoft.AspNetCore.Mvc.Testing;
 using MongoDB.Bson;
@@ -56,6 +57,12 @@ namespace Goose.Tests.Application.IntegrationTests
             copy.Id = ObjectId.Empty;
 
             return await Helper.GenerateIssue(Project, copy);
+        }
+
+        public async Task<ObjectId> GenerateUserAndSetToProject(params Role[] roles)
+        {
+            client.Auth(SignIn);
+            return await Helper.GenerateUserAndSetToProject(Company.Id, Project.Id, roles);
         }
 
         public async Task<Issue> GetIssueAsync(ObjectId issueId)
