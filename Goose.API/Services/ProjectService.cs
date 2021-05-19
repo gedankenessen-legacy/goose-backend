@@ -25,26 +25,22 @@ namespace Goose.API.Services
         Task<ProjectDTO> GetProject(ObjectId projectId);
     }
 
-    public class ProjectService : IProjectService
+    public class ProjectService : AuthorizableService, IProjectService
     {
         private readonly IProjectRepository _projectRepository;
         private readonly ICompanyRepository _companyRepository;
         private readonly IRoleRepository _roleRepository;
-        private readonly IAuthorizationService _authorizationService;
-        private readonly IHttpContextAccessor _httpContextAccessor;
 
         public ProjectService(
             IProjectRepository projectRepository,
             ICompanyRepository companyRepository,
             IRoleRepository roleRepository,
             IAuthorizationService authorizationService,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor) : base (httpContextAccessor, authorizationService)
         {
             _projectRepository = projectRepository;
             _companyRepository = companyRepository;
             _roleRepository = roleRepository;
-            _authorizationService = authorizationService;
-            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<ProjectDTO> CreateProjectAsync(ObjectId companyId, ProjectDTO requestedProject)
@@ -55,7 +51,7 @@ namespace Goose.API.Services
             if (company is null)
                 throw new HttpStatusException(StatusCodes.Status400BadRequest, "Company not found.");
 
-            await AuthorizeCreationAsync(company);
+            await AuthenticateRequirmentAsync(company, CompanyRolesRequirement.CompanyOwner, "You need to be the owner of this company, in order to create a project.");
 
             var newProject = new Project()
             {
@@ -71,20 +67,6 @@ namespace Goose.API.Services
             await _projectRepository.CreateAsync(newProject);
 
             return new ProjectDTO(newProject);
-        }
-
-        private async Task<bool> AuthorizeCreationAsync(Company company)
-        {
-            // Dict with the requirement as key und the error message as value.
-            Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
-            {
-                { CompanyRolesRequirement.CompanyOwner, "You need to be the owner of this company, in order to create a project."},
-            };
-
-            // validate requirements with the appropriate handlers.
-            (await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, company, requirementsWithErrors.Keys)).ThrowErrorForFailedRequirements(requirementsWithErrors);
-
-            return true;
         }
 
         private IList<State> GetDefaultStates()

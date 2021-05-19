@@ -74,6 +74,14 @@ namespace Goose.API.Authorization.Handlers
             Dictionary<OperationAuthorizationRequirement, Func<IList<ObjectId>, bool>> ValidateUserPermissions = new()
             {
                 {
+                    IssueOperationRequirments.Create,
+                    x => x.Contains(Role.CustomerRole.Id) || x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
+                },
+                {
+                    IssueOperationRequirments.Edit,
+                    x => x.Contains(Role.CustomerRole.Id) || x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
+                },
+                {
                     IssueOperationRequirments.WriteMessage,
                     x => x.Contains(Role.CustomerRole.Id) || x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
                 },
@@ -131,6 +139,10 @@ namespace Goose.API.Authorization.Handlers
             Dictionary<OperationAuthorizationRequirement, Func<IList<ObjectId>, bool>> ValidateUserPermissions = new()
             {
                 {
+                    IssueOperationRequirments.Edit,
+                    x => x.Contains(Role.CustomerRole.Id) || x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
+                },
+                {
                     IssueOperationRequirments.WriteMessage,
                     x => x.Contains(Role.CustomerRole.Id) || x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
                 },
@@ -176,6 +188,10 @@ namespace Goose.API.Authorization.Handlers
         {
             Dictionary<OperationAuthorizationRequirement, Func<IList<ObjectId>, bool>> ValidateUserPermissions = new()
             {
+                {
+                    IssueOperationRequirments.Edit,
+                    x => x.Contains(Role.CustomerRole.Id) || x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
+                },
                 {
                     IssueOperationRequirments.WriteMessage,
                     x => x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
