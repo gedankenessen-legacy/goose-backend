@@ -17,7 +17,6 @@ namespace Goose.Domain.Models
 
     public enum MessageType
     {
-        TimeSkipped,
         TimeExceeded,
         IssueCancelled,
         RecordedTimeChanged,
