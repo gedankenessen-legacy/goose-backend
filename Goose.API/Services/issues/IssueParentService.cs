@@ -1,4 +1,7 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
+using Goose.API.Authorization;
+using Goose.API.Authorization.Requirements;
 using Goose.API.Repositories;
 using Goose.API.Services.Issues;
 using Goose.API.Utils.Authentication;
@@ -49,6 +52,8 @@ namespace Goose.API.Services.issues
             var issue = await _issueRepository.GetAsync(issueId);
             var parent = await _issueRepository.GetAsync(parentId);
 
+            await UserCanAddParent(issue);
+
             if (issue.ProjectId != parent.ProjectId)
                 throw new HttpStatusException(StatusCodes.Status400BadRequest, "Issues müssen im selben Projekt sein");
             var parentState = await _stateService.GetState(parent.ProjectId, parent.Id);
@@ -71,6 +76,17 @@ namespace Goose.API.Services.issues
                 OtherTicketId = issueId,
             });
             await _issueRepository.UpdateAsync(parent);
+        }
+
+        private async Task UserCanAddParent(Issue issue)
+        {
+            Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
+            {
+                {IssueOperationRequirments.AddSubTicket, "Your are not allowed to add a parent to this issue."}
+            };
+
+            var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, issue, requirementsWithErrors.Keys);
+            authorizationResult.ThrowErrorForFailedRequirements(requirementsWithErrors);
         }
 
         public async Task RemoveParent(ObjectId issueId)

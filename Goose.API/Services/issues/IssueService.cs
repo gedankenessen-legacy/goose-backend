@@ -335,18 +335,6 @@ namespace Goose.API.Services.Issues
             var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, issue, requirementsWithErrors.Keys);
             authorizationResult.ThrowErrorForFailedRequirements(requirementsWithErrors);
         }
-
-        private async Task UserCanAddParent(Issue issue)
-        {
-            Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
-            {
-                { IssueOperationRequirments.AddSubTicket, "Your are not allowed to add a parent to this issue." }
-            };
-
-            var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, issue, requirementsWithErrors.Keys);
-            authorizationResult.ThrowErrorForFailedRequirements(requirementsWithErrors);
-        }
-
         private async Task UserCanCreateOrUpdateIssue(ObjectId projectId)
         {
             var project = await _projectRepository.GetAsync(projectId);
