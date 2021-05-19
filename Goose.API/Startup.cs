@@ -58,35 +58,33 @@ namespace Goose.API
             });
 
             services.AddAuthentication(opt =>
-            {
-                opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            })
-            .AddJwtBearer(opt =>
-            {
-                opt.RequireHttpsMetadata = false;
-                opt.SaveToken = true;
-                opt.TokenValidationParameters = new TokenValidationParameters
                 {
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_configuration.GetSection(nameof(TokenSettings)).Get<TokenSettings>().Secret)),
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
-                };
-            });
+                    opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                    opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                })
+                .AddJwtBearer(opt =>
+                {
+                    opt.RequireHttpsMetadata = false;
+                    opt.SaveToken = true;
+                    opt.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateIssuerSigningKey = true,
+                        IssuerSigningKey =
+                            new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_configuration.GetSection(nameof(TokenSettings)).Get<TokenSettings>().Secret)),
+                        ValidateIssuer = false,
+                        ValidateAudience = false,
+                    };
+                });
 
-            services.AddControllers(options =>
-            {
-                options.ModelBinderProviders.Insert(0, new ObjectIdBinderProvider());
-            }).AddJsonOptions(options =>
+            services.AddControllers(options => { options.ModelBinderProviders.Insert(0, new ObjectIdBinderProvider()); }).AddJsonOptions(options =>
             {
                 options.JsonSerializerOptions.Converters.Add(new ObjectIdJsonConverter());
             });
 
             services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "Goose.API", Version = "v1" });
-                
+                c.SwaggerDoc("v1", new OpenApiInfo {Title = "Goose.API", Version = "v1"});
+
                 c.MapType<ObjectId>(() => new OpenApiSchema
                 {
                     Type = "string",
@@ -102,15 +100,16 @@ namespace Goose.API
                     BearerFormat = "JWT",
                     Scheme = "Bearer"
                 });
-                c.AddSecurityRequirement(new OpenApiSecurityRequirement {
+                c.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
                     {
                         new OpenApiSecurityScheme
                         {
                             Reference = new OpenApiReference
-                                {
-                                    Type = ReferenceType.SecurityScheme,
-                                    Id = "Bearer"
-                                }
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            }
                         },
                         Array.Empty<string>()
                     }
@@ -130,6 +129,7 @@ namespace Goose.API
         {
             services.AddScoped<IAuthorizationHandler, CompanyRoleHandler>();
             services.AddScoped<IAuthorizationHandler, ProjectRoleHandler>();
+            services.AddScoped<IAuthorizationHandler, IssueOperationAuthorizationHandler>();
         }
 
         /// <summary>
@@ -183,7 +183,7 @@ namespace Goose.API
             services.AddScoped<IIssueChildrenService, IssueChildrenService>();
             services.AddScoped<IIssueParentService, IssueParentService>();
             services.AddScoped<IMessageService, MessageService>();
-
+            services.AddScoped<IIssueAssociationHelper, IssueAssociationHelper>();
             services.AddHttpContextAccessor();
         }
 

@@ -29,15 +29,17 @@ namespace Goose.API.Services.issues
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IAuthorizationService _authorizationService;
         private readonly IStateService _stateService;
+        private readonly IIssueAssociationHelper _associationHelper;
 
         public IssueParentService(IIssueService issueService, IIssueRepository issueRepository, IAuthorizationService authorizationService,
-            IHttpContextAccessor httpContextAccessor, IStateService stateService)
+            IHttpContextAccessor httpContextAccessor, IStateService stateService, IIssueAssociationHelper associationHelper)
         {
             _issueService = issueService;
             _issueRepository = issueRepository;
             _authorizationService = authorizationService;
             _httpContextAccessor = httpContextAccessor;
             _stateService = stateService;
+            _associationHelper = associationHelper;
         }
 
         public async Task<IssueDTO>? GetParent(ObjectId issueId)
@@ -54,14 +56,13 @@ namespace Goose.API.Services.issues
 
             await UserCanAddParent(issue);
 
-            if (issue.ProjectId != parent.ProjectId)
-                throw new HttpStatusException(StatusCodes.Status400BadRequest, "Issues müssen im selben Projekt sein");
-            var parentState = await _stateService.GetState(parent.ProjectId, parent.Id);
-
+            var parentState = await _stateService.GetState(parent.ProjectId, parent.StateId);
             if (parentState.Phase == State.ConclusionPhase || parentState.Name == State.ReviewState)
                 throw new HttpStatusException(StatusCodes.Status400BadRequest,
                     "An issue cannot be set as a child if it's being reviewed or in the conclusion phase");
 
+            await _associationHelper.CanAddAssociation(issue, parent);
+                
             issue.ParentIssueId = parentId;
             parent.ChildrenIssueIds.Add(issueId);
             await Task.WhenAll(_issueRepository.UpdateAsync(issue), _issueRepository.UpdateAsync(parent));
