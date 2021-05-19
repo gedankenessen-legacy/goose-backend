@@ -82,7 +82,7 @@ namespace Goose.API.Authorization.Handlers
                     x => x.Contains(Role.CustomerRole.Id) || x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ReadonlyEmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
                 },
                 {
-                    IssueOperationRequirments.DiscardTicket,
+                    IssueOperationRequirments.DiscardIssue,
                     x => x.Contains(Role.CustomerRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
                 },
                 {
@@ -102,11 +102,23 @@ namespace Goose.API.Authorization.Handlers
                     x => x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
                 },
                 {
-                    IssueOperationRequirments.AddSubTicket,
+                    IssueOperationRequirments.AddSubIssue,
                     x => x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
                 },
                 {
                     IssueOperationRequirments.CreateOwnTimeSheets,
+                    x => x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
+                },
+                {
+                    IssueOperationRequirments.CreateRequirements,
+                    x => x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
+                },
+                {
+                    IssueOperationRequirments.EditRequirements,
+                    x => x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
+                },
+                {
+                    IssueOperationRequirments.RemoveRequirements,
                     x => x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
                 }
             };
@@ -131,7 +143,7 @@ namespace Goose.API.Authorization.Handlers
                     x => x.Contains(Role.CustomerRole.Id) || x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ReadonlyEmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
                 },
                 {
-                    IssueOperationRequirments.DiscardTicket,
+                    IssueOperationRequirments.DiscardIssue,
                     x => x.Contains(Role.CustomerRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
                 },
                 {
@@ -143,7 +155,7 @@ namespace Goose.API.Authorization.Handlers
                     x => x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
                 },
                 {
-                    IssueOperationRequirments.AddSubTicket,
+                    IssueOperationRequirments.AddSubIssue,
                     x => x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
                 },
                 {
