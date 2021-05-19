@@ -3,10 +3,13 @@ using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
 using AutoMapper.Mappers;
+using Goose.API.Authorization.Requirements;
 using Goose.API.Repositories;
 using Goose.API.Utils.Exceptions;
 using Goose.Domain.DTOs.Issues;
 using Goose.Domain.Models.Issues;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
 
 namespace Goose.API.Services.Issues
@@ -20,12 +23,11 @@ namespace Goose.API.Services.Issues
         public Task DeleteAsync(ObjectId issueId, ObjectId requirementId);
     }
 
-    public class IssueRequirementService : IIssueRequirementService
+    public class IssueRequirementService : AuthorizableService, IIssueRequirementService
     {
         private readonly IIssueRepository _issueRepo;
 
-        public IssueRequirementService(IIssueRepository issueRepo)
-        {
+        public IssueRequirementService(IIssueRepository issueRepo, IAuthorizationService authorizationService, IHttpContextAccessor httpContextAccessor) : base(httpContextAccessor, authorizationService) {
             _issueRepo = issueRepo;
         }
 
@@ -43,6 +45,8 @@ namespace Goose.API.Services.Issues
         public async Task<IssueRequirement> CreateAsync(ObjectId issueId, IssueRequirement requirement)
         {
             var issue = await _issueRepo.GetAsync(issueId);
+
+            await AuthenticateRequirmentAsync(issue, IssueOperationRequirments.CreateRequirements);
 
             if(issue is null)
                 throw new HttpStatusException(400, "Das angefragte Issue Existiert nicht");
@@ -67,6 +71,8 @@ namespace Goose.API.Services.Issues
         {
             var issue = await _issueRepo.GetAsync(issueId);
 
+            await AuthenticateRequirmentAsync(issue, IssueOperationRequirments.EditRequirements);
+
             if (issue is null)
                 throw new HttpStatusException(400, "Das angefragte Issue Existiert nicht");
 
@@ -84,6 +90,8 @@ namespace Goose.API.Services.Issues
         public async Task DeleteAsync(ObjectId issueId, ObjectId requirementId)
         {
             var issue = await _issueRepo.GetAsync(issueId);
+
+            await AuthenticateRequirmentAsync(issue, IssueOperationRequirments.RemoveRequirements);
 
             if (issue is null)
                 throw new HttpStatusException(400, "Das angefragte Issue Existiert nicht");

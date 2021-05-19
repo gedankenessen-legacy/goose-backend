@@ -386,7 +386,7 @@ namespace Goose.API.Services.Issues
         {
             Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
             {
-                { IssueOperationRequirments.DiscardTicket, "Your are not allowed to discard the issue." }
+                { IssueOperationRequirments.DiscardIssue, "Your are not allowed to discard the issue." }
             };
 
             // add additional req. for internal issues.
@@ -401,7 +401,7 @@ namespace Goose.API.Services.Issues
         {
             Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
             {
-                { IssueOperationRequirments.AddSubTicket, "Your are not allowed to add a parent to this issue." }
+                { IssueOperationRequirments.AddSubIssue, "Your are not allowed to add a parent to this issue." }
             };
 
             var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, issue, requirementsWithErrors.Keys);
