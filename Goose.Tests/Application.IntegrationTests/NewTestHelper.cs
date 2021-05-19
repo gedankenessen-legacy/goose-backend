@@ -107,7 +107,7 @@ namespace Goose.Tests.Application.IntegrationTests
         }
 
 
-        public async Task<ObjectId> GenerateUserAndSetToProject(ObjectId companyId, ObjectId projectId,
+        public async Task<UserDTO> GenerateUserAndSetToProject(ObjectId companyId, ObjectId projectId,
             params Role[] roles)
         {
             var login = new PropertyUserLoginDTO
@@ -120,7 +120,7 @@ namespace Goose.Tests.Application.IntegrationTests
             return await GenerateUserAndSetToProject(companyId, projectId, login, roles);
         }
 
-        public async Task<ObjectId> GenerateUserAndSetToProject(ObjectId companyId, ObjectId projectId, PropertyUserLoginDTO user,
+        public async Task<UserDTO> GenerateUserAndSetToProject(ObjectId companyId, ObjectId projectId, PropertyUserLoginDTO user,
             params Role[] roles)
         {
             //generate User 
@@ -137,7 +137,7 @@ namespace Goose.Tests.Application.IntegrationTests
             });
 
             _client.Auth(signInResult);
-            return signInResult.User.Id;
+            return signInResult.User;
         }
 
         public async Task<HttpResponseMessage> GenerateIssue(UserDTO user, ProjectDTO project, Action<IssueDTO> withIssue = null)

@@ -59,7 +59,7 @@ namespace Goose.Tests.Application.IntegrationTests
             return await Helper.GenerateIssue(Project, copy);
         }
 
-        public async Task<ObjectId> GenerateUserAndSetToProject(params Role[] roles)
+        public async Task<UserDTO> GenerateUserAndSetToProject(params Role[] roles)
         {
             client.Auth(SignIn);
             return await Helper.GenerateUserAndSetToProject(Company.Id, Project.Id, roles);

@@ -20,7 +20,7 @@ namespace Goose.API.Repositories
         public Task<Issue> GetIssueByIdAsync(string issueId);
         public Task CreateOrUpdateConversationItemAsync(string issueId, IssueConversation issueConversation);
         public Task<IssueRequirement> GetRequirementByIdAsync(ObjectId issueId, ObjectId requirementId);
-        public Task StopAllTimeSheetsOfUserAsync(ObjectId userId);
+        public Task<IList<Issue>> GetIssuesWithOpenTimeSheetsAsync(ObjectId userId);
     }
 
     public class IssueRepository : Repository<Issue>, IIssueRepository
@@ -104,20 +104,23 @@ namespace Goose.API.Repositories
             return req;
         }
 
-        public async Task StopAllTimeSheetsOfUserAsync(ObjectId userId)
+        /// <summary>
+        /// Returns a list of all Issues where the given user has an open timesheet
+        /// (meaning no end time is set);
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        public async Task<IList<Issue>> GetIssuesWithOpenTimeSheetsAsync(ObjectId userId)
         {
-            // I can't think of a better way right now that just checking all timesheets.
+            var query = Builders<Issue>.Filter.ElemMatch(x => x.TimeSheets,
+                Builders<TimeSheet>.Filter.And(
+                    Builders<TimeSheet>.Filter.Eq(x => x.UserId, userId),
+                    Builders<TimeSheet>.Filter.Eq(x => x.End, default)
+                )
+            );
 
-            var update = Builders<Issue>.Update.Set("timeSheets.$[matches].end", DateTime.Now);
-
-            ArrayFilterDefinition<BsonDocument> filter = new BsonDocument("matches.userId", userId);
-
-            var options = new UpdateOptions()
-            {
-                ArrayFilters = new[] { filter },
-            };
-
-            await _dbCollection.UpdateManyAsync(_ => true, update, options);
+            var result = await _dbCollection.FindAsync(query);
+            return await result.ToListAsync();
         }
     }
 }

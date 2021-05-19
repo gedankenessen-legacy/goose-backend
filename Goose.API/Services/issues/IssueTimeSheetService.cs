@@ -85,10 +85,30 @@ namespace Goose.API.Services.Issues
             timesheet.UserId = userId;
             issue.TimeSheets.Add(timesheet);
 
-            await _issueRepo.StopAllTimeSheetsOfUserAsync(userId);
+            await StopAllTimeSheetsOfUserAsync(userId);
             await _issueRepo.UpdateAsync(issue);
+
             await CreateTimeExccededMessage(issueId, timeSheetDto);
             return await GetAsync(issueId, timesheet.Id);
+        }
+
+        private async Task StopAllTimeSheetsOfUserAsync(ObjectId userId)
+        {
+            var openIssues = await _issueRepo.GetIssuesWithOpenTimeSheetsAsync(userId);
+
+            foreach (var issue in openIssues)
+            {
+                foreach (var timeSheet in issue.TimeSheets)
+                {
+                    if (timeSheet.UserId == userId && timeSheet.End == default)
+                    {
+                        timeSheet.End = DateTime.Now;
+                    }
+                }
+
+                await _issueRepo.UpdateAsync(issue);
+                await CreateTimeExccededMessage(issue.Id);
+            }
         }
 
         public async Task UpdateAsync(ObjectId issueId, ObjectId id, IssueTimeSheetDTO timeSheetDto)
@@ -160,11 +180,29 @@ namespace Goose.API.Services.Issues
             return new IssueTimeSheetDTO(timeSheet, user);
         }
 
+        /// <summary>
+        /// Checks if the ticket time could have been exceeded. If it was, a message is generated.
+        /// The newly edited timesheet can be provided, in order to see if the timeSheet was just started.
+        /// In that case, the check if the time was exceeded is not necessary and will be skipped.
+        /// </summary>
+        /// <param name="issueId"></param>
+        /// <param name="timeSheetDto"></param>
+        /// <returns></returns>
         private async Task CreateTimeExccededMessage(ObjectId issueId, IssueTimeSheetDTO timeSheetDto)
         {
             if (timeSheetDto.End == default)
                 return;
 
+            await CreateTimeExccededMessage(issueId);
+        }
+
+        /// <summary>
+        /// Checks if the ticket time could have been exceeded. If it was, a message is generated.
+        /// </summary>
+        /// <param name="issueId"></param>
+        /// <returns></returns>
+        private async Task CreateTimeExccededMessage(ObjectId issueId)
+        {
             var updatedIssue = await _issueRepo.GetAsync(issueId);
             var timesheets = updatedIssue.TimeSheets.Where(x => !x.End.Equals(default(DateTime)));
 
