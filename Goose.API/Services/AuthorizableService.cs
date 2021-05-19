@@ -18,7 +18,7 @@ namespace Goose.API.Services
             _authorizationService = authorizationService;
         }
 
-        protected async Task AuthenticateRequirmentAsync<T>(T ressource, OperationAuthorizationRequirement requirment, string errorMessage = "You are missing rights to proceed this call.")
+        protected async Task AuthenticateRequirmentAsync<T>(T ressource, IAuthorizationRequirement requirment, string errorMessage = "You are missing rights to proceed this call.")
         {
             Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
             {

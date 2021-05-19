@@ -37,7 +37,7 @@ namespace Goose.API.Services.Issues
         Task<bool> UserCanSeeInternTicket(ObjectId projectId);
     }
 
-    public class IssueService : IIssueService
+    public class IssueService : AuthorizableService, IIssueService
     {
         private readonly IStateService _stateService;
         private readonly IProjectRepository _projectRepository;
@@ -46,8 +46,6 @@ namespace Goose.API.Services.Issues
         private readonly IIssueRepository _issueRepo;
         private readonly IIssueRequestValidator _issueValidator;
 
-        private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly IAuthorizationService _authorizationService;
         private readonly IMessageService _messageService;
 
         public IssueService(
@@ -58,15 +56,13 @@ namespace Goose.API.Services.Issues
             IIssueRequestValidator issueValidator,
             IHttpContextAccessor httpContextAccessor,
             IAuthorizationService authorizationService,
-            IMessageService messageService)
+            IMessageService messageService) : base (httpContextAccessor, authorizationService)
         {
             _issueRepo = issueRepo;
             _stateService = stateService;
             _projectRepository = projectRepository;
             _userRepository = userRepository;
             _issueValidator = issueValidator;
-            _httpContextAccessor = httpContextAccessor;
-            _authorizationService = authorizationService;
             _messageService = messageService;
         }
 
@@ -97,9 +93,10 @@ namespace Goose.API.Services.Issues
                 throw new HttpStatusException(StatusCodes.Status400BadRequest,
                     $"Cannot create an Issue. Project with id [{issueDto.Project.Id}] does not exist");
 
-            await UserCanCreateOrUpdateIssue(issueDto.Project.Id);
-
             var issue = await CreateValidIssue(issueDto);
+
+            await AuthenticateRequirmentAsync(issue, IssueOperationRequirments.Create);
+
             await _issueRepo.CreateAsync(issue);
 
             if(issue.IssueDetail.EndDate is not null && issue.IssueDetail.EndDate != default(DateTime))
@@ -148,7 +145,7 @@ namespace Goose.API.Services.Issues
             if(issue is null)
                 throw new HttpStatusException(StatusCodes.Status400BadRequest, $"Das angeforderte Ticket mit der id {id} konnte nicht gefunden werden");
 
-            await UserCanCreateOrUpdateIssue(issue.ProjectId);
+            await AuthenticateRequirmentAsync(issue, IssueOperationRequirments.Edit);
 
             var issueToUpdate = await GetUpdatedIssue(issue, issueDto);
 
@@ -175,7 +172,7 @@ namespace Goose.API.Services.Issues
                         await CreateCanceledMessage(old);
                     }
                     else
-                        await UserCanChangeStatus(old);
+                        await AuthenticateRequirmentAsync(old, IssueOperationRequirments.EditState);
 
                     // State wird aktualisiert
                     old.StateId = newStateId;
@@ -262,7 +259,7 @@ namespace Goose.API.Services.Issues
         {
             var issue = await _issueRepo.GetAsync(issueId);
 
-            await UserCanAddParent(issue);
+            await AuthenticateRequirmentAsync(issue, IssueOperationRequirments.AddSubIssue);
 
             var parent = await _issueRepo.GetAsync(parentId);
 
@@ -366,22 +363,6 @@ namespace Goose.API.Services.Issues
             return authorizationResult.Failure.FailedRequirements.Count() < requirements.Count;
         }
 
-        private async Task UserCanChangeStatus(Issue issue)
-        {
-            Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
-            {
-                { IssueOperationRequirments.EditState, "Your are not allowed to edit the state of the issue." }
-            };
-
-            // add additional req. for internal issues.
-            if (issue.IssueDetail.Visibility is false)
-                requirementsWithErrors.Add(IssueOperationRequirments.EditStateOfInternal, "Your are not allowed to edit the state of an internal issue.");
-
-            // validate requirements with the appropriate handlers.
-            var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, issue, requirementsWithErrors.Keys);
-            authorizationResult.ThrowErrorForFailedRequirements(requirementsWithErrors);
-        }
-
         private async Task UserCanDiscardIssue(Issue issue)
         {
             Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
@@ -395,33 +376,6 @@ namespace Goose.API.Services.Issues
 
             var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, issue, requirementsWithErrors.Keys);
             authorizationResult.ThrowErrorForFailedRequirements(requirementsWithErrors);
-        }
-
-        private async Task UserCanAddParent(Issue issue)
-        {
-            Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
-            {
-                { IssueOperationRequirments.AddSubIssue, "Your are not allowed to add a parent to this issue." }
-            };
-
-            var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, issue, requirementsWithErrors.Keys);
-            authorizationResult.ThrowErrorForFailedRequirements(requirementsWithErrors);
-        }
-
-        private async Task UserCanCreateOrUpdateIssue(ObjectId projectId)
-        {
-            var project = await _projectRepository.GetAsync(projectId);
-            Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
-            {
-                { ProjectRolesRequirement.EmployeeRequirement, "You need to be the employee with write-rights in this project, in order to create or update a issue." },
-                { ProjectRolesRequirement.LeaderRequirement, "You need to be the leader in this project, in order to create or update a issue." },
-                { ProjectRolesRequirement.CustomerRequirement, "You need to be a customer in this project, in order to create or update a issue." },
-                { CompanyRolesRequirement.CompanyOwner, "You need to be a Owner of the Company, in order to create or update a issue"}
-            };
-
-            // validate requirements with the appropriate handlers.
-            var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, project, requirementsWithErrors.Keys);
-            authorizationResult.ThrowErrorIfAllFailed(requirementsWithErrors);
         }
     }
 }
