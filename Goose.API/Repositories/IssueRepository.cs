@@ -9,7 +9,6 @@ using MongoDB.Driver;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using System;
 
 namespace Goose.API.Repositories
 {
