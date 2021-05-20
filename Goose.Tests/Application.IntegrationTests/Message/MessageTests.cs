@@ -43,7 +43,7 @@ namespace Goose.Tests.Application.IntegrationTests.Message
             responce = await helper.client.GetAsync(uri);
             Assert.IsTrue(responce.IsSuccessStatusCode);
             var messageList = await responce.Parse<IList<MessageDTO>>();
-            Assert.IsTrue(messageList.Count == 1);
+            Assert.AreEqual(1, messageList.Count);
         }
 
         [Test]
@@ -80,7 +80,7 @@ namespace Goose.Tests.Application.IntegrationTests.Message
             responce = await helper.client.GetAsync(uri);
             Assert.IsTrue(responce.IsSuccessStatusCode);
             var messageList = await responce.Parse<IList<MessageDTO>>();
-            Assert.IsTrue(messageList.Count == 1);
+            Assert.AreEqual(1, messageList.Count);
 
             uri = $"/api/messages/{messageList[0].Id}";
             responce = await helper.client.DeleteAsync(uri);
@@ -90,7 +90,7 @@ namespace Goose.Tests.Application.IntegrationTests.Message
             responce = await helper.client.GetAsync(uri);
             Assert.IsTrue(responce.IsSuccessStatusCode);
             messageList = await responce.Parse<IList<MessageDTO>>();
-            Assert.IsTrue(messageList.Count == 0);
+            Assert.AreEqual(0, messageList.Count);
         }
 
         [Test]
@@ -122,7 +122,7 @@ namespace Goose.Tests.Application.IntegrationTests.Message
             Assert.IsTrue(responce.IsSuccessStatusCode);
             var messageList = await responce.Parse<IList<MessageDTO>>();
 
-            Assert.IsTrue(messageList.Count == 1);
+            Assert.AreEqual(1, messageList.Count);
         }
 
         [Test]
@@ -156,7 +156,7 @@ namespace Goose.Tests.Application.IntegrationTests.Message
             Assert.IsTrue(responce.IsSuccessStatusCode);
             var messageList = await responce.Parse<IList<MessageDTO>>();
 
-            Assert.IsTrue(messageList.Count == 0);
+            Assert.AreEqual(0, messageList.Count);
 
             //Create Second Sheet which accours the Time Exceeding
             var timeSheetDTO2 = new IssueTimeSheetDTO()
@@ -184,7 +184,7 @@ namespace Goose.Tests.Application.IntegrationTests.Message
             Assert.IsTrue(responce.IsSuccessStatusCode);
             var messageList2 = await responce.Parse<IList<MessageDTO>>();
 
-            Assert.IsTrue(messageList2.Count == 1);
+            Assert.AreEqual(1, messageList2.Count);
         }
 
         [Test]
@@ -207,18 +207,18 @@ namespace Goose.Tests.Application.IntegrationTests.Message
             Assert.IsTrue(responce.IsSuccessStatusCode);
             var messageList = await responce.Parse<IList<MessageDTO>>();
 
-            Assert.IsTrue(messageList.Count == 1);
+            Assert.AreEqual(1, messageList.Count);
         }
 
         [Test]
         public async Task TimeSheetMessageTest4()
         {
             using var helper = await new SimpleTestHelperBuilderMessage().Build();
-            var newUserId = await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.EmployeeRole);
+            var newUser = await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.EmployeeRole);
 
             IssueTimeSheetDTO timeSheetDTO = new IssueTimeSheetDTO()
             {
-                User = new UserDTO(await helper.Helper.UserRepository.GetAsync(newUserId)),
+                User = new UserDTO(await helper.Helper.UserRepository.GetAsync(newUser.Id)),
                 Start = DateTime.Now
             };
 
@@ -238,12 +238,12 @@ namespace Goose.Tests.Application.IntegrationTests.Message
             responce = await helper.client.PutAsync(uri, createdSheet.ToStringContent());
             Assert.IsTrue(responce.IsSuccessStatusCode);
 
-            uri = $"/api/messages/{newUserId}";
+            uri = $"/api/messages/{newUser.Id}";
             responce = await helper.client.GetAsync(uri);
             Assert.IsTrue(responce.IsSuccessStatusCode);
             var messageList = await responce.Parse<IList<MessageDTO>>();
 
-            Assert.IsTrue(messageList.Count == 1);
+            Assert.AreEqual(1, messageList.Count);
         }
 
         [Test]
@@ -267,7 +267,7 @@ namespace Goose.Tests.Application.IntegrationTests.Message
             Assert.IsTrue(response.IsSuccessStatusCode);
             var messageList = await response.Parse<IList<MessageDTO>>();
 
-            Assert.IsTrue(messageList.Count == 2);
+            Assert.AreEqual(2, messageList.Count);
         }
 
         [Test]
@@ -291,7 +291,7 @@ namespace Goose.Tests.Application.IntegrationTests.Message
             Assert.IsTrue(response.IsSuccessStatusCode);
             var messageList = await response.Parse<IList<MessageDTO>>();
 
-            Assert.IsTrue(messageList.Count == 0);
+            Assert.AreEqual(0, messageList.Count);
         }
 
         [Test]
@@ -321,7 +321,7 @@ namespace Goose.Tests.Application.IntegrationTests.Message
             Assert.IsTrue(response.IsSuccessStatusCode);
             var messageList = await response.Parse<IList<MessageDTO>>();
 
-            Assert.IsTrue(messageList.Count == 1);
+            Assert.AreEqual(1, messageList.Count);
         }
 
         private Domain.Models.Message GetValidMessage(SimpleTestHelper helper)
