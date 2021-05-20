@@ -31,8 +31,8 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             public override async Task<SimpleTestHelper> Build()
             {
                 var helper = await base.Build();
-                var customerId = await helper.GenerateUserAndSetToProject(_role);
-                Costumer = new UserDTO(await helper.Helper.UserRepository.GetAsync(customerId));
+                var customer = await helper.GenerateUserAndSetToProject(_role);
+                Costumer = new UserDTO(await helper.Helper.UserRepository.GetAsync(customer.Id));
                 var issue = base.GetIssueDTOCopy(helper.client, helper);
                 issue.Author = Costumer;
                 issue.IssueDetail.Visibility = true;
