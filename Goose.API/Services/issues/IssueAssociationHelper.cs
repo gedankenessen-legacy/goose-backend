@@ -10,25 +10,22 @@ namespace Goose.API.Services.issues
 {
     public interface IIssueAssociationHelper
     {
-        public Task CanAddAssociation(Issue issue, Issue other);
+        public Task CanAddChild(Issue parent, Issue other);
+        public Task CanAddPredecessor(Issue successor, Issue other);
     }
 
     public class IssueAssociationHelper : IIssueAssociationHelper
     {
         private readonly IIssueRepository _issueRepository;
 
-
-        public async Task CanAddAssociation(Issue issue, Issue other)
+        public IssueAssociationHelper(IIssueRepository issueRepository)
         {
-            if (issue.ProjectId != other.ProjectId)
-                throw new HttpStatusException(400, $"Issues do not belong to same project, " +
-                                                   $"Issue {issue.Id} belongs to project {issue.ProjectId}, issue {other.Id} belongs to {other.ProjectId}");
-            //Falls A Ein Ober-/Unter-ticket von B ist 
-            var projectIssues = await _issueRepository.GetAllOfProjectAsync(issue.ProjectId);
-            if (IsChildOf(projectIssues, issue, other) || IsChildOf(projectIssues, other, issue))
-                throw new HttpStatusException(400,
-                    $"{issue.Id} or {other.Id} the parent of the other issue. Cannot associate issue or an enless lopp would occur");
+            _issueRepository = issueRepository;
+        }
 
+
+        public async Task CanAddAssociation(IList<Issue> projectIssues, Issue issue, Issue other)
+        {
             //TODO mom. wird ticket mehrmals abgearbeitet
             Queue<Issue> tickets = new Queue<Issue>();
 
@@ -48,11 +45,52 @@ namespace Goose.API.Services.issues
                 if (element == null) continue;
                 if (element.Id.Equals(other.Id))
                     throw new HttpStatusException(400, $"An endless loop would occur if {issue.Id} and {other.Id} were to be associated");
-                
+
                 if (element.ParentIssueId is ObjectId parentId) tickets.Enqueue(GetIssue(projectIssues, parentId));
                 foreach (var ticket in GetSuccessorsAdvanced(projectIssues, element))
                     tickets.Enqueue(ticket);
             }
+        }
+
+        public async Task CanAddChild(Issue parent, Issue other)
+        {
+            if (parent.ProjectId != other.ProjectId)
+                throw new HttpStatusException(400, $"Issues do not belong to same project, " +
+                                                   $"Issue {parent.Id} belongs to project {parent.ProjectId}, issue {other.Id} belongs to {other.ProjectId}");
+            if (parent.Id == other.Id)
+                throw new HttpStatusException(400, "Cannot associate an issue with itself");
+
+            var projectIssues = await _issueRepository.GetAllOfProjectAsync(parent.ProjectId);
+
+            if (GetRootIssue(projectIssues, parent) == GetRootIssue(projectIssues, other))
+                throw new HttpStatusException(400,
+                    $"{parent.Id} and {other.Id} belong to the same hierarchy. Cannot associate issue or an endless loop would occur");
+
+            await CanAddAssociation(projectIssues, parent, other);
+        }
+
+        public async Task CanAddPredecessor(Issue successor, Issue other)
+        {
+            if (successor.ProjectId != other.ProjectId)
+                throw new HttpStatusException(400, $"Issues do not belong to same project, " +
+                                                   $"Issue {successor.Id} belongs to project {successor.ProjectId}, issue {other.Id} belongs to {other.ProjectId}");
+            if (successor.Id == other.Id)
+                throw new HttpStatusException(400, "Cannot associate an issue with itself");
+
+            var projectIssues = await _issueRepository.GetAllOfProjectAsync(successor.ProjectId);
+            if (IsChildOf(projectIssues, successor, other) || IsChildOf(projectIssues, other, successor))
+                throw new HttpStatusException(400,
+                    $"{successor.Id} or {other.Id} are the parent of the other issue. Cannot associate issue or an endless loop would occur");
+
+            await CanAddAssociation(projectIssues, successor, other);
+        }
+
+        private Issue GetRootIssue(IList<Issue> projectIssues, Issue issue)
+        {
+            var parent = issue;
+            while (parent.ParentIssueId is ObjectId parentId)
+                parent = GetIssue(projectIssues, parentId);
+            return parent;
         }
 
         private bool IsChildOf(IList<Issue> projectIssues, Issue parent, Issue other)
@@ -71,7 +109,7 @@ namespace Goose.API.Services.issues
         /**
          * Returns Successors and it's children
          */
-        public IList<Issue> GetSuccessorsAdvanced(IList<Issue> projectIssues, Issue issue)
+        private IList<Issue> GetSuccessorsAdvanced(IList<Issue> projectIssues, Issue issue)
         {
             var result = new List<Issue>(issue.SuccessorIssueIds.Select(it => GetIssue(projectIssues, it)));
             result.AddRange(result.SelectMany(child => GetChildrenRecursive(projectIssues, child)));

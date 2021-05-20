@@ -1,7 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Goose.API.Services.Issues;
+using Goose.API.Utils.Exceptions;
 using Goose.Domain.DTOs.Issues;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -73,7 +73,7 @@ namespace Goose.API.Controllers.IssuesControllers
         public async Task<ActionResult> Post([FromRoute] ObjectId projectId, [FromBody] IssueDTO dto)
         {
             if (dto.Project.Id != default && dto.Project.Id != projectId)
-                throw new Exception("Project id must be the same in url and body or not defined in body");
+                throw new HttpStatusException(400, "Project id must be the same in url and body or not defined in body");
             dto.Project.Id = projectId;
 
             var res = await _issueService.Create(dto);

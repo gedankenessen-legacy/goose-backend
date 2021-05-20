@@ -61,7 +61,7 @@ namespace Goose.API.Services.issues
                 throw new HttpStatusException(StatusCodes.Status400BadRequest,
                     "An issue cannot be set as a child if it's being reviewed or in the conclusion phase");
 
-            await _associationHelper.CanAddAssociation(issue, parent);
+            await _associationHelper.CanAddChild(parent, issue);
                 
             issue.ParentIssueId = parentId;
             parent.ChildrenIssueIds.Add(issueId);
@@ -89,7 +89,6 @@ namespace Goose.API.Services.issues
             var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, issue, requirementsWithErrors.Keys);
             authorizationResult.ThrowErrorForFailedRequirements(requirementsWithErrors);
         }
-
         public async Task RemoveParent(ObjectId issueId)
         {
             var issue = await _issueRepository.GetAsync(issueId);

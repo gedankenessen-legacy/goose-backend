@@ -48,7 +48,7 @@ namespace Goose.API.Services.Issues
             var successor = await _issueRepo.GetAsync(successorId);
             var predecessor = await _issueRepo.GetAsync(predecessorId);
 
-            await _associationHelper.CanAddAssociation(successor, predecessor);
+            await _associationHelper.CanAddPredecessor(successor, predecessor);
             
             successor.PredecessorIssueIds.Add(predecessorId);
             predecessor.SuccessorIssueIds.Add(successorId);

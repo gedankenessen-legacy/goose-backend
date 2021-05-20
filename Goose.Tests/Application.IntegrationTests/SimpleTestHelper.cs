@@ -42,6 +42,32 @@ namespace Goose.Tests.Application.IntegrationTests
             return await Helper.GenerateProject(Company.Id, project);
         }
 
+        public async Task<HttpResponseMessage> CreateProject()
+        {
+            var copy = Project.Copy();
+            copy.Id = ObjectId.Empty;
+            return await CreateProject(copy);
+        }
+
+        /*
+         * Returns project
+         */
+        public async Task<HttpResponseMessage> CreateProjectAndAddProjectUser(params Role[] roles)
+        {
+            var copy = Project.Copy();
+            copy.Id = ObjectId.Empty;
+            return await CreateProjectAndAddProjectUser(copy, SignIn.User.Id, roles);
+        }
+
+        public async Task<HttpResponseMessage> CreateProjectAndAddProjectUser(ProjectDTO project, ObjectId userId, params Role[] roles)
+        {
+            var res = CreateProject(project);
+            var proj = await res.Parse<ProjectDTO>();
+            await Helper.AddUserToProject(proj.Id, userId, roles);
+            return await res;
+        }
+
+
         public async Task<HttpResponseMessage> CreateIssue(IssueDTO issue)
         {
             return await Helper.GenerateIssue(Project, issue);
