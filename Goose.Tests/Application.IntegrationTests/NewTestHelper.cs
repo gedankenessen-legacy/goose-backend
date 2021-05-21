@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
@@ -236,6 +237,18 @@ namespace Goose.Tests.Application.IntegrationTests
             return await _client.DeleteAsync($"api/projects/{projectId}/states/{stateToDelete.Id}");
         }
 
+        public async Task<HttpResponseMessage> GetParentIssue(ObjectId childId)
+        {
+            var uri = $"api/issues/{childId}/parent";
+            return await _client.GetAsync(uri);
+        }
+
+        public async Task<HttpResponseMessage> GetChildrenIssues(ObjectId parentId)
+        {
+            var uri = $"api/issues/{parentId}/children";
+            return await _client.GetAsync(uri);
+        }
+
         public async Task<SignInResponse> SignIn(SignInRequest signInRequest)
         {
             var uri = "/api/auth/signIn";
@@ -285,6 +298,12 @@ namespace Goose.Tests.Application.IntegrationTests
 
         #region Set
 
+        public async Task<HttpResponseMessage> SetParentIssue(ObjectId parentId, ObjectId childId)
+        {
+            var uri = $"api/issues/{childId}/parent/{parentId}";
+            return await _client.PutAsync(uri, null);
+        }
+        
         public void SetAuth(SignInResponse signIn)
         {
             _client.Auth(signIn);
