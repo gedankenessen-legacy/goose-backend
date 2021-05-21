@@ -19,7 +19,7 @@ namespace Goose.API.Services.Issues
         public Task<IList<IssueRequirement>> GetAllOfIssueAsync(ObjectId issueId);
         public Task<IssueRequirement> GetAsync(ObjectId issueId, ObjectId requirementId);
         public Task<IssueRequirement> CreateAsync(ObjectId issueId, IssueRequirement requirement);
-        public Task UpdateAsync(ObjectId issueId, IssueRequirement requirement);
+        public Task UpdateAsync(ObjectId issueId, ObjectId requirementId, IssueRequirement requirement);
         public Task DeleteAsync(ObjectId issueId, ObjectId requirementId);
     }
 
@@ -67,11 +67,12 @@ namespace Goose.API.Services.Issues
             return requirement;
         }
 
-        public async Task UpdateAsync(ObjectId issueId, IssueRequirement requirement)
+        public async Task UpdateAsync(ObjectId issueId, ObjectId requirementId, IssueRequirement requirement)
         {
-            var issue = await _issueRepo.GetAsync(issueId);
+            if (requirementId.Equals(requirement.Id) is false)
+                throw new HttpStatusException(400, "Die ID des Pfades passt nicht zu der ID der Ressource.");
 
-            await AuthenticateRequirmentAsync(issue, IssueOperationRequirments.EditRequirements);
+            var issue = await _issueRepo.GetAsync(issueId);
 
             if (issue is null)
                 throw new HttpStatusException(400, "Das angefragte Issue Existiert nicht");
@@ -81,6 +82,8 @@ namespace Goose.API.Services.Issues
 
             if (string.IsNullOrWhiteSpace(requirement.Requirement))
                 throw new HttpStatusException(400, "Bitte geben Sie eine Valide Anforderung an");
+
+            await AuthenticateRequirmentAsync(issue, IssueOperationRequirments.EditRequirements);
 
             var req = issue.IssueDetail.Requirements.First(it => it.Id == requirement.Id);
             SetRequirementFields(req, requirement);
@@ -108,6 +111,7 @@ namespace Goose.API.Services.Issues
         private void SetRequirementFields(IssueRequirement dest, IssueRequirement source)
         {
             dest.Requirement = source.Requirement;
+            dest.Achieved = source?.Achieved ?? false;
         }
     }
 }
