@@ -110,6 +110,10 @@ namespace Goose.API.Authorization.Handlers
                     x => x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
                 },
                 {
+                    IssueOperationRequirments.EditOwnTimeSheets,
+                    x => x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
+                },
+                {
                     IssueOperationRequirments.AddSubIssue,
                     x => x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
                 },
