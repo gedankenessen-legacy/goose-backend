@@ -32,6 +32,7 @@ namespace Goose.API.Authorization.Requirements
         #region Issue.Requrements
         public readonly static OperationAuthorizationRequirement CreateRequirements = new() { Name = nameof(CreateRequirements) };
         public readonly static OperationAuthorizationRequirement EditRequirements = new() { Name = nameof(EditRequirements) };
+        public readonly static OperationAuthorizationRequirement AchieveRequirements = new() { Name = nameof(AchieveRequirements) };
         public readonly static OperationAuthorizationRequirement RemoveRequirements = new() { Name = nameof(RemoveRequirements) };
         #endregion
     }
