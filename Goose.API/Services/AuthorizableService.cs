@@ -20,6 +20,11 @@ namespace Goose.API.Services
 
         protected async Task AuthenticateRequirmentAsync<T>(T ressource, IAuthorizationRequirement requirment, string errorMessage = "You are missing rights to proceed this call.")
         {
+            // This allowes the call of the service function, else a service call (not via http, so without jwt) would missing a the user.
+            // In Startup we require a logged in user to prevent unauthorized access anyway.
+            if (_httpContextAccessor.HttpContext is null)
+                return;
+
             Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
             {
                 { requirment, errorMessage }
