@@ -122,6 +122,10 @@ namespace Goose.API.Authorization.Handlers
                     x => x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
                 },
                 {
+                    IssueOperationRequirments.AchieveRequirements,
+                    x => x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
+                },
+                {
                     IssueOperationRequirments.RemoveRequirements,
                     x => x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
                 }
@@ -177,7 +181,11 @@ namespace Goose.API.Authorization.Handlers
                 {
                     IssueOperationRequirments.CreateOwnTimeSheets,
                     x => x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
-                }
+                },
+                {
+                    IssueOperationRequirments.AchieveRequirements,
+                    x => x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
+                },
             };
 
             if (ValidateUserPermissions[requirement](userRoles))
@@ -219,7 +227,11 @@ namespace Goose.API.Authorization.Handlers
                 {
                     IssueOperationRequirments.CreateOwnTimeSheets,
                     x => x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
-                }
+                },
+                {
+                    IssueOperationRequirments.AchieveRequirements,
+                    x => x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
+                },
             };
 
             if (ValidateUserPermissions[requirement](userRoles))

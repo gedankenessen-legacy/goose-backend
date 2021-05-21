@@ -83,10 +83,8 @@ namespace Goose.API.Services.Issues
             if (string.IsNullOrWhiteSpace(requirement.Requirement))
                 throw new HttpStatusException(400, "Bitte geben Sie eine Valide Anforderung an");
 
-            await AuthenticateRequirmentAsync(issue, IssueOperationRequirments.EditRequirements);
-
             var req = issue.IssueDetail.Requirements.First(it => it.Id == requirement.Id);
-            SetRequirementFields(req, requirement);
+            await SetRequirementFieldsAsync(issue, req, requirement);
             await _issueRepo.UpdateAsync(issue);
         }
 
@@ -108,10 +106,16 @@ namespace Goose.API.Services.Issues
         }
 
 
-        private void SetRequirementFields(IssueRequirement dest, IssueRequirement source)
+        private async Task SetRequirementFieldsAsync(Issue issue, IssueRequirement dest, IssueRequirement source)
         {
+            if (dest.Requirement != source.Requirement)         
+                await AuthenticateRequirmentAsync(issue, IssueOperationRequirments.EditRequirements);
+            
+            if (dest.Achieved != source.Achieved)
+                await AuthenticateRequirmentAsync(issue, IssueOperationRequirments.AchieveRequirements, "Du hast nicht die Rechte um ein Requirment als abgeschlossen zu markieren");
+
             dest.Requirement = source.Requirement;
-            dest.Achieved = source?.Achieved ?? false;
+            dest.Achieved = source.Achieved;
         }
     }
 }
