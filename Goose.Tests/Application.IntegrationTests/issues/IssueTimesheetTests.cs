@@ -63,7 +63,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         [Test]
         public static async Task TimeSheetCancellation()
         {
-            var now = new DateTime(2020, 5, 19, 12, 0, 0, DateTimeKind.Utc);
+            var now = new DateTime(2020, 5, 19, 12, 0, 0, DateTimeKind.Local);
 
             // Create all the timesheets
             using var helper = await new SimpleTestHelperBuilder().Build();
