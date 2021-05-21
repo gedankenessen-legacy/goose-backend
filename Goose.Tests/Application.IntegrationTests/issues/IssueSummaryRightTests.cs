@@ -12,7 +12,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Goose.Tests.Application.IntegrationTests.issues
+namespace Goose.Tests.Application.IntegrationTests.Issues
 {
     [TestFixture]
     [Parallelizable(ParallelScope.All)]
@@ -239,13 +239,13 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             var responce = await helper.client.PostAsync(uri, new object().ToStringContent());
             Assert.IsTrue(responce.IsSuccessStatusCode);
 
-            var signIn = await helper.Helper.SignIn(new SignInRequest()
+            var customerSignIn = await helper.Helper.SignIn(new SignInRequest()
             {
                 Username = builder.Costumer.Username,
                 Password = helper.Helper.UsedPasswordForTests
             });
 
-            helper.Helper.SetAuth(signIn);
+            helper.Helper.SetAuth(customerSignIn);
 
             uri = $"/api/issues/{helper.Issue.Id}/summaries?accept=false";
             responce = await helper.client.PutAsync(uri, new object().ToStringContent());
@@ -255,11 +255,13 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             Assert.IsFalse(issue.IssueDetail.RequirementsAccepted);
             Assert.IsFalse(issue.IssueDetail.RequirementsSummaryCreated);
 
+            // Client is not allowed to post requirements!
+            helper.Helper.SetAuth(helper.SignIn);
+
             issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen2" };
             uri = $"/api/issues/{issue.Id}/requirements/";
             responce = await helper.client.PostAsync(uri, issueRequirement.ToStringContent());
             Assert.IsTrue(responce.IsSuccessStatusCode);
-
         }
 
         [Test]

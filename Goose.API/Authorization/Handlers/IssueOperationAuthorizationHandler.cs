@@ -135,7 +135,7 @@ namespace Goose.API.Authorization.Handlers
                 }
             };
 
-            if (ValidateUserPermissions[requirement](userRoles))
+            if (ValidateUserPermissions.ContainsKey(requirement) && ValidateUserPermissions[requirement](userRoles))
                 context.Succeed(requirement);
         }
 
@@ -146,6 +146,10 @@ namespace Goose.API.Authorization.Handlers
             // project leader & company owner have the rights of the employee, additionaly: discard ticket, edit timesheets.
             Dictionary<OperationAuthorizationRequirement, Func<IList<ObjectId>, bool>> ValidateUserPermissions = new()
             {
+                {
+                    IssueOperationRequirments.Create,
+                    x => x.Contains(Role.CustomerRole.Id) || x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
+                },
                 {
                     IssueOperationRequirments.Edit,
                     x => x.Contains(Role.CustomerRole.Id) || x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
@@ -196,7 +200,7 @@ namespace Goose.API.Authorization.Handlers
                 },
             };
 
-            if (ValidateUserPermissions[requirement](userRoles))
+            if (ValidateUserPermissions.ContainsKey(requirement) && ValidateUserPermissions[requirement](userRoles))
                 context.Succeed(requirement);
         }
 
@@ -204,6 +208,10 @@ namespace Goose.API.Authorization.Handlers
         {
             Dictionary<OperationAuthorizationRequirement, Func<IList<ObjectId>, bool>> ValidateUserPermissions = new()
             {
+                {
+                    IssueOperationRequirments.Create,
+                    x => x.Contains(Role.CustomerRole.Id) || x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
+                },
                 {
                     IssueOperationRequirments.Edit,
                     x => x.Contains(Role.CustomerRole.Id) || x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
@@ -246,7 +254,7 @@ namespace Goose.API.Authorization.Handlers
                 },
             };
 
-            if (ValidateUserPermissions[requirement](userRoles))
+            if (ValidateUserPermissions.ContainsKey(requirement) && ValidateUserPermissions[requirement](userRoles))
                 context.Succeed(requirement);
         }
     }
