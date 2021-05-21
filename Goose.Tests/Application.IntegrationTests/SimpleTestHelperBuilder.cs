@@ -37,8 +37,8 @@ namespace Goose.Tests.Application.IntegrationTests
             {
                 Name = $"{new Random().NextDouble()}",
                 Type = Issue.TypeFeature,
-                StartDate = null,
-                EndDate = null,
+                StartDate = DateTime.Now.AddHours(1),
+                EndDate = DateTime.Now.AddHours(2),
                 ExpectedTime = 0,
                 Progress = 0,
                 Description = null,

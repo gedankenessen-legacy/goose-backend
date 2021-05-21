@@ -14,8 +14,8 @@ namespace Goose.API.EventHandler
 {
     public class IssueStartDateEvent : IEvent
     {
-        private static readonly object _runningDeadlinesLock = new object();
-        private static readonly Dictionary<ObjectId, EventCanceller> _runningDeadlines = new Dictionary<ObjectId, EventCanceller>();
+        private static readonly object _runningStartDatesLock = new object();
+        private static readonly Dictionary<ObjectId, EventCanceller> _runningStartDates = new Dictionary<ObjectId, EventCanceller>();
         private readonly IIssueRepository _issueRepository;
         private readonly IStateService _stateService;
 
@@ -32,9 +32,9 @@ namespace Goose.API.EventHandler
 
         public Task OnCancelled()
         {
-            lock (_runningDeadlinesLock)
+            lock (_runningStartDatesLock)
             {
-                _runningDeadlines.Remove(Issue.Id);
+                _runningStartDates.Remove(Issue.Id);
             }
             return Task.CompletedTask;
         }
@@ -43,9 +43,9 @@ namespace Goose.API.EventHandler
         {
             EventCanceller? oldCanceller;
 
-            lock (_runningDeadlinesLock)
+            lock (_runningStartDatesLock)
             {
-                _runningDeadlines.TryGetValue(issueId, out oldCanceller);
+                _runningStartDates.TryGetValue(issueId, out oldCanceller);
             }
 
             // old canceller cannot be awaited in the lock
@@ -57,9 +57,9 @@ namespace Goose.API.EventHandler
         {
             EventCanceller? oldCanceller;
 
-            lock (_runningDeadlinesLock)
+            lock (_runningStartDatesLock)
             {
-                _runningDeadlines.TryGetValue(Issue.Id, out oldCanceller);
+                _runningStartDates.TryGetValue(Issue.Id, out oldCanceller);
             }
 
             // old canceller cannot be awaited in the lock
@@ -68,24 +68,25 @@ namespace Goose.API.EventHandler
                 await oldCanceller.Cancel();
             }
 
-            lock (_runningDeadlinesLock)
+            lock (_runningStartDatesLock)
             {
                 // Get a canceller from the EventExecutor and update the index
-                _runningDeadlines[Issue.Id] = executor.GetEventCanceller();
+                _runningStartDates[Issue.Id] = executor.GetEventCanceller();
             }
         }
 
         public async Task OnTimeReached()
         {
-            lock (_runningDeadlinesLock)
+            lock (_runningStartDatesLock)
             {
-                _runningDeadlines.Remove(Issue.Id);
+                _runningStartDates.Remove(Issue.Id);
             }
             await UpdateIssue();
         }
 
         private async Task UpdateIssue()
         {
+            //TODO get Issue from cunstroctor 
             var issue = await _issueRepository.GetAsync(Issue.Id);
            
             if (issue is null)
