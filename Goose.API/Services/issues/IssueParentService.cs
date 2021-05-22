@@ -61,11 +61,21 @@ namespace Goose.API.Services.issues
                 throw new HttpStatusException(StatusCodes.Status400BadRequest,
                     "An issue cannot be set as a child if it's being reviewed or in the conclusion phase");
 
+            if (issue.IssueDetail.Visibility != parent.IssueDetail.Visibility)
+            {
+                throw new HttpStatusException(StatusCodes.Status400BadRequest,
+                    "The visibility Status of Parent and Child must be the same");
+            }
+
             await _associationHelper.CanAddChild(parent, issue);
-                
+
+            issue.IssueDetail.Priority = parent.IssueDetail.Priority;
             issue.ParentIssueId = parentId;
             parent.ChildrenIssueIds.Add(issueId);
             await Task.WhenAll(_issueRepository.UpdateAsync(issue), _issueRepository.UpdateAsync(parent));
+
+            // the issue might have grandchildren which need updating too.
+            await _issueService.PropagateDependentProperties(issue);
 
             // ConversationItem im Oberticket hinzufügen
             parent.ConversationItems.Add(new IssueConversation()

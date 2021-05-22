@@ -89,18 +89,36 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             using var helper = await new SimpleTestHelperBuilder().Build();
             var parentIssue = helper.Issue;
 
+            var childIssueDto = parentIssue.Copy();
+            childIssueDto.Id = ObjectId.Empty;
+
+            // TODO check predecessors
+            childIssueDto.IssueDetail.Priority = parentIssue.IssueDetail.Priority + 1;
+
+            childIssueDto = await helper.CreateIssue(childIssueDto).Parse<IssueDTO>();
+            await helper.Helper.SetParentIssue(parentIssue.Id, childIssueDto.Id);
+
+            var childIssue = await helper.Helper.GetIssueAsync(childIssueDto.Id);
+
+            Assert.AreEqual(parentIssue.IssueDetail.Priority, childIssue.IssueDetail.Priority);
+        }
+
+        [Test]
+        public async Task VisibilityStatusOfParentAndChildMustBeIndentical()
+        {
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            var parentIssue = helper.Issue;
+
             var childIssue = parentIssue.Copy();
             childIssue.Id = ObjectId.Empty;
 
             // TODO check predecessors
-            childIssue.IssueDetail.Priority = parentIssue.IssueDetail.Priority + 1;
             childIssue.IssueDetail.Visibility = !parentIssue.IssueDetail.Visibility;
 
             childIssue = await helper.CreateIssue(childIssue).Parse<IssueDTO>();
-            await helper.Helper.SetParentIssue(parentIssue.Id, childIssue.Id);
+            var result = await helper.Helper.SetParentIssue(parentIssue.Id, childIssue.Id);
 
-            Assert.AreEqual(parentIssue.IssueDetail.Priority, childIssue.IssueDetail.Priority);
-            Assert.AreEqual(parentIssue.IssueDetail.Visibility, childIssue.IssueDetail.Visibility);
+            Assert.AreEqual(HttpStatusCode.BadRequest, result.StatusCode);
         }
 
         [Test]
@@ -116,7 +134,6 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             await helper.Helper.SetParentIssue(childIssueDto.Id, grandChildIssueDto.Id);
 
             parentIssueDto.IssueDetail.Priority += 1;
-            parentIssueDto.IssueDetail.Visibility = !parentIssueDto.IssueDetail.Visibility;
 
             var result = await helper.Helper.PutIssue(parentIssueDto);
             Assert.IsTrue(result.IsSuccessStatusCode);
@@ -125,10 +142,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             var grandChildIssue = await helper.GetIssueAsync(grandChildIssueDto.Id);
 
             Assert.AreEqual(parentIssueDto.IssueDetail.Priority, childIssue.IssueDetail.Priority);
-            Assert.AreEqual(parentIssueDto.IssueDetail.Visibility, childIssue.IssueDetail.Visibility);
-
             Assert.AreEqual(parentIssueDto.IssueDetail.Priority, grandChildIssue.IssueDetail.Priority);
-            Assert.AreEqual(parentIssueDto.IssueDetail.Visibility, grandChildIssue.IssueDetail.Visibility);
         }
 
         [Test]
@@ -141,7 +155,6 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             await helper.Helper.SetParentIssue(parentIssueDto.Id, childIssueDto.Id);
 
             childIssueDto.IssueDetail.Priority = parentIssueDto.IssueDetail.Priority + 1;
-            childIssueDto.IssueDetail.Visibility = !parentIssueDto.IssueDetail.Visibility;
 
             var result = await helper.Helper.PutIssue(parentIssueDto);
             Assert.IsTrue(result.IsSuccessStatusCode);
@@ -149,7 +162,6 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             var childIssue = await helper.GetIssueAsync(childIssueDto.Id);
 
             Assert.AreEqual(parentIssueDto.IssueDetail.Priority, childIssue.IssueDetail.Priority);
-            Assert.AreEqual(parentIssueDto.IssueDetail.Visibility, childIssue.IssueDetail.Visibility);
 
         }
     }

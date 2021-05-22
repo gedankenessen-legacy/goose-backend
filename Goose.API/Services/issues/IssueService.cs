@@ -31,6 +31,7 @@ namespace Goose.API.Services.Issues
         public Task<bool> Delete(ObjectId id);
         public Task AssertNotArchived(Issue issue);
         Task<bool> UserCanSeeInternTicket(ObjectId projectId);
+        Task PropagateDependentProperties(Issue parentIssue);
     }
 
     public class IssueService : IIssueService
@@ -153,6 +154,9 @@ namespace Goose.API.Services.Issues
             var issueToUpdate = await GetUpdatedIssue(issue, issueDto);
 
             await _issueRepo.UpdateAsync(issueToUpdate);
+
+            await PropagateDependentProperties(issueToUpdate);
+
             return await Get(id);
         }
 
@@ -195,7 +199,8 @@ namespace Goose.API.Services.Issues
                 }
             }
 
-            old.IssueDetail = await GetUpdatedIssueDetail(old, updated.IssueDetail);
+            var isChild = old.ParentIssueId != null;
+            old.IssueDetail = await GetUpdatedIssueDetail(old, updated.IssueDetail, isChild);
             return old;
         }
 
@@ -220,12 +225,17 @@ namespace Goose.API.Services.Issues
             });
         }
 
-        private async Task<IssueDetail> GetUpdatedIssueDetail(Issue old, IssueDetail updated)
+        private async Task<IssueDetail> GetUpdatedIssueDetail(Issue old, IssueDetail updated, bool isChild)
         {
             var details = old.IssueDetail;
             details.Name = updated.Name;
 
-            details.Priority = updated.Priority;
+            if (!isChild)
+            {
+                // priority of children must be the same as parent and cannot be set
+                details.Priority = updated.Priority;
+            }
+
             details.Description = updated.Description;
             details.Progress = updated.Progress;
             details.ExpectedTime = updated.ExpectedTime;
@@ -357,6 +367,37 @@ namespace Goose.API.Services.Issues
             // validate requirements with the appropriate handlers.
             var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, project, requirementsWithErrors.Keys);
             authorizationResult.ThrowErrorIfAllFailed(requirementsWithErrors);
+        }
+
+        /// <summary>
+        /// Takes a parentIssue and makes sure that priority, visibility, and child issues are
+        /// propagated to it's child issues and gridchild issues (recursively).
+        /// </summary>
+        /// <returns></returns>
+        public async Task PropagateDependentProperties(Issue parentIssue)
+        {
+            var childIssues = await _issueRepo.GetChildrenOfIssueAsync(parentIssue.Id);
+
+            foreach (var childIssue in childIssues)
+            {
+                var changed = false;
+
+                // Visibility Status is inherited, but cannot be changed
+                // This means checking it is not necessary here.
+
+                var parentPriority = parentIssue.IssueDetail.Priority;
+                if (childIssue.IssueDetail.Priority != parentPriority)
+                {
+                    childIssue.IssueDetail.Priority = parentPriority;
+                    changed = true;
+                }
+
+                if (changed)
+                {
+                    await _issueRepo.UpdateAsync(childIssue);
+                    await PropagateDependentProperties(childIssue);
+                }
+            }
         }
     }
 }
