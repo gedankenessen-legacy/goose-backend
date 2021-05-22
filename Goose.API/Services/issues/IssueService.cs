@@ -17,6 +17,7 @@ using Goose.API.Authorization;
 using Goose.Domain.Models;
 using Goose.API.EventHandler;
 using System;
+using Goose.API.Utils;
 
 namespace Goose.API.Services.Issues
 {
@@ -376,7 +377,16 @@ namespace Goose.API.Services.Issues
         /// <returns></returns>
         public async Task PropagateDependentProperties(Issue parentIssue)
         {
-            var childIssues = await _issueRepo.GetChildrenOfIssueAsync(parentIssue.Id);
+            if (parentIssue.ChildrenIssueIds.Count == 0)
+            {
+                return;
+            }
+
+            var childIssues = await _issueRepo.GetAsync(parentIssue.ChildrenIssueIds);
+
+            IList<ObjectId> parentPredecessorIssues = new List<ObjectId>();
+            parentPredecessorIssues = parentPredecessorIssues.ConcatOrSkip(parentIssue.InheritedPredecessorIssueIds);
+            parentPredecessorIssues = parentPredecessorIssues.ConcatOrSkip(parentIssue.PredecessorIssueIds);
 
             foreach (var childIssue in childIssues)
             {
@@ -389,6 +399,13 @@ namespace Goose.API.Services.Issues
                 if (childIssue.IssueDetail.Priority != parentPriority)
                 {
                     childIssue.IssueDetail.Priority = parentPriority;
+                    changed = true;
+                }
+
+                if ((childIssue.InheritedPredecessorIssueIds == null && parentPredecessorIssues.Count != 0) ||
+                    (childIssue.InheritedPredecessorIssueIds != null && !childIssue.InheritedPredecessorIssueIds.SequenceEqual(parentPredecessorIssues)))
+                {
+                    childIssue.InheritedPredecessorIssueIds = parentPredecessorIssues;
                     changed = true;
                 }
 

@@ -69,13 +69,11 @@ namespace Goose.API.Services.issues
 
             await _associationHelper.CanAddChild(parent, issue);
 
-            issue.IssueDetail.Priority = parent.IssueDetail.Priority;
             issue.ParentIssueId = parentId;
             parent.ChildrenIssueIds.Add(issueId);
             await Task.WhenAll(_issueRepository.UpdateAsync(issue), _issueRepository.UpdateAsync(parent));
 
-            // the issue might have grandchildren which need updating too.
-            await _issueService.PropagateDependentProperties(issue);
+            await _issueService.PropagateDependentProperties(parent);
 
             // ConversationItem im Oberticket hinzufügen
             parent.ConversationItems.Add(new IssueConversation()

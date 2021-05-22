@@ -22,6 +22,7 @@ namespace Goose.Domain.Models.Issues
         public ObjectId? ParentIssueId { get; set; }
         public IList<ObjectId> ChildrenIssueIds { get; set; }
         public IList<ObjectId> PredecessorIssueIds { get; set; }
+        public IList<ObjectId> InheritedPredecessorIssueIds { get; set; }
         public IList<ObjectId> SuccessorIssueIds { get; set; }
     }
 }
