@@ -42,7 +42,7 @@ namespace Goose.API.Services.issues
             _associationHelper = associationHelper;
         }
 
-        public async Task<IssueDTO>? GetParent(ObjectId issueId)
+        public async Task<IssueDTO?> GetParent(ObjectId issueId)
         {
             var parentId = (await _issueRepository.GetAsync(issueId)).ParentIssueId;
             if (parentId == null) return null;

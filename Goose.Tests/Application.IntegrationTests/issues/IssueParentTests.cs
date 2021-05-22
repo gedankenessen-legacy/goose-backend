@@ -82,5 +82,75 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             var res = await helper.Helper.SetParentIssue(helper.Issue.Id, issue2.Id);
             Assert.AreEqual(HttpStatusCode.BadRequest, res.StatusCode);
         }
+
+        [Test]
+        public async Task DependentPropertiesGetSetWhenParentIsAdded()
+        {
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            var parentIssue = helper.Issue;
+
+            var childIssue = parentIssue.Copy();
+            childIssue.Id = ObjectId.Empty;
+
+            // TODO check predecessors
+            childIssue.IssueDetail.Priority = parentIssue.IssueDetail.Priority + 1;
+            childIssue.IssueDetail.Visibility = !parentIssue.IssueDetail.Visibility;
+
+            childIssue = await helper.CreateIssue(childIssue).Parse<IssueDTO>();
+            await helper.Helper.SetParentIssue(parentIssue.Id, childIssue.Id);
+
+            Assert.AreEqual(parentIssue.IssueDetail.Priority, childIssue.IssueDetail.Priority);
+            Assert.AreEqual(parentIssue.IssueDetail.Visibility, childIssue.IssueDetail.Visibility);
+        }
+
+        [Test]
+        public async Task DependentPropertiesGetPropagatedDown()
+        {
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            var parentIssueDto = helper.Issue;
+
+            var childIssueDto = await helper.CreateIssue().Parse<IssueDTO>();
+            await helper.Helper.SetParentIssue(parentIssueDto.Id, childIssueDto.Id);
+
+            var grandChildIssueDto = await helper.CreateIssue().Parse<IssueDTO>();
+            await helper.Helper.SetParentIssue(childIssueDto.Id, grandChildIssueDto.Id);
+
+            parentIssueDto.IssueDetail.Priority += 1;
+            parentIssueDto.IssueDetail.Visibility = !parentIssueDto.IssueDetail.Visibility;
+
+            var result = await helper.Helper.PutIssue(parentIssueDto);
+            Assert.IsTrue(result.IsSuccessStatusCode);
+
+            var childIssue = await helper.GetIssueAsync(childIssueDto.Id);
+            var grandChildIssue = await helper.GetIssueAsync(grandChildIssueDto.Id);
+
+            Assert.AreEqual(parentIssueDto.IssueDetail.Priority, childIssue.IssueDetail.Priority);
+            Assert.AreEqual(parentIssueDto.IssueDetail.Visibility, childIssue.IssueDetail.Visibility);
+
+            Assert.AreEqual(parentIssueDto.IssueDetail.Priority, grandChildIssue.IssueDetail.Priority);
+            Assert.AreEqual(parentIssueDto.IssueDetail.Visibility, grandChildIssue.IssueDetail.Visibility);
+        }
+
+        [Test]
+        public async Task DependentPropertiesOnChildrenCannotBeSet()
+        {
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            var parentIssueDto = helper.Issue;
+
+            var childIssueDto = await helper.CreateIssue().Parse<IssueDTO>();
+            await helper.Helper.SetParentIssue(parentIssueDto.Id, childIssueDto.Id);
+
+            childIssueDto.IssueDetail.Priority = parentIssueDto.IssueDetail.Priority + 1;
+            childIssueDto.IssueDetail.Visibility = !parentIssueDto.IssueDetail.Visibility;
+
+            var result = await helper.Helper.PutIssue(parentIssueDto);
+            Assert.IsTrue(result.IsSuccessStatusCode);
+
+            var childIssue = await helper.GetIssueAsync(childIssueDto.Id);
+
+            Assert.AreEqual(parentIssueDto.IssueDetail.Priority, childIssue.IssueDetail.Priority);
+            Assert.AreEqual(parentIssueDto.IssueDetail.Visibility, childIssue.IssueDetail.Visibility);
+
+        }
     }
 }
