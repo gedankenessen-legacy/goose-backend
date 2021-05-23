@@ -18,6 +18,7 @@ namespace Goose.Domain.DTOs.Issues
         public IList<IssueTimeSheetDTO>? TimeSheets { get; set; }
         public IssueDetail IssueDetail { get; set; }
         public IssueDTO? ParentIssue { get; set; }
+        public IList<IssueDTO>? ChildrenIssues { get; set; }
         public IList<IssueDTO>? PredecessorIssues { get; set; }
         public IList<IssueDTO>? SuccessorIssues { get; set; }
 
@@ -27,7 +28,7 @@ namespace Goose.Domain.DTOs.Issues
 
         public IssueDTODetailed(ObjectId id, StateDTO state, ProjectDTO project, UserDTO client, UserDTO author,
             IList<UserDTO>? assignedUsers, IList<IssueConversationDTO>? conversationItems,
-            IList<IssueTimeSheetDTO>? timeSheets, IssueDetail issueDetail, IssueDTO? parentIssue,
+            IList<IssueTimeSheetDTO>? timeSheets, IssueDetail issueDetail, IssueDTO? parentIssue, IList<IssueDTO>? childrenIssues,
             IList<IssueDTO>? predecessorIssues, IList<IssueDTO>? successorIssues)
         {
             Id = id;
@@ -40,6 +41,7 @@ namespace Goose.Domain.DTOs.Issues
             TimeSheets = timeSheets;
             IssueDetail = issueDetail;
             ParentIssue = parentIssue;
+            ChildrenIssues = childrenIssues;
             PredecessorIssues = predecessorIssues;
             SuccessorIssues = successorIssues;
         }
