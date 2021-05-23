@@ -3,10 +3,13 @@ using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
 using AutoMapper.Mappers;
+using Goose.API.Authorization.Requirements;
 using Goose.API.Repositories;
 using Goose.API.Utils.Exceptions;
 using Goose.Domain.DTOs.Issues;
 using Goose.Domain.Models.Issues;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
 
 namespace Goose.API.Services.Issues
@@ -16,16 +19,15 @@ namespace Goose.API.Services.Issues
         public Task<IList<IssueRequirement>> GetAllOfIssueAsync(ObjectId issueId);
         public Task<IssueRequirement> GetAsync(ObjectId issueId, ObjectId requirementId);
         public Task<IssueRequirement> CreateAsync(ObjectId issueId, IssueRequirement requirement);
-        public Task UpdateAsync(ObjectId issueId, IssueRequirement requirement);
+        public Task UpdateAsync(ObjectId issueId, ObjectId requirementId, IssueRequirement requirement);
         public Task DeleteAsync(ObjectId issueId, ObjectId requirementId);
     }
 
-    public class IssueRequirementService : IIssueRequirementService
+    public class IssueRequirementService : AuthorizableService, IIssueRequirementService
     {
         private readonly IIssueRepository _issueRepo;
 
-        public IssueRequirementService(IIssueRepository issueRepo)
-        {
+        public IssueRequirementService(IIssueRepository issueRepo, IAuthorizationService authorizationService, IHttpContextAccessor httpContextAccessor) : base(httpContextAccessor, authorizationService) {
             _issueRepo = issueRepo;
         }
 
@@ -43,6 +45,8 @@ namespace Goose.API.Services.Issues
         public async Task<IssueRequirement> CreateAsync(ObjectId issueId, IssueRequirement requirement)
         {
             var issue = await _issueRepo.GetAsync(issueId);
+
+            await AuthenticateRequirmentAsync(issue, IssueOperationRequirments.CreateRequirements);
 
             if(issue is null)
                 throw new HttpStatusException(400, "Das angefragte Issue Existiert nicht");
@@ -63,8 +67,11 @@ namespace Goose.API.Services.Issues
             return requirement;
         }
 
-        public async Task UpdateAsync(ObjectId issueId, IssueRequirement requirement)
+        public async Task UpdateAsync(ObjectId issueId, ObjectId requirementId, IssueRequirement requirement)
         {
+            if (requirementId.Equals(requirement.Id) is false)
+                throw new HttpStatusException(400, "Die ID des Pfades passt nicht zu der ID der Ressource.");
+
             var issue = await _issueRepo.GetAsync(issueId);
 
             if (issue is null)
@@ -77,13 +84,15 @@ namespace Goose.API.Services.Issues
                 throw new HttpStatusException(400, "Bitte geben Sie eine Valide Anforderung an");
 
             var req = issue.IssueDetail.Requirements.First(it => it.Id == requirement.Id);
-            SetRequirementFields(req, requirement);
+            await SetRequirementFieldsAsync(issue, req, requirement);
             await _issueRepo.UpdateAsync(issue);
         }
 
         public async Task DeleteAsync(ObjectId issueId, ObjectId requirementId)
         {
             var issue = await _issueRepo.GetAsync(issueId);
+
+            await AuthenticateRequirmentAsync(issue, IssueOperationRequirments.RemoveRequirements);
 
             if (issue is null)
                 throw new HttpStatusException(400, "Das angefragte Issue Existiert nicht");
@@ -97,9 +106,16 @@ namespace Goose.API.Services.Issues
         }
 
 
-        private void SetRequirementFields(IssueRequirement dest, IssueRequirement source)
+        private async Task SetRequirementFieldsAsync(Issue issue, IssueRequirement dest, IssueRequirement source)
         {
+            if (dest.Requirement != source.Requirement)         
+                await AuthenticateRequirmentAsync(issue, IssueOperationRequirments.EditRequirements);
+            
+            if (dest.Achieved != source.Achieved)
+                await AuthenticateRequirmentAsync(issue, IssueOperationRequirments.AchieveRequirements, "Du hast nicht die Rechte um ein Requirment als abgeschlossen zu markieren");
+
             dest.Requirement = source.Requirement;
+            dest.Achieved = source.Achieved;
         }
     }
 }

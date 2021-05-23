@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
@@ -26,10 +27,9 @@ namespace Goose.Tests.Application.IntegrationTests
     {
         private readonly HttpClient _client;
 
-        private SignInResponse LoggedInUser { get; set; }
-        private List<ObjectId> _companies = new();
-        private List<ObjectId> _projects = new();
-        private List<ObjectId> _issues = new();
+        private readonly List<ObjectId> _companies = new();
+        private readonly List<ObjectId> _projects = new();
+        private readonly List<ObjectId> _issues = new();
 
 
         public ICompanyRepository CompanyRepository { get; }
@@ -108,7 +108,7 @@ namespace Goose.Tests.Application.IntegrationTests
         }
 
 
-        public async Task<ObjectId> GenerateUserAndSetToProject(ObjectId companyId, ObjectId projectId,
+        public async Task<UserDTO> GenerateUserAndSetToProject(ObjectId companyId, ObjectId projectId,
             params Role[] roles)
         {
             var login = new PropertyUserLoginDTO
@@ -121,7 +121,7 @@ namespace Goose.Tests.Application.IntegrationTests
             return await GenerateUserAndSetToProject(companyId, projectId, login, roles);
         }
 
-        public async Task<ObjectId> GenerateUserAndSetToProject(ObjectId companyId, ObjectId projectId, PropertyUserLoginDTO user,
+        public async Task<UserDTO> GenerateUserAndSetToProject(ObjectId companyId, ObjectId projectId, PropertyUserLoginDTO user,
             params Role[] roles)
         {
             //generate User 
@@ -138,7 +138,7 @@ namespace Goose.Tests.Application.IntegrationTests
             });
 
             _client.Auth(signInResult);
-            return signInResult.User.Id;
+            return signInResult.User;
         }
 
         public async Task<HttpResponseMessage> GenerateIssue(UserDTO user, ProjectDTO project, Action<IssueDTO> withIssue = null)
@@ -237,6 +237,18 @@ namespace Goose.Tests.Application.IntegrationTests
             return await _client.DeleteAsync($"api/projects/{projectId}/states/{stateToDelete.Id}");
         }
 
+        public async Task<HttpResponseMessage> GetParentIssue(ObjectId childId)
+        {
+            var uri = $"api/issues/{childId}/parent";
+            return await _client.GetAsync(uri);
+        }
+
+        public async Task<HttpResponseMessage> GetChildrenIssues(ObjectId parentId)
+        {
+            var uri = $"api/issues/{parentId}/children";
+            return await _client.GetAsync(uri);
+        }
+
         public async Task<SignInResponse> SignIn(SignInRequest signInRequest)
         {
             var uri = "/api/auth/signIn";
@@ -286,6 +298,12 @@ namespace Goose.Tests.Application.IntegrationTests
 
         #region Set
 
+        public async Task<HttpResponseMessage> SetParentIssue(ObjectId parentId, ObjectId childId)
+        {
+            var uri = $"api/issues/{childId}/parent/{parentId}";
+            return await _client.PutAsync(uri, null);
+        }
+        
         public void SetAuth(SignInResponse signIn)
         {
             _client.Auth(signIn);

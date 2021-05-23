@@ -42,6 +42,32 @@ namespace Goose.Tests.Application.IntegrationTests
             return await Helper.GenerateProject(Company.Id, project);
         }
 
+        public async Task<HttpResponseMessage> CreateProject()
+        {
+            var copy = Project.Copy();
+            copy.Id = ObjectId.Empty;
+            return await CreateProject(copy);
+        }
+
+        /*
+         * Returns project
+         */
+        public async Task<HttpResponseMessage> CreateProjectAndAddProjectUser(params Role[] roles)
+        {
+            var copy = Project.Copy();
+            copy.Id = ObjectId.Empty;
+            return await CreateProjectAndAddProjectUser(copy, SignIn.User.Id, roles);
+        }
+
+        public async Task<HttpResponseMessage> CreateProjectAndAddProjectUser(ProjectDTO project, ObjectId userId, params Role[] roles)
+        {
+            var res = CreateProject(project);
+            var proj = await res.Parse<ProjectDTO>();
+            await Helper.AddUserToProject(proj.Id, userId, roles);
+            return await res;
+        }
+
+
         public async Task<HttpResponseMessage> CreateIssue(IssueDTO issue)
         {
             return await Helper.GenerateIssue(Project, issue);
@@ -59,7 +85,7 @@ namespace Goose.Tests.Application.IntegrationTests
             return await Helper.GenerateIssue(Project, copy);
         }
 
-        public async Task<ObjectId> GenerateUserAndSetToProject(params Role[] roles)
+        public async Task<UserDTO> GenerateUserAndSetToProject(params Role[] roles)
         {
             client.Auth(SignIn);
             return await Helper.GenerateUserAndSetToProject(Company.Id, Project.Id, roles);
@@ -68,6 +94,11 @@ namespace Goose.Tests.Application.IntegrationTests
         public async Task<Issue> GetIssueAsync(ObjectId issueId)
         {
             return await Helper.GetIssueAsync(issueId);
+        }
+
+        public async Task<HttpResponseMessage> AddIssueChild(ObjectId childId)
+        {
+            return await Helper.SetParentIssue(Issue.Id, childId);
         }
 
 

@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using Goose.API.Services.Issues;
-using Goose.API.Utils;
+using Goose.API.Services.issues;
 using Goose.Domain.DTOs;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -13,11 +12,11 @@ namespace Goose.API.Controllers.IssuesControllers
     [ApiController]
     public class IssueParentsController: Controller
     {
-    private readonly IIssueService _issueService;
+    private readonly IIssueParentService _issueParentService;
 
-    public IssueParentsController(IIssueService issueService)
+    public IssueParentsController(IIssueParentService issueParentService)
     {
-        _issueService = issueService;
+        _issueParentService = issueParentService;
     }
 
     [HttpGet]
@@ -26,7 +25,7 @@ namespace Goose.API.Controllers.IssuesControllers
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<IList<UserDTO>>> Get([FromRoute] ObjectId issueId)
     {
-        var issue = await _issueService.GetParent(issueId);
+        var issue = await _issueParentService.GetParent(issueId);
         if (issue == null) return NotFound();
         return Ok(issue);
     }
@@ -36,7 +35,7 @@ namespace Goose.API.Controllers.IssuesControllers
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> Put([FromRoute] ObjectId issueId, [FromRoute] ObjectId parentId)
     {
-        await _issueService.SetParent(issueId, parentId);
+        await _issueParentService.SetParent(issueId, parentId);
         return NoContent();
     }
 
@@ -45,7 +44,7 @@ namespace Goose.API.Controllers.IssuesControllers
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> Delete([FromRoute] ObjectId issueId)
     {
-        await _issueService.RemoveParent(issueId);
+        await _issueParentService.RemoveParent(issueId);
         return NoContent();
     }
     }

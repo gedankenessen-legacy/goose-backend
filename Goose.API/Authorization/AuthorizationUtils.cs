@@ -1,4 +1,4 @@
-using Goose.API.Utils;
+﻿using Goose.API.Utils;
 using Goose.API.Utils.Exceptions;
 using Goose.Domain.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -6,6 +6,9 @@ using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
+using System.Threading.Tasks;
+using Goose.Domain.Models.Projects;
 
 namespace Goose.API.Authorization
 {
@@ -26,6 +29,14 @@ namespace Goose.API.Authorization
                 // fallback error message.
                 throw new HttpStatusException(StatusCodes.Status403Forbidden, "You are missing one or more requirements, in order to process this request.");    
             }
+        }
+        
+        public static async Task<bool> HasAtLeastOneRequirement(this IAuthorizationService authorizationService, ClaimsPrincipal user, Project resource,
+            params IAuthorizationRequirement[] req)
+        {
+            var res = await authorizationService.AuthorizeAsync(user, resource, req);
+            if (res.Failure == null) return true;
+            return res.Failure!.FailedRequirements.Count() < req.Length;
         }
 
         public static void ThrowErrorIfAllFailed(this AuthorizationResult authorizationResult, Dictionary<IAuthorizationRequirement, string> errorMap)

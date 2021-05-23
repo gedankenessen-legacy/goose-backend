@@ -6,5 +6,6 @@ namespace Goose.Domain.Models.Issues
     {
         public ObjectId Id { get; set; }
         public string Requirement { get; set; }
+        public bool Achieved { get; set; }
     }
 }

@@ -245,7 +245,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
         public async Task WriteMessageAsEmployee()
         {
             using var helper = await new SimpleTestHelperBuilderIssueRights().Build();
-            var userId = await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.EmployeeRole);
+            var user = await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.EmployeeRole);
 
             var newItem = new IssueConversationDTO()
             {
@@ -260,7 +260,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
 
             var issue = await helper.GetIssueAsync(helper.Issue.Id);
             var latestConversationItem = issue.ConversationItems.Last();
-            Assert.AreEqual(latestConversationItem.CreatorUserId, userId);
+            Assert.AreEqual(latestConversationItem.CreatorUserId, user.Id);
             Assert.AreEqual(latestConversationItem.Type, IssueConversation.MessageType);
             Assert.AreEqual(latestConversationItem.Data, "TestConversation");
         }
@@ -270,7 +270,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
         public async Task WriteMessageAsCustomer()
         {
             using var helper = await new SimpleTestHelperBuilderIssueRights().Build();
-            var userId = await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.CustomerRole);
+            var user = await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.CustomerRole);
 
             var newItem = new IssueConversationDTO()
             {
@@ -285,7 +285,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
 
             var issue = await helper.GetIssueAsync(helper.Issue.Id);
             var latestConversationItem = issue.ConversationItems.Last();
-            Assert.AreEqual(latestConversationItem.CreatorUserId, userId);
+            Assert.AreEqual(latestConversationItem.CreatorUserId, user.Id);
             Assert.AreEqual(latestConversationItem.Type, IssueConversation.MessageType);
             Assert.AreEqual(latestConversationItem.Data, "TestConversation");
         }

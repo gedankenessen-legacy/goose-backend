@@ -29,15 +29,11 @@ namespace Goose.API.Services.Issues
         public Task<IssueDTO> Create(IssueDTO issueDto);
         public Task<IssueDTO> Update(IssueDTO issueDto, ObjectId id);
         public Task<bool> Delete(ObjectId id);
-        public Task<IssueDTO?> GetParent(ObjectId issueId);
-        public Task SetParent(ObjectId issueId, ObjectId parentId);
-        public Task RemoveParent(ObjectId issueId);
-
         public Task AssertNotArchived(Issue issue);
         Task<bool> UserCanSeeInternTicket(ObjectId projectId);
     }
 
-    public class IssueService : IIssueService
+    public class IssueService : AuthorizableService, IIssueService
     {
         private readonly IStateService _stateService;
         private readonly IProjectRepository _projectRepository;
@@ -46,8 +42,6 @@ namespace Goose.API.Services.Issues
         private readonly IIssueRepository _issueRepo;
         private readonly IIssueRequestValidator _issueValidator;
 
-        private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly IAuthorizationService _authorizationService;
         private readonly IMessageService _messageService;
 
         public IssueService(
@@ -58,15 +52,13 @@ namespace Goose.API.Services.Issues
             IIssueRequestValidator issueValidator,
             IHttpContextAccessor httpContextAccessor,
             IAuthorizationService authorizationService,
-            IMessageService messageService)
+            IMessageService messageService) : base (httpContextAccessor, authorizationService)
         {
             _issueRepo = issueRepo;
             _stateService = stateService;
             _projectRepository = projectRepository;
             _userRepository = userRepository;
             _issueValidator = issueValidator;
-            _httpContextAccessor = httpContextAccessor;
-            _authorizationService = authorizationService;
             _messageService = messageService;
         }
 
@@ -97,12 +89,16 @@ namespace Goose.API.Services.Issues
                 throw new HttpStatusException(StatusCodes.Status400BadRequest,
                     $"Cannot create an Issue. Project with id [{issueDto.Project.Id}] does not exist");
 
-            await UserCanCreateOrUpdateIssue(issueDto.Project.Id);
-
             var issue = await CreateValidIssue(issueDto);
+
+            await AuthenticateRequirmentAsync(issue, IssueOperationRequirments.Create);
+
             await _issueRepo.CreateAsync(issue);
 
-            if(issue.IssueDetail.EndDate is not null && issue.IssueDetail.EndDate != default(DateTime))
+            if (issue.IssueDetail.StartDate is not null && issue.IssueDetail.StartDate != default(DateTime))
+                await Scheduler.AddEvent(new IssueStartDateEvent(issue, _issueRepo, _stateService));
+
+            if (issue.IssueDetail.EndDate is not null && issue.IssueDetail.EndDate != default(DateTime))
                 await Scheduler.AddEvent(new IssueDeadlineEvent(await _projectRepository.GetAsync(issue.ProjectId), issue, _messageService, _issueRepo));
 
             return await Get(issue.Id);
@@ -124,6 +120,7 @@ namespace Goose.API.Services.Issues
                 TimeSheets = new List<TimeSheet>(),
                 AssignedUserIds = new List<ObjectId>(),
                 ParentIssueId = null,
+                ChildrenIssueIds = new List<ObjectId>(),
                 PredecessorIssueIds = new List<ObjectId>(),
                 SuccessorIssueIds = new List<ObjectId>()
             };
@@ -145,10 +142,10 @@ namespace Goose.API.Services.Issues
         {
             var issue = await _issueRepo.GetAsync(id);
 
-            if(issue is null)
+            if (issue is null)
                 throw new HttpStatusException(StatusCodes.Status400BadRequest, $"Das angeforderte Ticket mit der id {id} konnte nicht gefunden werden");
 
-            await UserCanCreateOrUpdateIssue(issue.ProjectId);
+            await AuthenticateRequirmentAsync(issue, IssueOperationRequirments.Edit);
 
             var issueToUpdate = await GetUpdatedIssue(issue, issueDto);
 
@@ -175,7 +172,7 @@ namespace Goose.API.Services.Issues
                         await CreateCanceledMessage(old);
                     }
                     else
-                        await UserCanChangeStatus(old);
+                        await AuthenticateRequirmentAsync(old, IssueOperationRequirments.EditState);
 
                     // State wird aktualisiert
                     old.StateId = newStateId;
@@ -237,6 +234,11 @@ namespace Goose.API.Services.Issues
                 details.StartDate = updated.StartDate;
                 details.EndDate = updated.EndDate;
 
+                if (details.StartDate is not null && details.StartDate != default(DateTime))
+                    await Scheduler.AddEvent(new IssueStartDateEvent(old, _issueRepo, _stateService));
+                else
+                    await IssueStartDateEvent.CancelDeadLine(old.Id);
+
                 if (details.EndDate is not null && details.EndDate != default(DateTime))
                     await Scheduler.AddEvent(new IssueDeadlineEvent(await _projectRepository.GetAsync(old.ProjectId), old, _messageService, _issueRepo));
                 else
@@ -249,64 +251,6 @@ namespace Goose.API.Services.Issues
         public async Task<bool> Delete(ObjectId id)
         {
             return (await _issueRepo.DeleteAsync(id)).DeletedCount > 0;
-        }
-
-        public async Task<IssueDTO?> GetParent(ObjectId issueId)
-        {
-            var parentId = (await _issueRepo.GetAsync(issueId)).ParentIssueId;
-            if (parentId == null) return null;
-            return await Get(issueId);
-        }
-
-        public async Task SetParent(ObjectId issueId, ObjectId parentId)
-        {
-            var issue = await _issueRepo.GetAsync(issueId);
-
-            await UserCanAddParent(issue);
-
-            var parent = await _issueRepo.GetAsync(parentId);
-
-            if (issue.ProjectId != parent.ProjectId)
-            {
-                throw new HttpStatusException(StatusCodes.Status400BadRequest, "Issues müssen im selben Projekt sein");
-            }
-
-            issue.ParentIssueId = parentId;
-            await _issueRepo.UpdateAsync(issue);
-
-            // ConversationItem im Oberticket hinzufügen
-            parent.ConversationItems.Add(new IssueConversation()
-            {
-                Id = ObjectId.GenerateNewId(),
-                CreatorUserId = _httpContextAccessor.HttpContext.User.GetUserId(),
-                Type = IssueConversation.ChildIssueAddedType,
-                Data = null,
-                OtherTicketId = issueId,
-            });
-            await _issueRepo.UpdateAsync(parent);
-        }
-
-        public async Task RemoveParent(ObjectId issueId)
-        {
-            var issue = await _issueRepo.GetAsync(issueId);
-            var mightBeParentId = issue.ParentIssueId;
-            issue.ParentIssueId = null;
-            await _issueRepo.UpdateAsync(issue);
-
-            if (mightBeParentId is ObjectId parentId)
-            {
-                // ConversationItem im Oberticket hinzufügen
-                var parent = await _issueRepo.GetAsync(parentId);
-                parent.ConversationItems.Add(new IssueConversation()
-                {
-                    Id = ObjectId.GenerateNewId(),
-                    CreatorUserId = _httpContextAccessor.HttpContext.User.GetUserId(),
-                    Type = IssueConversation.ChildIssueRemovedType,
-                    Data = null,
-                    OtherTicketId = issueId,
-                });
-                await _issueRepo.UpdateAsync(parent);
-            }
         }
 
         private async Task<StateDTO> GetState(ObjectId projectId, string stateName)
@@ -366,27 +310,11 @@ namespace Goose.API.Services.Issues
             return authorizationResult.Failure.FailedRequirements.Count() < requirements.Count;
         }
 
-        private async Task UserCanChangeStatus(Issue issue)
-        {
-            Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
-            {
-                { IssueOperationRequirments.EditState, "Your are not allowed to edit the state of the issue." }
-            };
-
-            // add additional req. for internal issues.
-            if (issue.IssueDetail.Visibility is false)
-                requirementsWithErrors.Add(IssueOperationRequirments.EditStateOfInternal, "Your are not allowed to edit the state of an internal issue.");
-
-            // validate requirements with the appropriate handlers.
-            var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, issue, requirementsWithErrors.Keys);
-            authorizationResult.ThrowErrorForFailedRequirements(requirementsWithErrors);
-        }
-
         private async Task UserCanDiscardIssue(Issue issue)
         {
             Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
             {
-                { IssueOperationRequirments.DiscardTicket, "Your are not allowed to discard the issue." }
+                { IssueOperationRequirments.DiscardIssue, "Your are not allowed to discard the issue." }
             };
 
             // add additional req. for internal issues.
@@ -395,33 +323,6 @@ namespace Goose.API.Services.Issues
 
             var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, issue, requirementsWithErrors.Keys);
             authorizationResult.ThrowErrorForFailedRequirements(requirementsWithErrors);
-        }
-
-        private async Task UserCanAddParent(Issue issue)
-        {
-            Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
-            {
-                { IssueOperationRequirments.AddSubTicket, "Your are not allowed to add a parent to this issue." }
-            };
-
-            var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, issue, requirementsWithErrors.Keys);
-            authorizationResult.ThrowErrorForFailedRequirements(requirementsWithErrors);
-        }
-
-        private async Task UserCanCreateOrUpdateIssue(ObjectId projectId)
-        {
-            var project = await _projectRepository.GetAsync(projectId);
-            Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
-            {
-                { ProjectRolesRequirement.EmployeeRequirement, "You need to be the employee with write-rights in this project, in order to create or update a issue." },
-                { ProjectRolesRequirement.LeaderRequirement, "You need to be the leader in this project, in order to create or update a issue." },
-                { ProjectRolesRequirement.CustomerRequirement, "You need to be a customer in this project, in order to create or update a issue." },
-                { CompanyRolesRequirement.CompanyOwner, "You need to be a Owner of the Company, in order to create or update a issue"}
-            };
-
-            // validate requirements with the appropriate handlers.
-            var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, project, requirementsWithErrors.Keys);
-            authorizationResult.ThrowErrorIfAllFailed(requirementsWithErrors);
         }
     }
 }
