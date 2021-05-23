@@ -74,6 +74,14 @@ namespace Goose.API.Authorization.Handlers
             Dictionary<OperationAuthorizationRequirement, Func<IList<ObjectId>, bool>> ValidateUserPermissions = new()
             {
                 {
+                    IssueOperationRequirments.Create,
+                    x => x.Contains(Role.CustomerRole.Id) || x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
+                },
+                {
+                    IssueOperationRequirments.Edit,
+                    x => x.Contains(Role.CustomerRole.Id) || x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
+                },
+                {
                     IssueOperationRequirments.WriteMessage,
                     x => x.Contains(Role.CustomerRole.Id) || x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
                 },
@@ -82,7 +90,7 @@ namespace Goose.API.Authorization.Handlers
                     x => x.Contains(Role.CustomerRole.Id) || x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ReadonlyEmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
                 },
                 {
-                    IssueOperationRequirments.DiscardTicket,
+                    IssueOperationRequirments.DiscardIssue,
                     x => x.Contains(Role.CustomerRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
                 },
                 {
@@ -102,16 +110,36 @@ namespace Goose.API.Authorization.Handlers
                     x => x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
                 },
                 {
-                    IssueOperationRequirments.AddSubTicket,
+                    IssueOperationRequirments.EditOwnTimeSheets,
+                    x => x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
+                },
+                {
+                    IssueOperationRequirments.AddSubIssue,
                     x => x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
                 },
                 {
                     IssueOperationRequirments.CreateOwnTimeSheets,
                     x => x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
+                },
+                {
+                    IssueOperationRequirments.CreateRequirements,
+                    x => x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
+                },
+                {
+                    IssueOperationRequirments.EditRequirements,
+                    x => x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
+                },
+                {
+                    IssueOperationRequirments.AchieveRequirements,
+                    x => x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
+                },
+                {
+                    IssueOperationRequirments.RemoveRequirements,
+                    x => x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
                 }
             };
 
-            if (ValidateUserPermissions[requirement](userRoles))
+            if (ValidateUserPermissions.ContainsKey(requirement) && ValidateUserPermissions[requirement](userRoles))
                 context.Succeed(requirement);
         }
 
@@ -123,6 +151,14 @@ namespace Goose.API.Authorization.Handlers
             Dictionary<OperationAuthorizationRequirement, Func<IList<ObjectId>, bool>> ValidateUserPermissions = new()
             {
                 {
+                    IssueOperationRequirments.Create,
+                    x => x.Contains(Role.CustomerRole.Id) || x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
+                },
+                {
+                    IssueOperationRequirments.Edit,
+                    x => x.Contains(Role.CustomerRole.Id) || x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
+                },
+                {
                     IssueOperationRequirments.WriteMessage,
                     x => x.Contains(Role.CustomerRole.Id) || x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
                 },
@@ -131,7 +167,7 @@ namespace Goose.API.Authorization.Handlers
                     x => x.Contains(Role.CustomerRole.Id) || x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ReadonlyEmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
                 },
                 {
-                    IssueOperationRequirments.DiscardTicket,
+                    IssueOperationRequirments.DiscardIssue,
                     x => x.Contains(Role.CustomerRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
                 },
                 {
@@ -143,7 +179,7 @@ namespace Goose.API.Authorization.Handlers
                     x => x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
                 },
                 {
-                    IssueOperationRequirments.AddSubTicket,
+                    IssueOperationRequirments.AddSubIssue,
                     x => x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
                 },
                 {
@@ -161,10 +197,14 @@ namespace Goose.API.Authorization.Handlers
                 {
                     IssueOperationRequirments.CreateOwnTimeSheets,
                     x => x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
-                }
+                },
+                {
+                    IssueOperationRequirments.AchieveRequirements,
+                    x => x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
+                },
             };
 
-            if (ValidateUserPermissions[requirement](userRoles))
+            if (ValidateUserPermissions.ContainsKey(requirement) && ValidateUserPermissions[requirement](userRoles))
                 context.Succeed(requirement);
         }
 
@@ -172,6 +212,14 @@ namespace Goose.API.Authorization.Handlers
         {
             Dictionary<OperationAuthorizationRequirement, Func<IList<ObjectId>, bool>> ValidateUserPermissions = new()
             {
+                {
+                    IssueOperationRequirments.Create,
+                    x => x.Contains(Role.CustomerRole.Id) || x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
+                },
+                {
+                    IssueOperationRequirments.Edit,
+                    x => x.Contains(Role.CustomerRole.Id) || x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
+                },
                 {
                     IssueOperationRequirments.WriteMessage,
                     x => x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
@@ -203,10 +251,14 @@ namespace Goose.API.Authorization.Handlers
                 {
                     IssueOperationRequirments.CreateOwnTimeSheets,
                     x => x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
-                }
+                },
+                {
+                    IssueOperationRequirments.AchieveRequirements,
+                    x => x.Contains(Role.EmployeeRole.Id) || x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
+                },
             };
 
-            if (ValidateUserPermissions[requirement](userRoles))
+            if (ValidateUserPermissions.ContainsKey(requirement) && ValidateUserPermissions[requirement](userRoles))
                 context.Succeed(requirement);
         }
     }
