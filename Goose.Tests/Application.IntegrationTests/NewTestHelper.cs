@@ -309,6 +309,12 @@ namespace Goose.Tests.Application.IntegrationTests
             _client.Auth(signIn);
         }
 
+        public async Task<HttpResponseMessage> PutIssue(IssueDTO issue)
+        {
+            var uri = $"api/projects/{issue.Project.Id}/issues/{issue.Id}/";
+            return await _client.PutAsync(uri, issue.ToStringContent());
+        }
+
         #endregion
 
         #region Utils

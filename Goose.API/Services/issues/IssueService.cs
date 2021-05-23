@@ -17,6 +17,7 @@ using Goose.API.Authorization;
 using Goose.Domain.Models;
 using Goose.API.EventHandler;
 using System;
+using Goose.API.Utils;
 
 namespace Goose.API.Services.Issues
 {
@@ -31,6 +32,7 @@ namespace Goose.API.Services.Issues
         public Task<bool> Delete(ObjectId id);
         public Task AssertNotArchived(Issue issue);
         Task<bool> UserCanSeeInternTicket(ObjectId projectId);
+        Task PropagateDependentProperties(Issue parentIssue);
     }
 
     public class IssueService : AuthorizableService, IIssueService
@@ -150,6 +152,9 @@ namespace Goose.API.Services.Issues
             var issueToUpdate = await GetUpdatedIssue(issue, issueDto);
 
             await _issueRepo.UpdateAsync(issueToUpdate);
+
+            await PropagateDependentProperties(issueToUpdate);
+
             return await Get(id);
         }
 
@@ -192,7 +197,8 @@ namespace Goose.API.Services.Issues
                 }
             }
 
-            old.IssueDetail = await GetUpdatedIssueDetail(old, updated.IssueDetail);
+            var isChild = old.ParentIssueId != null;
+            old.IssueDetail = await GetUpdatedIssueDetail(old, updated.IssueDetail, isChild);
             return old;
         }
 
@@ -217,12 +223,17 @@ namespace Goose.API.Services.Issues
             });
         }
 
-        private async Task<IssueDetail> GetUpdatedIssueDetail(Issue old, IssueDetail updated)
+        private async Task<IssueDetail> GetUpdatedIssueDetail(Issue old, IssueDetail updated, bool isChild)
         {
             var details = old.IssueDetail;
             details.Name = updated.Name;
 
-            details.Priority = updated.Priority;
+            if (!isChild)
+            {
+                // priority of children must be the same as parent and cannot be set
+                details.Priority = updated.Priority;
+            }
+
             details.Description = updated.Description;
             details.Progress = updated.Progress;
             details.ExpectedTime = updated.ExpectedTime;
@@ -323,6 +334,69 @@ namespace Goose.API.Services.Issues
 
             var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, issue, requirementsWithErrors.Keys);
             authorizationResult.ThrowErrorForFailedRequirements(requirementsWithErrors);
+        }
+        
+        private async Task UserCanCreateOrUpdateIssue(ObjectId projectId)
+        {
+            var project = await _projectRepository.GetAsync(projectId);
+            Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
+            {
+                { ProjectRolesRequirement.EmployeeRequirement, "You need to be the employee with write-rights in this project, in order to create or update a issue." },
+                { ProjectRolesRequirement.LeaderRequirement, "You need to be the leader in this project, in order to create or update a issue." },
+                { ProjectRolesRequirement.CustomerRequirement, "You need to be a customer in this project, in order to create or update a issue." },
+                { CompanyRolesRequirement.CompanyOwner, "You need to be a Owner of the Company, in order to create or update a issue"}
+            };
+
+            // validate requirements with the appropriate handlers.
+            var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, project, requirementsWithErrors.Keys);
+            authorizationResult.ThrowErrorIfAllFailed(requirementsWithErrors);
+        }
+
+        /// <summary>
+        /// Takes a parentIssue and makes sure that priority, visibility, and child issues are
+        /// propagated to it's child issues and gridchild issues (recursively).
+        /// </summary>
+        /// <returns></returns>
+        public async Task PropagateDependentProperties(Issue parentIssue)
+        {
+            if (parentIssue.ChildrenIssueIds.Count == 0)
+            {
+                return;
+            }
+
+            var childIssues = await _issueRepo.GetAsync(parentIssue.ChildrenIssueIds);
+
+            IList<ObjectId> parentPredecessorIssues = new List<ObjectId>();
+            parentPredecessorIssues = parentPredecessorIssues.ConcatOrSkip(parentIssue.InheritedPredecessorIssueIds);
+            parentPredecessorIssues = parentPredecessorIssues.ConcatOrSkip(parentIssue.PredecessorIssueIds);
+
+            foreach (var childIssue in childIssues)
+            {
+                var changed = false;
+
+                // Visibility Status is inherited, but cannot be changed
+                // This means checking it is not necessary here.
+
+                var parentPriority = parentIssue.IssueDetail.Priority;
+                if (childIssue.IssueDetail.Priority != parentPriority)
+                {
+                    childIssue.IssueDetail.Priority = parentPriority;
+                    changed = true;
+                }
+
+                if ((childIssue.InheritedPredecessorIssueIds == null && parentPredecessorIssues.Count != 0) ||
+                    (childIssue.InheritedPredecessorIssueIds != null && !childIssue.InheritedPredecessorIssueIds.SequenceEqual(parentPredecessorIssues)))
+                {
+                    childIssue.InheritedPredecessorIssueIds = parentPredecessorIssues;
+                    changed = true;
+                }
+
+                if (changed)
+                {
+                    await _issueRepo.UpdateAsync(childIssue);
+                    await PropagateDependentProperties(childIssue);
+                }
+            }
         }
     }
 }
