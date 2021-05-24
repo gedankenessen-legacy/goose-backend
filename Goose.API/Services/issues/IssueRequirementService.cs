@@ -77,11 +77,8 @@ namespace Goose.API.Services.Issues
             if (issue is null)
                 throw new HttpStatusException(400, "Das angefragte Issue Existiert nicht");
 
-            if (issue.IssueDetail.RequirementsSummaryCreated)
-                throw new HttpStatusException(400, "Die Anforderung für dieses Ticket konnte nicht aktualliesiert werden, da schon eine Zusammenfassung erstellt wurde");
-
             if (string.IsNullOrWhiteSpace(requirement.Requirement))
-                throw new HttpStatusException(400, "Bitte geben Sie eine Valide Anforderung an");
+                throw new HttpStatusException(400, "Bitte geben Sie eine valide Anforderung an");
 
             var req = issue.IssueDetail.Requirements.First(it => it.Id == requirement.Id);
             await SetRequirementFieldsAsync(issue, req, requirement);
@@ -108,9 +105,14 @@ namespace Goose.API.Services.Issues
 
         private async Task SetRequirementFieldsAsync(Issue issue, IssueRequirement dest, IssueRequirement source)
         {
-            if (dest.Requirement != source.Requirement)         
-                await AuthenticateRequirmentAsync(issue, IssueOperationRequirments.EditRequirements);
-            
+            if (dest.Requirement != source.Requirement)
+            {
+                if (issue.IssueDetail.RequirementsSummaryCreated)
+                    throw new HttpStatusException(400, "Die Anforderung für dieses Ticket konnte nicht aktualisiert werden, da schon eine Zusammenfassung erstellt wurde");
+                else
+                    await AuthenticateRequirmentAsync(issue, IssueOperationRequirments.EditRequirements);
+            }
+
             if (dest.Achieved != source.Achieved)
                 await AuthenticateRequirmentAsync(issue, IssueOperationRequirments.AchieveRequirements, "Du hast nicht die Rechte um ein Requirment als abgeschlossen zu markieren");
 
