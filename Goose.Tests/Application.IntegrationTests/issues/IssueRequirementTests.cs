@@ -1,6 +1,7 @@
 ﻿using Goose.Domain.Models.Auth;
 using Goose.Domain.Models.Identity;
 using Goose.Domain.Models.Issues;
+using Goose.Domain.Models.Projects;
 using MongoDB.Bson;
 using NUnit.Framework;
 using System.Linq;
@@ -77,6 +78,20 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             });
 
             helper.Helper.SetAuth(customerSignIn);
+
+            var res = await helper.Helper.GenerateRequirement();
+            Assert.True(ObjectId.Empty.Equals(res.Id));
+        }
+    
+        [Test]
+        public async Task AddRequirementInProcessingPhaseFalse()
+        {
+            using var helper = await new SimpleTestHelperBuilder().Build();
+
+            var issue = helper.Issue.Copy();
+            issue.State = await helper.Helper.GetStateByNameAsync(helper.Project.Id, State.ProcessingState);
+            var uri = $"api/projects/{issue.Project.Id}/issues/{issue.Id}";
+            var response = await helper.client.PutAsync(uri, issue.ToStringContent());
 
             var res = await helper.Helper.GenerateRequirement();
             Assert.True(ObjectId.Empty.Equals(res.Id));
