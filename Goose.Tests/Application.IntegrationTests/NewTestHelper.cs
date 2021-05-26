@@ -153,9 +153,9 @@ namespace Goose.Tests.Application.IntegrationTests
             return await CreateIssue(project.Id, issue);
         }
 
-        public async Task<IssueRequirement> GenerateRequirement()
+        public async Task<IssueRequirement> GenerateRequirement(string requirement = "Die Application Testen")
         {
-            IssueRequirement issueRequirement = new() { Requirement = "Die Application Testen" };
+            IssueRequirement issueRequirement = new() { Requirement = requirement };
             var res = await CreateRequirementForIssueAsync(_client, _issues[0], issueRequirement);
             return await res.Content.Parse<IssueRequirement>();
         }
