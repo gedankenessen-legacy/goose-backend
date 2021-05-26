@@ -1,4 +1,7 @@
-﻿using Goose.Domain.Models.Issues;
+﻿using Goose.Domain.Models.Auth;
+using Goose.Domain.Models.Identity;
+using Goose.Domain.Models.Issues;
+using MongoDB.Bson;
 using NUnit.Framework;
 using System.Linq;
 using System.Threading.Tasks;
@@ -19,18 +22,6 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             var issue = await helper.GetIssueAsync(helper.Issue.Id);
             var exits = issue.IssueDetail.Requirements?.FirstOrDefault(x => x.Requirement.Equals("Die Application Testen")) != null;
             Assert.IsTrue(exits);
-        }
-
-        [Test]
-        public async Task AddRequirementFalse()
-        {
-            using var helper = await new SimpleTestHelperBuilder().Build();
-            var res = await helper.Helper.GenerateRequirement();
-            Assert.NotNull(res);
-
-            var issue = await helper.GetIssueAsync(helper.Issue.Id);
-            var exits = issue.IssueDetail.Requirements?.FirstOrDefault(x => x.Requirement.Equals("Die Application Testen")) != null;
-            Assert.IsFalse(exits);
         }
 
         [Test]
@@ -73,26 +64,22 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
         }
 
         [Test]
-        public async Task AddRequirementAsCompany()
+        public async Task AddRequirementAsCustomerFalse()
         {
             using var helper = await new SimpleTestHelperBuilder().Build();
 
+            var customerUser = await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.CustomerRole);
+
+            var customerSignIn = await helper.Helper.SignIn(new SignInRequest()
+            {
+                Username = customerUser.Username,
+                Password = helper.Helper.UsedPasswordForTests
+            });
+
+            helper.Helper.SetAuth(customerSignIn);
+
             var res = await helper.Helper.GenerateRequirement();
-            Assert.NotNull(res);
-
-            // TODO: 
-        }
-
-        [Test]
-        public async Task AddRequirementAsProjectLeader()
-        {
-
-        }
-
-        [Test]
-        public async Task AddRequirementAsCustomerFalse()
-        {
-
+            Assert.True(ObjectId.Empty.Equals(res.Id));
         }
     }
 }
