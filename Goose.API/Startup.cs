@@ -184,6 +184,8 @@ namespace Goose.API
             services.AddScoped<IIssueParentService, IssueParentService>();
             services.AddScoped<IMessageService, MessageService>();
             services.AddScoped<IIssueAssociationHelper, IssueAssociationHelper>();
+            services.AddScoped<IIssueStateService, IssueStateService>();
+            
             services.AddHttpContextAccessor();
         }
 

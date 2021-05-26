@@ -12,6 +12,7 @@ namespace Goose.API.Services.issues
     {
         public Task CanAddChild(Issue parent, Issue other);
         public Task CanAddPredecessor(Issue successor, Issue other);
+        public Task<IList<Issue>> GetChildrenRecursive(Issue issue);
     }
 
     public class IssueAssociationHelper : IIssueAssociationHelper
@@ -67,6 +68,12 @@ namespace Goose.API.Services.issues
                     $"{parent.Id} and {other.Id} belong to the same hierarchy. Cannot associate issue or an endless loop would occur");
 
             await CanAddAssociation(projectIssues, parent, other);
+        }
+
+        public async Task<IList<Issue>> GetChildrenRecursive(Issue issue)
+        {
+            var projectIssues = await _issueRepository.GetAllOfProjectAsync(issue.ProjectId);
+            return GetChildrenRecursive(projectIssues, issue);
         }
 
         public async Task CanAddPredecessor(Issue successor, Issue other)
