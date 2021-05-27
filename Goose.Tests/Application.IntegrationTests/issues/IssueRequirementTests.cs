@@ -96,5 +96,19 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             var res = await helper.Helper.GenerateRequirement();
             Assert.True(ObjectId.Empty.Equals(res.Id));
         }
+
+        [Test]
+        public async Task AddRequirementInConclusionPhaseFalse()
+        {
+            using var helper = await new SimpleTestHelperBuilder().Build();
+
+            var issue = helper.Issue.Copy();
+            issue.State = await helper.Helper.GetStateByNameAsync(helper.Project.Id, State.CompletedState);
+            var uri = $"api/projects/{issue.Project.Id}/issues/{issue.Id}";
+            var response = await helper.client.PutAsync(uri, issue.ToStringContent());
+
+            var res = await helper.Helper.GenerateRequirement();
+            Assert.True(ObjectId.Empty.Equals(res.Id));
+        }
     }
 }
