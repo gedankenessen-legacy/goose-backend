@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Goose.API.Repositories;
 using Goose.API.Services.issues;
 using Goose.API.Utils.Authentication;
+using Goose.API.Utils.Exceptions;
 using Goose.Domain.DTOs.Issues;
 using Goose.Domain.Models.Issues;
 using Microsoft.AspNetCore.Http;
@@ -47,6 +48,8 @@ namespace Goose.API.Services.Issues
         {
             var successor = await _issueRepo.GetAsync(successorId);
             var predecessor = await _issueRepo.GetAsync(predecessorId);
+            if (!predecessor.IssueDetail.Visibility && successor.IssueDetail.Visibility)
+                throw new HttpStatusException(400, "An intern issue cannot be the predecessor of an extern issue");
 
             await _associationHelper.CanAddPredecessor(successor, predecessor);
             
