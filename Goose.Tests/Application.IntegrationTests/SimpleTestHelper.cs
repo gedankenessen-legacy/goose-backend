@@ -101,6 +101,11 @@ namespace Goose.Tests.Application.IntegrationTests
             return await Helper.SetParentIssue(Issue.Id, childId);
         }
 
+        public async Task<HttpResponseMessage> UpdateState(string stateName)
+        {
+            return await Helper.UpdateStateOfIssue(Issue, stateName);
+        }
+
 
         public void Dispose()
         {

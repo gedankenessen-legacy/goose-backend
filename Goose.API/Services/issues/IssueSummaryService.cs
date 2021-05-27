@@ -34,6 +34,7 @@ namespace Goose.API.Services.issues
         private readonly IStateService _stateService;
         private readonly IAuthorizationService _authorizationService;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IIssueStateService _issueStateService;
 
         public IssueSummaryService(
             IIssueRepository issueRepository,
@@ -41,13 +42,14 @@ namespace Goose.API.Services.issues
             IStateService stateService,
             IHttpContextAccessor httpContextAccessor,
             IProjectRepository projectRepository,
-            IAuthorizationService authorizationService)
+            IAuthorizationService authorizationService, IIssueStateService issueStateService)
         {
             _issueRepository = issueRepository;
             _issueRequirementService = issueRequirementService;
             _stateService = stateService;
             _httpContextAccessor = httpContextAccessor;
             _authorizationService = authorizationService;
+            _issueStateService = issueStateService;
             _projectRepository = projectRepository;
         }
 
@@ -70,13 +72,14 @@ namespace Goose.API.Services.issues
             if (states is null)
                 throw new HttpStatusException(400, "Es wurden keine Statuse für dieses Project gefunden");
 
-            var state = states.FirstOrDefault(x => x.Name.Equals(State.WaitingState));
+            var state = await _issueStateService.GetNewStateUpdateAssociatedIssues(issue, states.First(it => it.Name == State.ProcessingState));
 
             if (state is null)
                 throw new HttpStatusException(400, "Es wurde kein State gefunden");
 
             issue.IssueDetail.RequirementsAccepted = true;
             issue.StateId = state.Id;
+
             issue.ConversationItems.Add(new IssueConversation()
             {
                 Id = ObjectId.GenerateNewId(),
@@ -92,7 +95,7 @@ namespace Goose.API.Services.issues
                 Id = ObjectId.GenerateNewId(),
                 CreatorUserId = _httpContextAccessor.HttpContext.User.GetUserId(),
                 Type = IssueConversation.StateChangeType,
-                Data = $"Status von {State.NegotiationState} zu {State.WaitingState} geändert.",
+                Data = $"Status von {State.NegotiationState} zu {state.Name} geändert.",
                 StateChange = new()
                 {
                     Before = State.NegotiationState,
@@ -115,7 +118,8 @@ namespace Goose.API.Services.issues
                 throw new HttpStatusException(400, "Die Requirements waren null");
 
             if (issue.IssueDetail.Requirements.Count <= 0 && issue.IssueDetail.ExpectedTime <= 0)
-                throw new HttpStatusException(400, "Um eine Zusammenfassung erstellen zu können muss mindestens eine Anforderung oder eine geschätze Zeit vorhanden sein");
+                throw new HttpStatusException(400,
+                    "Um eine Zusammenfassung erstellen zu können muss mindestens eine Anforderung oder eine geschätze Zeit vorhanden sein");
 
             issue.IssueDetail.RequirementsSummaryCreated = true;
             issue.ConversationItems.Add(new IssueConversation()
@@ -139,7 +143,7 @@ namespace Goose.API.Services.issues
             if (issue is null)
                 throw new HttpStatusException(400, "Das angefragte Issue Existiert nicht");
 
-            if(!(await CanUserAcceptOrDeclineSummary(issue)))
+            if (!(await CanUserAcceptOrDeclineSummary(issue)))
                 throw new HttpStatusException(400, "Sie haben nicht die berechtigung eine Zusammenfassung abzulehnen");
 
             if (issue.IssueDetail.RequirementsSummaryCreated is false)
@@ -176,14 +180,16 @@ namespace Goose.API.Services.issues
 
         private async Task SummaryLeaderRight(Issue issue)
         {
-            var project = await _projectRepository.GetAsync(issue.ProjectId) ?? throw new HttpStatusException(400, $"Es Existiert kein Project mit der ID {issue.ProjectId}");
+            var project = await _projectRepository.GetAsync(issue.ProjectId) ??
+                          throw new HttpStatusException(400, $"Es Existiert kein Project mit der ID {issue.ProjectId}");
             Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
             {
-                { CompanyRolesRequirement.CompanyOwner, "You need to be the owner of this company, in order to create, accept or decline a Summary." },
-                { ProjectRolesRequirement.LeaderRequirement, "You need to be the Leader of this Project, in order to create, accept or decline a Summary." }
+                {CompanyRolesRequirement.CompanyOwner, "You need to be the owner of this company, in order to create, accept or decline a Summary."},
+                {ProjectRolesRequirement.LeaderRequirement, "You need to be the Leader of this Project, in order to create, accept or decline a Summary."}
             };
 
-            (await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, project, requirementsWithErrors.Keys)).ThrowErrorIfAllFailed(requirementsWithErrors);
+            (await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, project, requirementsWithErrors.Keys)).ThrowErrorIfAllFailed(
+                requirementsWithErrors);
         }
 
 
@@ -205,7 +211,7 @@ namespace Goose.API.Services.issues
         {
             //Get Project 
             var project = await _projectRepository.GetAsync(issue.ProjectId)
-                ?? throw new HttpStatusException(400, $"Es Existiert kein Project mit der ID {issue.ProjectId}");
+                          ?? throw new HttpStatusException(400, $"Es Existiert kein Project mit der ID {issue.ProjectId}");
 
             // Check is Author a customer?
             var user = project.Users.FirstOrDefault(x => x.UserId.Equals(issue.AuthorId));

@@ -270,7 +270,9 @@ namespace Goose.Tests.Application.IntegrationTests.Message
             Assert.IsTrue(messageList.Count == 2);
         }
 
-        [Test]
+        //TODO duplicat IssueCanceledMesageTest()?
+       /*
+        *  [Test]
         public async Task IssueCanceledMesageTest2()
         {
             using var helper = await new SimpleTestHelperBuilderMessage().Build();
@@ -293,6 +295,7 @@ namespace Goose.Tests.Application.IntegrationTests.Message
 
             Assert.IsTrue(messageList.Count == 0);
         }
+        */
 
         [Test]
         public async Task IssueConversationTest()

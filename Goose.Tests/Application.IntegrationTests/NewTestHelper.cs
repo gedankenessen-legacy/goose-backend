@@ -83,7 +83,7 @@ namespace Goose.Tests.Application.IntegrationTests
 
         public async Task<HttpResponseMessage> GenerateProject(ObjectId companyId)
         {
-            return await GenerateProject(companyId, new ProjectDTO { Name = $"{new Random().NextDouble()}" });
+            return await GenerateProject(companyId, new ProjectDTO {Name = $"{new Random().NextDouble()}"});
         }
 
         public async Task<HttpResponseMessage> GenerateProject(ObjectId companyId, ProjectDTO projectDto)
@@ -277,7 +277,7 @@ namespace Goose.Tests.Application.IntegrationTests
             return await GetIssueThroughClientAsync(issueDto.Project.Id, issueDto.Id);
         }
 
-        private async Task<IList<StateDTO>> GetStateListAsync(ObjectId projectId)
+        public async Task<IList<StateDTO>> GetStateListAsync(ObjectId projectId)
         {
             var uri = $"api/projects/{projectId}/states";
             var responce = await _client.GetAsync(uri);
@@ -304,10 +304,24 @@ namespace Goose.Tests.Application.IntegrationTests
             var uri = $"api/issues/{childId}/parent/{parentId}";
             return await _client.PutAsync(uri, null);
         }
-        
+
         public void SetAuth(SignInResponse signIn)
         {
             _client.Auth(signIn);
+        }
+
+        public async Task<HttpResponseMessage> UpdateIssue(IssueDTO dto)
+        {
+            var uri = $"api/projects/{dto.Project.Id}/issues/{dto.Id}";
+            return await _client.PutAsync(uri, dto.ToStringContent());
+        }
+
+        public async Task<HttpResponseMessage> UpdateStateOfIssue(IssueDTO issue, string stateName)
+        {
+            var state = await GetStateByNameAsync(issue.Project.Id, stateName);
+            var copy = issue.Copy();
+            copy.State = state;
+            return await UpdateIssue(copy);
         }
 
         #endregion

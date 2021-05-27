@@ -190,7 +190,18 @@ namespace Goose.API.Services.issues
          */
         public async Task<StateDTO> GetNewStateUpdateAssociatedIssues(Issue issue, StateDTO newState)
         {
+            if (issue.StateId == newState.Id) return newState;
             return await _updateStateHandler.HandleStateUpdate(issue, await _stateService.GetState(issue.ProjectId, issue.StateId), newState);
+        }
+
+        private async Task<StateDTO> GetStateByName(Issue issue, string name)
+        {
+            return (await _stateService.GetStates(issue.ProjectId)).First(it => it.Name == name);
+        }
+
+        private async Task<StateDTO> GetState(Issue issue)
+        {
+            return await _stateService.GetState(issue.ProjectId, issue.StateId);
         }
 
         private async Task TryCatch(Task task)
@@ -202,18 +213,6 @@ namespace Goose.API.Services.issues
             catch (Exception)
             {
             }
-        }
-
-        private async Task<StateDTO> GetStateByName(Issue issue, string name)
-        {
-            return (await _stateService.GetStates(issue.ProjectId)).First(it => it.Name == name);
-        }
-
-        private StateDTO GetStateFromList(ObjectId id, IList<StateDTO> states) => states.First(it => it.Id == id);
-
-        private async Task<StateDTO> GetState(Issue issue)
-        {
-            return await _stateService.GetState(issue.ProjectId, issue.StateId);
         }
     }
 

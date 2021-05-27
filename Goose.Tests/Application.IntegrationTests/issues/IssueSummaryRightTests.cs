@@ -103,6 +103,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         {
             var builder = new SimpleTestHelperBuilderSummaryRights(Role.CustomerRole);
             using var helper = await builder.Build();
+            await helper.UpdateState(State.NegotiationState);
 
             var issue = helper.Issue;
             IssueRequirement issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen" };
@@ -161,7 +162,8 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         {
             var builder = new SimpleTestHelperBuilderSummaryRights(Role.EmployeeRole);
             using var helper = await builder.Build();
-
+            await helper.UpdateState(State.NegotiationState);
+            
             var issue = helper.Issue;
             IssueRequirement issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen" };
             await helper.Helper.IssueRequirementService.CreateAsync(issue.Id, issueRequirement);
@@ -200,6 +202,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         {
             var builder = new SimpleTestHelperBuilderSummaryRights(Role.EmployeeRole);
             using var helper = await builder.Build();
+            await helper.UpdateState(State.NegotiationState);
 
             var issue = helper.Issue;
             IssueRequirement issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen" };

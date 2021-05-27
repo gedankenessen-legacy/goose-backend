@@ -37,7 +37,7 @@ namespace Goose.API.Services.Issues
         public async Task<IssueRequirement> GetAsync(ObjectId issueId, ObjectId requirementId)
         {
             return (await _issueRepo.GetAsync(issueId)).IssueDetail.Requirements.First(
-                it => it.Id.Equals(requirementId)) ?? throw new HttpStatusException(400, "Das angefragte Ticket existiert nicht");
+                it => it.Id.Equals(requirementId));
         }
 
         public async Task<IssueRequirement> CreateAsync(ObjectId issueId, IssueRequirement requirement)

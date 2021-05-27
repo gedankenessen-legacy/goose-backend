@@ -82,5 +82,6 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             var res = await helper.Helper.SetParentIssue(helper.Issue.Id, issue2.Id);
             Assert.AreEqual(HttpStatusCode.BadRequest, res.StatusCode);
         }
+        //TODO cannot add child after specific state
     }
 }

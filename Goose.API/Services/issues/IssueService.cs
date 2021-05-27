@@ -17,6 +17,7 @@ using Goose.API.Authorization;
 using Goose.Domain.Models;
 using Goose.API.EventHandler;
 using System;
+using Goose.API.Services.issues;
 
 namespace Goose.API.Services.Issues
 {
@@ -45,6 +46,7 @@ namespace Goose.API.Services.Issues
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IAuthorizationService _authorizationService;
         private readonly IMessageService _messageService;
+        private readonly IIssueStateService _issueStateService;
 
         public IssueService(
             IIssueRepository issueRepo,
@@ -54,7 +56,7 @@ namespace Goose.API.Services.Issues
             IIssueRequestValidator issueValidator,
             IHttpContextAccessor httpContextAccessor,
             IAuthorizationService authorizationService,
-            IMessageService messageService)
+            IMessageService messageService, IIssueStateService issueStateService)
         {
             _issueRepo = issueRepo;
             _stateService = stateService;
@@ -64,6 +66,7 @@ namespace Goose.API.Services.Issues
             _httpContextAccessor = httpContextAccessor;
             _authorizationService = authorizationService;
             _messageService = messageService;
+            _issueStateService = issueStateService;
         }
 
         public async Task<IList<IssueDTO>> GetAll()
@@ -98,7 +101,7 @@ namespace Goose.API.Services.Issues
             var issue = await CreateValidIssue(issueDto);
             await _issueRepo.CreateAsync(issue);
 
-            if(issue.IssueDetail.EndDate is not null && issue.IssueDetail.EndDate != default(DateTime))
+            if (issue.IssueDetail.EndDate is not null && issue.IssueDetail.EndDate != default(DateTime))
                 await Scheduler.AddEvent(new IssueDeadlineEvent(await _projectRepository.GetAsync(issue.ProjectId), issue, _messageService, _issueRepo));
 
             return await Get(issue.Id);
@@ -158,12 +161,12 @@ namespace Goose.API.Services.Issues
             if (updated.State != null)
             {
                 var oldStateId = old.StateId;
+                var newState = await _issueStateService.GetNewStateUpdateAssociatedIssues(old, updated.State);
                 var newStateId = updated.State.Id;
 
                 if (oldStateId != newStateId)
                 {
                     var oldState = await _stateService.GetState(old.ProjectId, oldStateId);
-                    var newState = await _stateService.GetState(old.ProjectId, newStateId);
 
                     // if changing the state to cancelled, we need to validate the user requirments.
                     if (newState.Name.Equals(State.CancelledState))
@@ -236,8 +239,7 @@ namespace Goose.API.Services.Issues
 
                 if (details.EndDate is not null && details.EndDate != default(DateTime))
                     await Scheduler.AddEvent(new IssueDeadlineEvent(await _projectRepository.GetAsync(old.ProjectId), old, _messageService, _issueRepo));
-                else
-                    await IssueDeadlineEvent.CancelDeadLine(old.Id);
+                else await IssueDeadlineEvent.CancelDeadLine(old.Id);
             }
 
             return old.IssueDetail;
@@ -297,7 +299,7 @@ namespace Goose.API.Services.Issues
                 ProjectRolesRequirement.ReadonlyEmployeeRequirement,
                 CompanyRolesRequirement.CompanyOwner
             };
-            
+
 
             // validate requirements with the appropriate handlers.
             var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, project, requirements);
@@ -309,7 +311,7 @@ namespace Goose.API.Services.Issues
         {
             Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
             {
-                { IssueOperationRequirments.EditState, "Your are not allowed to edit the state of the issue." }
+                {IssueOperationRequirments.EditState, "Your are not allowed to edit the state of the issue."}
             };
 
             // add additional req. for internal issues.
@@ -325,7 +327,7 @@ namespace Goose.API.Services.Issues
         {
             Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
             {
-                { IssueOperationRequirments.DiscardTicket, "Your are not allowed to discard the issue." }
+                {IssueOperationRequirments.DiscardTicket, "Your are not allowed to discard the issue."}
             };
 
             // add additional req. for internal issues.
@@ -340,9 +342,9 @@ namespace Goose.API.Services.Issues
             var project = await _projectRepository.GetAsync(projectId);
             Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
             {
-                { ProjectRolesRequirement.EmployeeRequirement, "You need to be the employee with write-rights in this project, in order to create or update a issue." },
-                { ProjectRolesRequirement.LeaderRequirement, "You need to be the leader in this project, in order to create or update a issue." },
-                { ProjectRolesRequirement.CustomerRequirement, "You need to be a customer in this project, in order to create or update a issue." },
+                { ProjectRolesRequirement.EmployeeRequirement, "You need to be the employee with write-rights in this project, in order to create or update a issue."},
+                { ProjectRolesRequirement.LeaderRequirement, "You need to be the leader in this project, in order to create or update a issue."},
+                { ProjectRolesRequirement.CustomerRequirement, "You need to be a customer in this project, in order to create or update a issue."},
                 { CompanyRolesRequirement.CompanyOwner, "You need to be a Owner of the Company, in order to create or update a issue"}
             };
 

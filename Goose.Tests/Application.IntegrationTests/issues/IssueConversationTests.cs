@@ -156,6 +156,8 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
         public async Task SummaryAcceptedConversation()
         {
             using var helper = await new SimpleTestHelperBuilder().Build();
+            await helper.UpdateState(State.NegotiationState);
+            
             var issue = helper.Issue;
             IssueRequirement issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen"};
             await helper.Helper.IssueRequirementService.CreateAsync(issue.Id, issueRequirement);
