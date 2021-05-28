@@ -153,6 +153,13 @@ namespace Goose.Tests.Application.IntegrationTests
             return await CreateIssue(project.Id, issue);
         }
 
+        public async Task<IssueRequirement> GenerateRequirement(string requirement = "Die Application Testen")
+        {
+            IssueRequirement issueRequirement = new() { Requirement = requirement };
+            var res = await CreateRequirementForIssueAsync(_client, _issues[0], issueRequirement);
+            return await res.Content.Parse<IssueRequirement>();
+        }
+
         #endregion
 
         #region Requests
@@ -225,6 +232,12 @@ namespace Goose.Tests.Application.IntegrationTests
             };
 
             return await _client.PostAsync($"api/projects/{projectId}/states", newState.ToStringContent());
+        }
+
+        public async Task<HttpResponseMessage> CreateRequirementForIssueAsync(HttpClient client, ObjectId issueId, IssueRequirement issueRequirement)
+        {
+            var uri = $"/api/issues/{issueId}/requirements/";
+            return await client.PostAsync(uri, issueRequirement.ToStringContent());
         }
 
         public async Task<HttpResponseMessage> EditStateInProject(ObjectId projectId, StateDTO stateEdited)
