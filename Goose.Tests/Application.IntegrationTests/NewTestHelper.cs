@@ -21,8 +21,6 @@ using MongoDB.Bson;
 
 namespace Goose.Tests.Application.IntegrationTests
 {
-    //TODO wo wird der client header gesetzt
-    //TODO GenerateUserAndSetToProject generiert einen user. Solen seine rollen wirklich als Projekt und CompanyRolle gesetzt werden?
     public class NewTestHelper : IDisposable
     {
         private readonly HttpClient _client;
@@ -294,6 +292,21 @@ namespace Goose.Tests.Application.IntegrationTests
         {
             return (await GetStateListAsync(projectId)).FirstOrDefault(x => x.Id.Equals(Id));
         }
+        public async Task<StateDTO> GetStateById(Issue issue)
+        {
+            return (await GetStateListAsync(issue.ProjectId)).FirstOrDefault(x => x.Id.Equals(issue.StateId));
+        }
+
+        public async Task<HttpResponseMessage> GetPredecessors(ObjectId issueId)
+        {
+            var uri = $"api/issues/{issueId}/predecessors/";
+            return await _client.GetAsync(uri);
+        }
+        public async Task<HttpResponseMessage> GetSuccessors(ObjectId issueId)
+        {
+            var uri = $"api/issues/{issueId}/successors/";
+            return await _client.GetAsync(uri);
+        }
 
         #endregion
 
@@ -302,6 +315,12 @@ namespace Goose.Tests.Application.IntegrationTests
         public async Task<HttpResponseMessage> SetParentIssue(ObjectId parentId, ObjectId childId)
         {
             var uri = $"api/issues/{childId}/parent/{parentId}";
+            return await _client.PutAsync(uri, null);
+        }
+
+        public async Task<HttpResponseMessage> SetPredecessor(ObjectId predecessorId, ObjectId successorId)
+        {
+            var uri = $"api/issues/{successorId}/predecessors/{predecessorId}";
             return await _client.PutAsync(uri, null);
         }
 
@@ -316,7 +335,7 @@ namespace Goose.Tests.Application.IntegrationTests
             return await _client.PutAsync(uri, dto.ToStringContent());
         }
 
-        public async Task<HttpResponseMessage> UpdateStateOfIssue(IssueDTO issue, string stateName)
+        public async Task<HttpResponseMessage> SetStateOfIssue(IssueDTO issue, string stateName)
         {
             var state = await GetStateByNameAsync(issue.Project.Id, stateName);
             var copy = issue.Copy();

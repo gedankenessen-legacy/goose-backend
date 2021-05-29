@@ -62,7 +62,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
         public async Task AcceptSummary()
         {
             using var helper = await new SimpleTestHelperBuilder().Build();
-            await helper.UpdateState(State.NegotiationState);
+            await helper.SetState(State.NegotiationState);
 
             var issue = helper.Issue;
             IssueRequirement issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen"};
@@ -79,7 +79,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             var newIssue = await helper.GetIssueAsync(issue.Id);
             Assert.IsTrue(newIssue.IssueDetail.RequirementsAccepted);
 
-            var state = await helper.Helper.GetStateByNameAsync(newIssue.ProjectId, State.WaitingState);
+            var state = await helper.Helper.GetStateByNameAsync(newIssue.ProjectId, State.ProcessingState);
             Assert.AreEqual(state.Id, newIssue.StateId);
 
             issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen2"};
@@ -143,7 +143,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
         public async Task DeclineSummaryFalse2()
         {
             using var helper = await new SimpleTestHelperBuilder().Build();
-            await helper.UpdateState(State.NegotiationState);
+            await helper.SetState(State.NegotiationState);
             
             IssueRequirement issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen"};
             await helper.Helper.IssueRequirementService.CreateAsync(helper.Issue.Id, issueRequirement);
@@ -160,7 +160,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             Assert.IsTrue(issue.IssueDetail.RequirementsAccepted);
 
 
-            var state = await helper.Helper.GetStateByNameAsync(issue.ProjectId, State.WaitingState);
+            var state = await helper.Helper.GetStateByNameAsync(issue.ProjectId, State.ProcessingState);
             Assert.AreEqual(state.Id, issue.StateId);
 
             uri = $"/api/issues/{issue.Id}/summaries?accept=false";

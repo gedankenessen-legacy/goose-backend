@@ -270,9 +270,7 @@ namespace Goose.Tests.Application.IntegrationTests.Message
             Assert.IsTrue(messageList.Count == 2);
         }
 
-        //TODO duplicat IssueCanceledMesageTest()?
-       /*
-        *  [Test]
+        [Test]
         public async Task IssueCanceledMesageTest2()
         {
             using var helper = await new SimpleTestHelperBuilderMessage().Build();
@@ -282,7 +280,7 @@ namespace Goose.Tests.Application.IntegrationTests.Message
             var issue = await helper.Helper.GetIssueAsync(helper.Issue.Id);
             var uri = $"/api/projects/{project.Id}/issues/{issue.Id}";
 
-            var newState = await helper.Helper.GetStateByNameAsync(issue.ProjectId, State.BlockedState);
+            var newState = await helper.Helper.GetStateByNameAsync(issue.ProjectId, State.ReviewState);
             var issueDTO = new IssueDTO(issue, newState, project, user, user);
 
             var response = await helper.client.PutAsync(uri, issueDTO.ToStringContent());
@@ -295,7 +293,7 @@ namespace Goose.Tests.Application.IntegrationTests.Message
 
             Assert.IsTrue(messageList.Count == 0);
         }
-        */
+
 
         [Test]
         public async Task IssueConversationTest()

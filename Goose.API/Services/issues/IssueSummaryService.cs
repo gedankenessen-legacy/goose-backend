@@ -72,8 +72,9 @@ namespace Goose.API.Services.issues
             if (states is null)
                 throw new HttpStatusException(400, "Es wurden keine Statuse für dieses Project gefunden");
 
-            var state = await _issueStateService.GetNewStateUpdateAssociatedIssues(issue, states.First(it => it.Name == State.ProcessingState));
-
+            var state = await _issueStateService.UpdateState(issue, states.First(it => it.Name == State.ProcessingState));
+            issue = await _issueRepository.GetAsync(issueId.ToObjectId());
+            
             if (state is null)
                 throw new HttpStatusException(400, "Es wurde kein State gefunden");
 

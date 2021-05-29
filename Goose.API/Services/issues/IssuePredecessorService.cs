@@ -22,9 +22,6 @@ namespace Goose.API.Services.Issues
 
     public class IssuePredecessorService : IIssuePredecessorService
     {
-        //TODO ggf müssen vorgänger rekursiv entfernt werden?
-
-        //TODO wie bekommt man am besten alle issues in einem vorgänger baum? phil fragen?
         private readonly IIssueRepository _issueRepo;
         private readonly IIssueService _issueService;
         private readonly IIssueAssociationHelper _associationHelper;

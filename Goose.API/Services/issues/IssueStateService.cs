@@ -3,19 +3,18 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Goose.API.Repositories;
+using Goose.API.Services.Issues;
 using Goose.API.Utils;
 using Goose.API.Utils.Exceptions;
 using Goose.Domain.DTOs;
 using Goose.Domain.Models.Issues;
 using Goose.Domain.Models.Projects;
-using MongoDB.Bson;
 
 namespace Goose.API.Services.issues
 {
     public interface IIssueStateService
     {
         public Task<StateDTO> UpdateState(Issue issue, StateDTO newState);
-        public Task<StateDTO> GetNewStateUpdateAssociatedIssues(Issue issue, StateDTO newState);
     }
 
     public class IssueStateService : IIssueStateService
@@ -37,52 +36,52 @@ namespace Goose.API.Services.issues
 
         public void RegisterFsmEvents()
         {
+            Func<Issue, StateDTO, StateDTO, Task<StateDTO>> moveToProcessingPhase = async (Issue issue, StateDTO oldState, StateDTO newState) =>
+            {
+                //Das Issue wird in Waiting gesetzt wenn das Startdatum noch nicht erreicht ist
+                if (issue.IssueDetail.StartDate > DateTime.Now)
+                {
+                    var waitingState = await GetStateByName(issue, State.WaitingState);
+                    return await SetState(issue, waitingState);
+                }
+
+                Task<Issue> parent = null;
+                if (issue.ParentIssueId is { } parentId) parent = _issueRepository.GetAsync(parentId);
+                var predecessors = Task.WhenAll(issue.PredecessorIssueIds.Select(_issueRepository.GetAsync));
+
+
+                Task<StateDTO> parentState = null;
+                if (parent is { } parentNotNull) parentState = _stateService.GetState((await parentNotNull).ProjectId, (await parentNotNull).Id);
+                var predecessorStates = await Task.WhenAll((await predecessors).Select(it => _stateService.GetState(it.ProjectId, it.StateId)));
+
+                /*
+                 * Issue wird blockiert wenn:
+                 * 1) Das Oberticket nicht in der Bearbeitungsphase ist
+                 * 2) Nicht alle Vorgänger abgeschlossen sind
+                 * 
+                 */
+                if (parentState != null && (await parentState).Phase == State.NegotiationPhase ||
+                    predecessorStates.HasWhere(it => it.Phase != State.ConclusionPhase))
+                {
+                    var blockedState = await GetStateByName(issue, State.BlockedState);
+                    return await SetState(issue, blockedState);
+                }
+
+                return await SetState(issue, newState);
+            };
+
             _updateStateHandler.AddEvent(new FsmEvent<Func<Issue, StateDTO, StateDTO, Task<StateDTO>>> //CheckingState -> NegotiationState
             {
                 OldState = State.CheckingState,
                 NewState = State.NegotiationState,
-                Func = async (issue, oldState, newState) => newState
+                Func = async (issue, oldState, newState) => await SetState(issue, newState)
             });
-            _updateStateHandler.AddEvent(new FsmEvent<Func<Issue, StateDTO, StateDTO, Task<StateDTO>>> //NegotiationState -> ProcessingState
+            _updateStateHandler.AddEvent(new List<string>() //NegotiationState/WaitingState/BlockedState -> ProcessingState
             {
-                OldState = State.NegotiationState,
-                NewState = State.ProcessingState,
-                Func = async (issue, oldState, newState) =>
-                {
-                    //TODO nur wenn zusammenfassung akzeptiert ist
-
-                    /*
-                     * Das Issue wird in Waiting gesetzt wenn das Startdatum noch nicht erreicht ist
-                     */
-                    if (issue.IssueDetail.StartDate < DateTime.Now)
-                    {
-                        return await GetStateByName(issue, State.WaitingState);
-                    }
-
-                    Task<Issue> parent = null;
-                    if (issue.ParentIssueId is { } parentId) parent = _issueRepository.GetAsync(parentId);
-                    var predecessors = Task.WhenAll(issue.PredecessorIssueIds.Select(_issueRepository.GetAsync));
-
-
-                    Task<StateDTO> parentState = null;
-                    if (parent is { } parentNotNull) parentState = _stateService.GetState((await parentNotNull).ProjectId, (await parentNotNull).Id);
-                    var predecessorStates = Task.WhenAll((await predecessors).Select(it => _stateService.GetState(it.ProjectId, it.StateId)));
-
-                    /*
-                     * Issue wird blockiert wenn:
-                     * 1) Das Oberticket nicht in der Bearbeitungsphase ist
-                     * 2) Nicht alle Vorgänger abgeschlossen sind
-                     * 
-                     */
-                    if (parentState != null && (await parentState).Phase == State.NegotiationPhase ||
-                        (await predecessorStates).HasWhere(it => it.Phase != State.ConclusionPhase))
-                    {
-                        return await GetStateByName(issue, State.BlockedState);
-                    }
-
-                    return newState;
-                }
-            });
+                State.NegotiationState,
+                State.BlockedState,
+                State.WaitingState
+            }, State.ProcessingState, moveToProcessingPhase);
             _updateStateHandler.AddEvent(new FsmEvent<Func<Issue, StateDTO, StateDTO, Task<StateDTO>>> //Cancel Issue
             {
                 OldState = "",
@@ -90,9 +89,10 @@ namespace Goose.API.Services.issues
                 Func = async (issue, oldState, newState) =>
                 {
                     //Cancels all children
+                    await SetState(issue, newState);
                     var children = await _associationHelper.GetChildrenRecursive(issue);
                     await Task.WhenAll(children.Select(it => UpdateState(it, newState)));
-                    //TODO was ist mit nachfolgern
+                    await OnIssueReachedCompletionPhase(issue);
                     return newState;
                 }
             });
@@ -100,7 +100,7 @@ namespace Goose.API.Services.issues
             {
                 OldState = State.CheckingState,
                 NewState = State.NegotiationState,
-                Func = async (issue, oldState, newState) => newState
+                Func = async (issue, oldState, newState) => await SetState(issue, newState)
             });
             _updateStateHandler.AddEvent(new FsmEvent<Func<Issue, StateDTO, StateDTO, Task<StateDTO>>> //ProcessingState -> ReviewState
             {
@@ -112,7 +112,7 @@ namespace Goose.API.Services.issues
                     var childrenStates = await Task.WhenAll(children.Select(it => _stateService.GetState(it.ProjectId, it.StateId)));
                     if (childrenStates.HasWhere(it => it.Phase != State.ConclusionPhase))
                         throw new HttpStatusException(400, "At least one sub issue is not in conclusion phase");
-                    return newState;
+                    return await SetState(issue, newState);
                 }
             });
             _updateStateHandler.AddEvent(new FsmEvent<Func<Issue, StateDTO, StateDTO, Task<StateDTO>>> //ReviewState -> CompletedState
@@ -122,6 +122,7 @@ namespace Goose.API.Services.issues
                 Func = async (issue, oldState, newState) =>
                 {
                     //TODO Projektleiter überprüft ticket
+                    await SetState(issue, newState);
                     await OnIssueReachedCompletionPhase(issue);
                     return newState;
                 }
@@ -133,6 +134,7 @@ namespace Goose.API.Services.issues
                 Func = async (issue, oldState, newState) =>
                 {
                     //TODO Abschlusskommentar
+                    await SetState(issue, newState);
                     await OnIssueReachedCompletionPhase(issue);
                     return newState;
                 }
@@ -161,7 +163,7 @@ namespace Goose.API.Services.issues
                         tasks.Add(TryCatch(UpdateState(parentNotNull, processingState)));
                 }
 
-                var blockedSuccessors = (await successors).Where(it => it.StateId == blockedState.Id);
+                var blockedSuccessors = (await successors).Where(it => it.StateId == blockedState.Id).ToList();
                 tasks.AddRange(blockedSuccessors.Select(it => TryCatch(UpdateState(it, processingState))));
 
                 await Task.WhenAll(tasks);
@@ -178,7 +180,13 @@ namespace Goose.API.Services.issues
          */
         public async Task<StateDTO> UpdateState(Issue issue, StateDTO newState)
         {
-            var state = await GetNewStateUpdateAssociatedIssues(issue, newState);
+            if (issue.StateId == newState.Id) return newState;
+            var state = await _updateStateHandler.HandleStateUpdate(issue, await _stateService.GetState(issue.ProjectId, issue.StateId), newState);
+            return state;
+        }
+
+        private async Task<StateDTO> SetState(Issue issue, StateDTO state)
+        {
             issue.StateId = state.Id;
             await _issueRepository.UpdateAsync(issue);
             return state;
@@ -188,12 +196,6 @@ namespace Goose.API.Services.issues
          * Gibt den neuen Status zurück (schmeißt eine Exception wenn der Status nicht geändert werden kann).
          * Der Status von jeden abhängigem Issue wird ebenfalls geupdated 
          */
-        public async Task<StateDTO> GetNewStateUpdateAssociatedIssues(Issue issue, StateDTO newState)
-        {
-            if (issue.StateId == newState.Id) return newState;
-            return await _updateStateHandler.HandleStateUpdate(issue, await _stateService.GetState(issue.ProjectId, issue.StateId), newState);
-        }
-
         private async Task<StateDTO> GetStateByName(Issue issue, string name)
         {
             return (await _stateService.GetStates(issue.ProjectId)).First(it => it.Name == name);
@@ -241,6 +243,23 @@ namespace Goose.API.Services.issues
             if (Contains(e)) return false;
             _events.Add(e);
             return true;
+        }
+
+        //returns false if one or more failed
+        public bool AddEvent(IList<string> oldStates, string newState, TFunc fun)
+        {
+            var res = true;
+            foreach (var oldState in oldStates)
+            {
+                if (!AddEvent(new FsmEvent<TFunc>
+                {
+                    OldState = oldState,
+                    NewState = newState,
+                    Func = fun
+                })) res = false;
+            }
+
+            return res;
         }
 
         public Task<TReturn> CallAction(TFunc action, Issue issue, StateDTO oldState, StateDTO newState);

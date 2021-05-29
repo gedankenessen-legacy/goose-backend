@@ -133,7 +133,6 @@ namespace Goose.API.Services.Issues
 
         private IssueDetail CreateValidIssueDetail(IssueDetail detail)
         {
-            //TODO more validation
             detail.Requirements = new List<IssueRequirement>();
             detail.RelevantDocuments = new List<string>();
             detail.RequirementsSummaryCreated = false;
@@ -160,13 +159,11 @@ namespace Goose.API.Services.Issues
         {
             if (updated.State != null)
             {
-                var oldStateId = old.StateId;
-                var newState = await _issueStateService.GetNewStateUpdateAssociatedIssues(old, updated.State);
-                var newStateId = updated.State.Id;
+                var newState = await _stateService.GetState(old.ProjectId, updated.State.Id);
 
-                if (oldStateId != newStateId)
+                if (old.StateId != newState.Id)
                 {
-                    var oldState = await _stateService.GetState(old.ProjectId, oldStateId);
+                    var oldState = await _stateService.GetState(old.ProjectId, old.StateId);
 
                     // if changing the state to cancelled, we need to validate the user requirments.
                     if (newState.Name.Equals(State.CancelledState))
@@ -176,9 +173,9 @@ namespace Goose.API.Services.Issues
                     }
                     else
                         await UserCanChangeStatus(old);
-
-                    // State wird aktualisiert
-                    old.StateId = newStateId;
+                    
+                    newState = await _issueStateService.UpdateState(old, updated.State);
+                    old = await _issueRepo.GetAsync(old.Id);
 
                     old.ConversationItems.Add(new IssueConversation()
                     {
