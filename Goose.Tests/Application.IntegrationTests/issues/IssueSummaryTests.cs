@@ -79,8 +79,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             var newIssue = await helper.GetIssueAsync(issue.Id);
             Assert.IsTrue(newIssue.IssueDetail.RequirementsAccepted);
 
-            var state = await helper.Helper.GetStateByNameAsync(newIssue.ProjectId, State.ProcessingState);
-            Assert.AreEqual(state.Id, newIssue.StateId);
+            Assert.AreEqual(State.ProcessingState, (await helper.Helper.GetStateById(newIssue)).Name);
 
             issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen2"};
             uri = $"/api/issues/{issue.Id}/requirements/";
@@ -160,8 +159,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             Assert.IsTrue(issue.IssueDetail.RequirementsAccepted);
 
 
-            var state = await helper.Helper.GetStateByNameAsync(issue.ProjectId, State.ProcessingState);
-            Assert.AreEqual(state.Id, issue.StateId);
+            Assert.AreEqual(State.ProcessingState, (await helper.Helper.GetStateById(issue)).Name);
 
             uri = $"/api/issues/{issue.Id}/summaries?accept=false";
             responce = await helper.client.PutAsync(uri, new object().ToStringContent());

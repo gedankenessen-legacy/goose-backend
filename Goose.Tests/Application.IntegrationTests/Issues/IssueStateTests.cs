@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Resources;
@@ -6,6 +7,8 @@ using System.Threading.Tasks;
 using Goose.Domain.DTOs;
 using Goose.Domain.DTOs.Issues;
 using Goose.Domain.Models.Projects;
+using Goose.Tests.Application.IntegrationTests.Issues;
+using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
 using NUnit.Framework;
 
@@ -69,9 +72,9 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         {
             using var helper = await new SimpleTestHelperBuilder().Build();
             var child = await helper.CreateIssue().Parse<IssueDTO>();
-            await helper.AddIssueChild(child.Id);
+            await helper.SetIssueChild(child.Id);
 
-            var cancel = await helper.UpdateState(State.CancelledState);
+            var cancel = await helper.SetState(State.CancelledState);
             Assert.AreEqual(HttpStatusCode.NoContent, cancel.StatusCode);
             var newChild = await helper.GetIssueAsync(child.Id);
             Assert.AreEqual((await helper.Helper.GetStateByNameAsync(helper.Project.Id, State.CancelledState)).Id, newChild.StateId);
@@ -80,11 +83,44 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         [Test]
         public async Task SuccessorMovesOutOfBlockedOnPredecessorCancel()
         {
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            var predecessor1 = await helper.CreateIssue().Parse<IssueDTO>();
+            var predecessor2 = await helper.CreateIssue().Parse<IssueDTO>();
+            await helper.SetPredecessor(predecessor1.Id);
+            await helper.SetPredecessor(predecessor2.Id);
+
+            await helper.SetState(State.NegotiationState);
+            await helper.SetState(State.ProcessingState);
+
+            var states = helper.Helper.GetStateListAsync(helper.Project.Id);
+            var newIssue = await helper.GetIssueAsync(helper.Issue.Id);
+            Assert.AreEqual((await states).First(it => it.Name == State.BlockedState).Id, newIssue.StateId);
+
+            await helper.Helper.SetStateOfIssue(predecessor1, State.CancelledState);
+            newIssue = await helper.GetIssueAsync(helper.Issue.Id);
+            Assert.AreEqual((await states).First(it => it.Name == State.BlockedState).Id, newIssue.StateId);
+
+            await helper.Helper.SetStateOfIssue(predecessor2, State.CancelledState);
+            newIssue = await helper.GetIssueAsync(helper.Issue.Id);
+            Assert.AreEqual((await states).First(it => it.Name == State.ProcessingState).Id, newIssue.StateId);
         }
 
         [Test]
-        public async Task SuccessorDoesntMoveOutOfBlockedStateOnPredecessorCancelBecauseHeHasAnotherPredecessor()
+        public async Task IssueIsWaitingIfStartDateNotReached()
         {
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            var copy = helper.Issue.Copy();
+            copy.Id = ObjectId.Empty;
+            copy.IssueDetail.StartDate = DateTime.Now.AddHours(3);
+            var res = await helper.CreateIssue(copy);
+            Assert.AreEqual(HttpStatusCode.Created, res.StatusCode);
+            var issue = await res.Parse<IssueDTO>();
+            await helper.Helper.SetStateOfIssue(issue, State.NegotiationState);
+            await helper.Helper.SetStateOfIssue(issue, State.ProcessingState);
+
+            var newIssue = await helper.GetIssueAsync(issue.Id);
+            Assert.AreEqual(State.WaitingState, (await helper.Helper.GetStateById(newIssue)).Name);
         }
+
     }
 }

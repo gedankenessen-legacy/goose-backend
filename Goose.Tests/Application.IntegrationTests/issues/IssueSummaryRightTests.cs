@@ -128,8 +128,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             var newIssue = await helper.GetIssueAsync(issue.Id);
             Assert.IsTrue(newIssue.IssueDetail.RequirementsAccepted);
 
-            var state = await helper.Helper.GetStateByNameAsync(newIssue.ProjectId, State.ProcessingState);
-            Assert.AreEqual(state.Id, newIssue.StateId);
+            Assert.AreEqual(State.ProcessingState, (await helper.Helper.GetStateById(newIssue)).Name);
 
             issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen2" };
             uri = $"/api/issues/{issue.Id}/requirements/";
@@ -187,8 +186,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             var newIssue = await helper.GetIssueAsync(issue.Id);
             Assert.IsTrue(newIssue.IssueDetail.RequirementsAccepted);
 
-            var state = await helper.Helper.GetStateByNameAsync(newIssue.ProjectId, State.ProcessingState);
-            Assert.AreEqual(state.Id, newIssue.StateId);
+            Assert.AreEqual(State.ProcessingState, (await helper.Helper.GetStateById(newIssue)).Name);
 
             issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen2" };
             uri = $"/api/issues/{issue.Id}/requirements/";
@@ -219,8 +217,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             var newIssue = await helper.GetIssueAsync(issue.Id);
             Assert.IsTrue(newIssue.IssueDetail.RequirementsAccepted);
 
-            var state = await helper.Helper.GetStateByNameAsync(newIssue.ProjectId, State.ProcessingState);
-            Assert.AreEqual(state.Id, newIssue.StateId);
+            Assert.AreEqual(State.ProcessingState, (await helper.Helper.GetStateById(newIssue)).Name);
 
             issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen2" };
             uri = $"/api/issues/{issue.Id}/requirements/";
