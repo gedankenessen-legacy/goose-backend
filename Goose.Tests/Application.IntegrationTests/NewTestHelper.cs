@@ -25,10 +25,9 @@ namespace Goose.Tests.Application.IntegrationTests
     {
         private readonly HttpClient _client;
 
-        private SignInResponse LoggedInUser { get; set; }
-        private List<ObjectId> _companies = new();
-        private List<ObjectId> _projects = new();
-        private List<ObjectId> _issues = new();
+        private readonly List<ObjectId> _companies = new();
+        private readonly List<ObjectId> _projects = new();
+        private readonly List<ObjectId> _issues = new();
 
 
         public ICompanyRepository CompanyRepository { get; }
@@ -81,7 +80,7 @@ namespace Goose.Tests.Application.IntegrationTests
 
         public async Task<HttpResponseMessage> GenerateProject(ObjectId companyId)
         {
-            return await GenerateProject(companyId, new ProjectDTO {Name = $"{new Random().NextDouble()}"});
+            return await GenerateProject(companyId, new ProjectDTO { Name = $"{new Random().NextDouble()}" });
         }
 
         public async Task<HttpResponseMessage> GenerateProject(ObjectId companyId, ProjectDTO projectDto)
@@ -107,7 +106,7 @@ namespace Goose.Tests.Application.IntegrationTests
         }
 
 
-        public async Task<ObjectId> GenerateUserAndSetToProject(ObjectId companyId, ObjectId projectId,
+        public async Task<UserDTO> GenerateUserAndSetToProject(ObjectId companyId, ObjectId projectId,
             params Role[] roles)
         {
             var login = new PropertyUserLoginDTO
@@ -120,7 +119,7 @@ namespace Goose.Tests.Application.IntegrationTests
             return await GenerateUserAndSetToProject(companyId, projectId, login, roles);
         }
 
-        public async Task<ObjectId> GenerateUserAndSetToProject(ObjectId companyId, ObjectId projectId, PropertyUserLoginDTO user,
+        public async Task<UserDTO> GenerateUserAndSetToProject(ObjectId companyId, ObjectId projectId, PropertyUserLoginDTO user,
             params Role[] roles)
         {
             //generate User 
@@ -137,7 +136,7 @@ namespace Goose.Tests.Application.IntegrationTests
             });
 
             _client.Auth(signInResult);
-            return signInResult.User.Id;
+            return signInResult.User;
         }
 
         public async Task<HttpResponseMessage> GenerateIssue(UserDTO user, ProjectDTO project, Action<IssueDTO> withIssue = null)
@@ -150,6 +149,13 @@ namespace Goose.Tests.Application.IntegrationTests
         public async Task<HttpResponseMessage> GenerateIssue(ProjectDTO project, IssueDTO issue)
         {
             return await CreateIssue(project.Id, issue);
+        }
+
+        public async Task<IssueRequirement> GenerateRequirement(string requirement = "Die Application Testen")
+        {
+            IssueRequirement issueRequirement = new() { Requirement = requirement };
+            var res = await CreateRequirementForIssueAsync(_client, _issues[0], issueRequirement);
+            return await res.Content.Parse<IssueRequirement>();
         }
 
         #endregion
@@ -224,6 +230,12 @@ namespace Goose.Tests.Application.IntegrationTests
             };
 
             return await _client.PostAsync($"api/projects/{projectId}/states", newState.ToStringContent());
+        }
+
+        public async Task<HttpResponseMessage> CreateRequirementForIssueAsync(HttpClient client, ObjectId issueId, IssueRequirement issueRequirement)
+        {
+            var uri = $"/api/issues/{issueId}/requirements/";
+            return await client.PostAsync(uri, issueRequirement.ToStringContent());
         }
 
         public async Task<HttpResponseMessage> EditStateInProject(ObjectId projectId, StateDTO stateEdited)

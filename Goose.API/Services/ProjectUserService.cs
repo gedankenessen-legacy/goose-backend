@@ -168,10 +168,11 @@ namespace Goose.API.Services
             Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
             {
                 { CompanyRolesRequirement.CompanyOwner, "You need to be the owner of this company, in order to update the users" },
+                { ProjectRolesRequirement.LeaderRequirement, "You need to be the Project leader, in order to update the users"}
             };
 
             // validate requirements with the appropriate handlers.
-            (await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, company, requirementsWithErrors.Keys)).ThrowErrorForFailedRequirements(requirementsWithErrors);
+            (await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, company, requirementsWithErrors.Keys)).ThrowErrorIfAllFailed(requirementsWithErrors);
 
             return true;
         }

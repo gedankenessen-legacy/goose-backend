@@ -1,4 +1,5 @@
 ﻿#nullable enable
+using MongoDB.Bson.Serialization.Attributes;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -15,9 +16,13 @@ namespace Goose.Domain.Models.Issues
         [Required]
         public string Type { get; set; }
 
+        [BsonDateTimeOptions(Kind = DateTimeKind.Local)]
         public DateTime? StartDate { get; set; }
+
+        [BsonDateTimeOptions(Kind = DateTimeKind.Local)]
         public DateTime? EndDate { get; set; }
         public double? ExpectedTime { get; set; }
+        public double? TotalWorkTime { get; set; }
         [Required] public int Progress { get; set; }
         public string? Description { get; set; }
         public IList<IssueRequirement>? Requirements { get; set; }

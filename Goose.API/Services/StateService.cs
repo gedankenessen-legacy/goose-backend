@@ -169,8 +169,9 @@ namespace Goose.API.Services
             // Dict with the requirement as key und the error message as value.
             Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
             {
-                { ProjectRolesRequirement.EmployeeRequirement, "You missing the employee role in this project, in order to create a state." },
-                { ProjectRolesRequirement.LeaderRequirement, "You missing the leader role in this project, in order to create a state." },
+                { ProjectRolesRequirement.EmployeeRequirement, "You missing the employee role in this project, in order to create, update or delete a state." },
+                { ProjectRolesRequirement.LeaderRequirement, "You missing the leader role in this project, in order to create, update or delete a state." },
+                { CompanyRolesRequirement.CompanyOwner, "You missing the company role in this project, in order to create, update or delete a state." }
             };
 
             // validate requirements with the appropriate handlers.

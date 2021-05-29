@@ -52,13 +52,21 @@ namespace Goose.API.Services.Issues
 
         public async Task<IList<IssueTimeSheetDTO>> GetAllOfIssueAsync(ObjectId issueId)
         {
-            var timeSheets = (await _issueRepo.GetAsync(issueId)).TimeSheets;
+            Issue issue = await _issueRepo.GetAsync(issueId);
+
+            await CanUserReadTimeSheetsAsync(issue);
+
+            var timeSheets = issue.TimeSheets;
             return (await Task.WhenAll(timeSheets.Select(MapToTimeSheetDTO))).ToList();
         }
 
         public async Task<IssueTimeSheetDTO> GetAsync(ObjectId issueId, ObjectId timeSheetId)
         {
-            var timeSheet = (await _issueRepo.GetAsync(issueId)).TimeSheets.First(it => it.Id.Equals(timeSheetId));
+            Issue issue = await _issueRepo.GetAsync(issueId);
+
+            await CanUserReadTimeSheetsAsync(issue);
+
+            var timeSheet = issue.TimeSheets.First(it => it.Id.Equals(timeSheetId));
             return await MapToTimeSheetDTO(timeSheet);
         }
 
@@ -66,16 +74,42 @@ namespace Goose.API.Services.Issues
         {
             var issue = await _issueRepo.GetAsync(issueId);
 
-            if ((await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, issue, IssueOperationRequirments.CreateOwnTimeSheets)).Succeeded is false)
+            var user = _httpContextAccessor.HttpContext.User;
+            var userId = user.GetUserId();
+
+            if ((await _authorizationService.AuthorizeAsync(user, issue, IssueOperationRequirments.CreateOwnTimeSheets)).Succeeded is false)
                 throw new HttpStatusException(StatusCodes.Status403Forbidden, "You are not allowed to create a time sheet.");
             var timesheet = timeSheetDto.ToTimeSheet();
 
             timesheet.Id = ObjectId.GenerateNewId();
-            timesheet.UserId = _httpContextAccessor.HttpContext.User.GetUserId();
+            timesheet.UserId = userId;
             issue.TimeSheets.Add(timesheet);
+            issue.IssueDetail.TotalWorkTime = CalculateWorkedTime(issue);
+
+            await StopAllTimeSheetsOfUserAsync(userId);
             await _issueRepo.UpdateAsync(issue);
+
             await CreateTimeExccededMessage(issueId, timeSheetDto);
             return await GetAsync(issueId, timesheet.Id);
+        }
+
+        private async Task StopAllTimeSheetsOfUserAsync(ObjectId userId)
+        {
+            var openIssues = await _issueRepo.GetIssuesWithOpenTimeSheetsAsync(userId);
+
+            foreach (var issue in openIssues)
+            {
+                foreach (var timeSheet in issue.TimeSheets)
+                {
+                    if (timeSheet.UserId == userId && timeSheet.End == default)
+                    {
+                        timeSheet.End = DateTime.Now;
+                    }
+                }
+
+                await _issueRepo.UpdateAsync(issue);
+                await CreateTimeExccededMessage(issue.Id);
+            }
         }
 
         public async Task UpdateAsync(ObjectId issueId, ObjectId id, IssueTimeSheetDTO timeSheetDto)
@@ -96,8 +130,20 @@ namespace Goose.API.Services.Issues
                 
 
             issue.TimeSheets.Replace(it => it.Id == timeSheetDto.Id, timeSheetDto.ToTimeSheet());
+            issue.IssueDetail.TotalWorkTime = CalculateWorkedTime(issue);
             await _issueRepo.UpdateAsync(issue);
             await CreateTimeExccededMessage(issueId, timeSheetDto);
+        }
+
+        private async Task CanUserReadTimeSheetsAsync(Issue issue)
+        {
+            var requirementsWithErrors = new Dictionary<IAuthorizationRequirement, string>()
+            {
+                { IssueOperationRequirments.ReadTimeSheets, "You are not allowed to read timesheets" }
+            };
+
+            var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, issue, requirementsWithErrors.Keys);
+            authorizationResult.ThrowErrorForFailedRequirements(requirementsWithErrors);
         }
 
         private async Task CanUserUpdateTimeSheetAsync(Issue issue)
@@ -136,13 +182,31 @@ namespace Goose.API.Services.Issues
             return new IssueTimeSheetDTO(timeSheet, user);
         }
 
+        /// <summary>
+        /// Checks if the ticket time could have been exceeded. If it was, a message is generated.
+        /// The newly edited timesheet can be provided, in order to see if the timeSheet was just started.
+        /// In that case, the check if the time was exceeded is not necessary and will be skipped.
+        /// </summary>
+        /// <param name="issueId"></param>
+        /// <param name="timeSheetDto"></param>
+        /// <returns></returns>
         private async Task CreateTimeExccededMessage(ObjectId issueId, IssueTimeSheetDTO timeSheetDto)
         {
-            if (timeSheetDto.End == default(DateTime))
+            if (timeSheetDto.End == default)
                 return;
 
+            await CreateTimeExccededMessage(issueId);
+        }
+
+        /// <summary>
+        /// Checks if the ticket time could have been exceeded. If it was, a message is generated.
+        /// </summary>
+        /// <param name="issueId"></param>
+        /// <returns></returns>
+        private async Task CreateTimeExccededMessage(ObjectId issueId)
+        {
             var updatedIssue = await _issueRepo.GetAsync(issueId);
-            var timesheets = updatedIssue.TimeSheets.Where(x => !x.End.Equals(default(DateTime)));
+            var timesheets = updatedIssue.TimeSheets.Where(x =>!x.End.Equals(default(DateTime)));
 
             TimeSpan? diffrence = new TimeSpan();
 
@@ -161,6 +225,16 @@ namespace Goose.API.Services.Issues
                 Type = MessageType.TimeExceeded,
                 Consented = false,
             });
+        }
+
+        private double CalculateWorkedTime(Issue issue)
+        {
+            var timesheets = issue.TimeSheets.Where(x => !x.End.Equals(default(DateTime)));
+            TimeSpan diffrence = new TimeSpan();
+
+            foreach (var timesheet in timesheets)
+                diffrence += timesheet.End - timesheet.Start;
+            return diffrence.TotalHours.Round(2);
         }
 
         private async Task CreateTimeChangedMessage(Issue issue, IssueTimeSheetDTO timeSheetDto)

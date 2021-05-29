@@ -209,8 +209,8 @@ namespace Goose.API
 
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapControllers();
-                //endpoints.MapControllers().RequireAuthorization(); // enforce jwt token validation on all controllers...
+                //endpoints.MapControllers();
+                endpoints.MapControllers().RequireAuthorization(); // enforce jwt token validation on all controllers...
             });
         }
     }

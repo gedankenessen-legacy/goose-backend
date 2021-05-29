@@ -22,5 +22,7 @@ jobs:
       run: dotnet restore
     - name: Build
       run: dotnet build --no-restore
+    - name: increase the amount of authorized instances
+      run: echo fs.inotify.max_user_instances=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
     - name: Test
       run: dotnet test --no-build --verbosity normal
