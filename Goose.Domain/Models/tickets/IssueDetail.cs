@@ -22,6 +22,7 @@ namespace Goose.Domain.Models.Issues
         [BsonDateTimeOptions(Kind = DateTimeKind.Local)]
         public DateTime? EndDate { get; set; }
         public double? ExpectedTime { get; set; }
+        public double? TotalWorkTime { get; set; }
         [Required] public int Progress { get; set; }
         public string? Description { get; set; }
         public IList<IssueRequirement>? Requirements { get; set; }

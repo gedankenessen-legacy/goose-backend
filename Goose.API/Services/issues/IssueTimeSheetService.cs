@@ -84,6 +84,7 @@ namespace Goose.API.Services.Issues
             timesheet.Id = ObjectId.GenerateNewId();
             timesheet.UserId = userId;
             issue.TimeSheets.Add(timesheet);
+            issue.IssueDetail.TotalWorkTime = CalculateWorkedTime(issue);
 
             await StopAllTimeSheetsOfUserAsync(userId);
             await _issueRepo.UpdateAsync(issue);
@@ -129,6 +130,7 @@ namespace Goose.API.Services.Issues
                 
 
             issue.TimeSheets.Replace(it => it.Id == timeSheetDto.Id, timeSheetDto.ToTimeSheet());
+            issue.IssueDetail.TotalWorkTime = CalculateWorkedTime(issue);
             await _issueRepo.UpdateAsync(issue);
             await CreateTimeExccededMessage(issueId, timeSheetDto);
         }
@@ -204,7 +206,7 @@ namespace Goose.API.Services.Issues
         private async Task CreateTimeExccededMessage(ObjectId issueId)
         {
             var updatedIssue = await _issueRepo.GetAsync(issueId);
-            var timesheets = updatedIssue.TimeSheets.Where(x => !x.End.Equals(default(DateTime)));
+            var timesheets = updatedIssue.TimeSheets.Where(x =>!x.End.Equals(default(DateTime)));
 
             TimeSpan? diffrence = new TimeSpan();
 
@@ -223,6 +225,16 @@ namespace Goose.API.Services.Issues
                 Type = MessageType.TimeExceeded,
                 Consented = false,
             });
+        }
+
+        private double CalculateWorkedTime(Issue issue)
+        {
+            var timesheets = issue.TimeSheets.Where(x => !x.End.Equals(default(DateTime)));
+            TimeSpan diffrence = new TimeSpan();
+
+            foreach (var timesheet in timesheets)
+                diffrence += timesheet.End - timesheet.Start;
+            return diffrence.TotalHours.Round(2);
         }
 
         private async Task CreateTimeChangedMessage(Issue issue, IssueTimeSheetDTO timeSheetDto)

@@ -142,6 +142,34 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             AssertTimeSheetsAreEqualExceptId(fourthTimeSheet, otherTimeSheets[0]);
         }
 
+        [Test]
+        public async Task TimeSheetTest1()
+        {
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            IssueTimeSheetDTO timeSheetDTO = new IssueTimeSheetDTO()
+            {
+                User = helper.User,
+                Start = DateTime.Now
+            };
+
+            var uri = $"/api/issues/{helper.Issue.Id}/timesheets";
+            var responce = await helper.client.PostAsync(uri, timeSheetDTO.ToStringContent());
+            Assert.IsTrue(responce.IsSuccessStatusCode);
+            var result = await responce.Parse<IssueTimeSheetDTO>();
+
+            uri = $"/api/issues/{helper.Issue.Id}/timesheets/{result.Id}";
+            responce = await helper.client.GetAsync(uri);
+            Assert.IsTrue(responce.IsSuccessStatusCode);
+            var createdSheet = await responce.Parse<IssueTimeSheetDTO>();
+
+            createdSheet.End = DateTime.Now.AddHours(2);
+            responce = await helper.client.PutAsync(uri, createdSheet.ToStringContent());
+            Assert.IsTrue(responce.IsSuccessStatusCode);
+
+            var issue = await helper.Helper.GetIssueThroughClientAsync(helper.Issue);
+            Assert.AreEqual(2, issue.IssueDetail.TotalWorkTime);
+        }
+
         public static void AssertTimeSheetsAreEqualExceptId(IssueTimeSheetDTO expected, IssueTimeSheetDTO actual)
         {
             Assert.AreEqual(expected.User.Id, actual.User.Id);
