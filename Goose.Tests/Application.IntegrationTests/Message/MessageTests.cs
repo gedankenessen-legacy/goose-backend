@@ -280,7 +280,7 @@ namespace Goose.Tests.Application.IntegrationTests.Message
             var issue = await helper.Helper.GetIssueAsync(helper.Issue.Id);
             var uri = $"/api/projects/{project.Id}/issues/{issue.Id}";
 
-            var newState = await helper.Helper.GetStateByNameAsync(issue.ProjectId, State.BlockedState);
+            var newState = await helper.Helper.GetStateByNameAsync(issue.ProjectId, State.ReviewState);
             var issueDTO = new IssueDTO(issue, newState, project, user, user);
 
             var response = await helper.client.PutAsync(uri, issueDTO.ToStringContent());
@@ -293,6 +293,7 @@ namespace Goose.Tests.Application.IntegrationTests.Message
 
             Assert.AreEqual(0, messageList.Count);
         }
+
 
         [Test]
         public async Task IssueConversationTest()

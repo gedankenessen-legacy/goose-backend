@@ -128,7 +128,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             await helper.Helper.GenerateUserAndSetToProject(helper.Company.Id, helper.Project.Id, Role.EmployeeRole);
 
             var copy = helper.Issue.Copy();
-            copy.State = await helper.Helper.GetStateByNameAsync(copy.Project.Id, State.WaitingState);
+            copy.State = await helper.Helper.GetStateByNameAsync(copy.Project.Id, State.NegotiationState);
 
             var uri = $"api/projects/{copy.Project.Id}/issues/{copy.Id}";
 

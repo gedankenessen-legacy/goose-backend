@@ -96,9 +96,19 @@ namespace Goose.Tests.Application.IntegrationTests
             return await Helper.GetIssueAsync(issueId);
         }
 
-        public async Task<HttpResponseMessage> AddIssueChild(ObjectId childId)
+        public async Task<HttpResponseMessage> SetIssueChild(ObjectId childId)
         {
             return await Helper.SetParentIssue(Issue.Id, childId);
+        }
+
+        public async Task<HttpResponseMessage> SetPredecessor(ObjectId predecessorId)
+        {
+            return await Helper.SetPredecessor(predecessorId, Issue.Id);
+        }
+
+        public async Task<HttpResponseMessage> SetState(string stateName)
+        {
+            return await Helper.SetStateOfIssue(Issue, stateName);
         }
 
 

@@ -169,7 +169,7 @@ namespace Goose.API
             services.AddScoped<IIssueRequirementService, IssueRequirementService>();
             services.AddScoped<IIssueRequestValidator, IssueRequestValidator>();
             services.AddScoped<IIssuePredecessorService, IssuePredecessorService>();
-            services.AddScoped<IIssuePredecessorService, IssuePredecessorService>();
+            services.AddScoped<IIssueSuccessorService, IssueSuccessorService>();
             services.AddScoped<IIssueTimeSheetService, IssueTimeSheetService>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IRoleService, RoleService>();
@@ -184,6 +184,8 @@ namespace Goose.API
             services.AddScoped<IIssueParentService, IssueParentService>();
             services.AddScoped<IMessageService, MessageService>();
             services.AddScoped<IIssueAssociationHelper, IssueAssociationHelper>();
+            services.AddScoped<IIssueStateService, IssueStateService>();
+            
             services.AddHttpContextAccessor();
         }
 

@@ -156,6 +156,8 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
         public async Task SummaryAcceptedConversation()
         {
             using var helper = await new SimpleTestHelperBuilder().Build();
+            await helper.SetState(State.NegotiationState);
+            
             var issue = helper.Issue;
             IssueRequirement issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen"};
             await helper.Helper.IssueRequirementService.CreateAsync(issue.Id, issueRequirement);
@@ -189,7 +191,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             Assert.IsTrue(latestConversationItem is not null);
             Assert.AreEqual(latestConversationItem.CreatorUserId, helper.User.Id);
             Assert.AreEqual(latestConversationItem.Type, IssueConversation.StateChangeType);
-            Assert.AreEqual(latestConversationItem.Data, $"Status von {State.NegotiationState} zu {State.WaitingState} geändert.");
+            Assert.AreEqual(latestConversationItem.Data, $"Status von {State.NegotiationState} zu {State.ProcessingState} geändert.");
         }
 
         [Test]

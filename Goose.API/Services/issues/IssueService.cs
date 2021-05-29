@@ -17,6 +17,7 @@ using Goose.API.Authorization;
 using Goose.Domain.Models;
 using Goose.API.EventHandler;
 using System;
+using Goose.API.Services.issues;
 using Goose.API.Utils;
 
 namespace Goose.API.Services.Issues
@@ -45,6 +46,7 @@ namespace Goose.API.Services.Issues
         private readonly IIssueRequestValidator _issueValidator;
 
         private readonly IMessageService _messageService;
+        private readonly IIssueStateService _issueStateService;
 
         public IssueService(
             IIssueRepository issueRepo,
@@ -54,7 +56,7 @@ namespace Goose.API.Services.Issues
             IIssueRequestValidator issueValidator,
             IHttpContextAccessor httpContextAccessor,
             IAuthorizationService authorizationService,
-            IMessageService messageService) : base (httpContextAccessor, authorizationService)
+            IMessageService messageService, IIssueStateService issueStateService) : base (httpContextAccessor, authorizationService)
         {
             _issueRepo = issueRepo;
             _stateService = stateService;
@@ -62,6 +64,7 @@ namespace Goose.API.Services.Issues
             _userRepository = userRepository;
             _issueValidator = issueValidator;
             _messageService = messageService;
+            _issueStateService = issueStateService;
         }
 
         public async Task<IList<IssueDTO>> GetAll()
@@ -132,7 +135,6 @@ namespace Goose.API.Services.Issues
 
         private IssueDetail CreateValidIssueDetail(IssueDetail detail)
         {
-            //TODO more validation
             detail.Requirements = new List<IssueRequirement>();
             detail.RelevantDocuments = new List<string>();
             detail.RequirementsSummaryCreated = false;
@@ -162,13 +164,11 @@ namespace Goose.API.Services.Issues
         {
             if (updated.State != null)
             {
-                var oldStateId = old.StateId;
-                var newStateId = updated.State.Id;
+                var newState = await _stateService.GetState(old.ProjectId, updated.State.Id);
 
-                if (oldStateId != newStateId)
+                if (old.StateId != newState.Id)
                 {
-                    var oldState = await _stateService.GetState(old.ProjectId, oldStateId);
-                    var newState = await _stateService.GetState(old.ProjectId, newStateId);
+                    var oldState = await _stateService.GetState(old.ProjectId, old.StateId);
 
                     // if changing the state to cancelled, we need to validate the user requirments.
                     if (newState.Name.Equals(State.CancelledState))
@@ -179,8 +179,9 @@ namespace Goose.API.Services.Issues
                     else
                         await AuthenticateRequirmentAsync(old, IssueOperationRequirments.EditState);
 
-                    // State wird aktualisiert
-                    old.StateId = newStateId;
+                    
+                    newState = await _issueStateService.UpdateState(old, updated.State);
+                    old = await _issueRepo.GetAsync(old.Id);
 
                     old.ConversationItems.Add(new IssueConversation()
                     {

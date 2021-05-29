@@ -103,6 +103,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
         {
             var builder = new SimpleTestHelperBuilderSummaryRights(Role.CustomerRole);
             using var helper = await builder.Build();
+            await helper.SetState(State.NegotiationState);
 
             var issue = helper.Issue;
             IssueRequirement issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen" };
@@ -127,8 +128,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             var newIssue = await helper.GetIssueAsync(issue.Id);
             Assert.IsTrue(newIssue.IssueDetail.RequirementsAccepted);
 
-            var state = await helper.Helper.GetStateByNameAsync(newIssue.ProjectId, State.WaitingState);
-            Assert.AreEqual(state.Id, newIssue.StateId);
+            Assert.AreEqual(State.ProcessingState, (await helper.Helper.GetStateById(newIssue)).Name);
 
             issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen2" };
             uri = $"/api/issues/{issue.Id}/requirements/";
@@ -161,7 +161,8 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
         {
             var builder = new SimpleTestHelperBuilderSummaryRights(Role.EmployeeRole);
             using var helper = await builder.Build();
-
+            await helper.SetState(State.NegotiationState);
+            
             var issue = helper.Issue;
             IssueRequirement issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen" };
             await helper.Helper.IssueRequirementService.CreateAsync(issue.Id, issueRequirement);
@@ -185,8 +186,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             var newIssue = await helper.GetIssueAsync(issue.Id);
             Assert.IsTrue(newIssue.IssueDetail.RequirementsAccepted);
 
-            var state = await helper.Helper.GetStateByNameAsync(newIssue.ProjectId, State.WaitingState);
-            Assert.AreEqual(state.Id, newIssue.StateId);
+            Assert.AreEqual(State.ProcessingState, (await helper.Helper.GetStateById(newIssue)).Name);
 
             issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen2" };
             uri = $"/api/issues/{issue.Id}/requirements/";
@@ -200,6 +200,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
         {
             var builder = new SimpleTestHelperBuilderSummaryRights(Role.EmployeeRole);
             using var helper = await builder.Build();
+            await helper.SetState(State.NegotiationState);
 
             var issue = helper.Issue;
             IssueRequirement issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen" };
@@ -216,8 +217,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             var newIssue = await helper.GetIssueAsync(issue.Id);
             Assert.IsTrue(newIssue.IssueDetail.RequirementsAccepted);
 
-            var state = await helper.Helper.GetStateByNameAsync(newIssue.ProjectId, State.WaitingState);
-            Assert.AreEqual(state.Id, newIssue.StateId);
+            Assert.AreEqual(State.ProcessingState, (await helper.Helper.GetStateById(newIssue)).Name);
 
             issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen2" };
             uri = $"/api/issues/{issue.Id}/requirements/";

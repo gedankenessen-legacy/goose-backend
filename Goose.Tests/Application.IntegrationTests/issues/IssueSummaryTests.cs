@@ -21,7 +21,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             using var helper = await new SimpleTestHelperBuilder().Build();
 
             var issue = helper.Issue;
-            IssueRequirement issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen" };
+            IssueRequirement issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen"};
             await helper.Helper.IssueRequirementService.CreateAsync(issue.Id, issueRequirement);
 
             var uri = $"/api/issues/{issue.Id}/summaries";
@@ -36,11 +36,10 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
 
             Assert.IsTrue(requirements != null && requirements.Count > 0);
 
-            issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen2" };
+            issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen2"};
             uri = $"/api/issues/{issue.Id}/requirements/";
             response = await helper.client.PostAsync(uri, issueRequirement.ToStringContent());
             Assert.IsFalse(response.IsSuccessStatusCode);
-
         }
 
         [Test]
@@ -57,16 +56,16 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             uri = $"/api/issues/{issue.Id}/summaries";
             responce = await helper.client.GetAsync(uri);
             Assert.IsFalse(responce.IsSuccessStatusCode);
-
         }
 
         [Test]
         public async Task AcceptSummary()
         {
             using var helper = await new SimpleTestHelperBuilder().Build();
+            await helper.SetState(State.NegotiationState);
 
             var issue = helper.Issue;
-            IssueRequirement issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen" };
+            IssueRequirement issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen"};
             await helper.Helper.IssueRequirementService.CreateAsync(issue.Id, issueRequirement);
 
             var uri = $"/api/issues/{issue.Id}/summaries";
@@ -80,14 +79,12 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             var newIssue = await helper.GetIssueAsync(issue.Id);
             Assert.IsTrue(newIssue.IssueDetail.RequirementsAccepted);
 
-            var state = await helper.Helper.GetStateByNameAsync(newIssue.ProjectId, State.WaitingState);
-            Assert.AreEqual(state.Id, newIssue.StateId);
+            Assert.AreEqual(State.ProcessingState, (await helper.Helper.GetStateById(newIssue)).Name);
 
-            issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen2" };
+            issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen2"};
             uri = $"/api/issues/{issue.Id}/requirements/";
             response = await helper.client.PostAsync(uri, issueRequirement.ToStringContent());
             Assert.IsFalse(response.IsSuccessStatusCode);
-
         }
 
         [Test]
@@ -98,7 +95,6 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             var uri = $"/api/issues/{helper.Issue.Id}/summaries?accept=true";
             var response = await helper.client.PutAsync(uri, new object().ToStringContent());
             Assert.IsFalse(response.IsSuccessStatusCode);
-
         }
 
         [Test]
@@ -106,7 +102,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
         {
             using var helper = await new SimpleTestHelperBuilder().Build();
 
-            IssueRequirement issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen" };
+            IssueRequirement issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen"};
             await helper.Helper.IssueRequirementService.CreateAsync(helper.Issue.Id, issueRequirement);
 
             var uri = $"/api/issues/{helper.Issue.Id}/summaries";
@@ -121,11 +117,10 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             Assert.IsFalse(issue.IssueDetail.RequirementsAccepted);
             Assert.IsFalse(issue.IssueDetail.RequirementsSummaryCreated);
 
-            issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen2" };
+            issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen2"};
             uri = $"/api/issues/{issue.Id}/requirements/";
             responce = await helper.client.PostAsync(uri, issueRequirement.ToStringContent());
             Assert.IsTrue(responce.IsSuccessStatusCode);
-
         }
 
         [Test]
@@ -137,19 +132,19 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             var responce = await helper.client.PutAsync(uri, new object().ToStringContent());
             Assert.IsFalse(responce.IsSuccessStatusCode);
 
-            var issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen2" };
+            var issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen2"};
             uri = $"/api/issues/{helper.Issue.Id}/requirements/";
             responce = await helper.client.PostAsync(uri, issueRequirement.ToStringContent());
             Assert.IsTrue(responce.IsSuccessStatusCode);
-
         }
 
         [Test]
         public async Task DeclineSummaryFalse2()
         {
             using var helper = await new SimpleTestHelperBuilder().Build();
-
-            IssueRequirement issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen" };
+            await helper.SetState(State.NegotiationState);
+            
+            IssueRequirement issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen"};
             await helper.Helper.IssueRequirementService.CreateAsync(helper.Issue.Id, issueRequirement);
 
             var uri = $"/api/issues/{helper.Issue.Id}/summaries";
@@ -164,13 +159,11 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             Assert.IsTrue(issue.IssueDetail.RequirementsAccepted);
 
 
-            var state = await helper.Helper.GetStateByNameAsync(issue.ProjectId, State.WaitingState);
-            Assert.AreEqual(state.Id, issue.StateId);
+            Assert.AreEqual(State.ProcessingState, (await helper.Helper.GetStateById(issue)).Name);
 
             uri = $"/api/issues/{issue.Id}/summaries?accept=false";
             responce = await helper.client.PutAsync(uri, new object().ToStringContent());
             Assert.IsFalse(responce.IsSuccessStatusCode);
-
         }
     }
 }

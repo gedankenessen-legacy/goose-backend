@@ -79,9 +79,10 @@ namespace Goose.API.Utils
                     return i;
                 }
             }
+
             return -1;
         }
-    
+
         public static IList<T> ConcatOrSkip<T>(this IList<T> list, IList<T> concatee)
         {
             if (list is null)
@@ -90,5 +91,7 @@ namespace Goose.API.Utils
                 return list;
             return list.Concat(concatee).ToList();
         }
+
+        public static bool HasWhere<T>(this IList<T> list, Func<T, bool> fun) => list.FirstOrDefault(fun) != null;
     }
 }

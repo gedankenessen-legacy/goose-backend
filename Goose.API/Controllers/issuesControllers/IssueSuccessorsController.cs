@@ -18,7 +18,7 @@ namespace Goose.API.Controllers.IssuesControllers
         {
             _issueService = issueService;
         }
-        
+
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -26,5 +26,9 @@ namespace Goose.API.Controllers.IssuesControllers
         {
             return await _issueService.GetAll(issueId);
         }
+
+/*
+             * Issue wird blockiert wenn:
+             * 1) Das Oberticket nicht in der Bearbeitungsphase ist*/
     }
 }

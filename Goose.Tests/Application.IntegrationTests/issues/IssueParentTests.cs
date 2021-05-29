@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Goose.Domain.DTOs;
 using Goose.Domain.DTOs.Issues;
 using Goose.Domain.Models.Identity;
+using Goose.Domain.Models.Projects;
 using MongoDB.Bson;
 using NUnit.Framework;
 
@@ -21,7 +22,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             var child = await helper.CreateIssue().Parse<IssueDTO>();
 
             //Set Parent
-            var setParentRes = await helper.AddIssueChild(child.Id);
+            var setParentRes = await helper.SetIssueChild(child.Id);
             Assert.AreEqual(HttpStatusCode.NoContent, setParentRes.StatusCode);
 
             //Check if child issue has parent field set
@@ -40,7 +41,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
         {
             using var helper = await new SimpleTestHelperBuilder().Build();
             //Set Parent
-            var setParentRes = await helper.AddIssueChild(helper.Issue.Id);
+            var setParentRes = await helper.SetIssueChild(helper.Issue.Id);
             Assert.AreEqual(HttpStatusCode.BadRequest, setParentRes.StatusCode);
         }
 
@@ -50,7 +51,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             using var helper = await new SimpleTestHelperBuilder().Build();
             var child = await helper.CreateIssue().Parse<IssueDTO>();
             //Set Parent
-            await helper.AddIssueChild(child.Id);
+            await helper.SetIssueChild(child.Id);
             var setParentRes = await helper.Helper.SetParentIssue(child.Id, helper.Issue.Id);
             Assert.AreEqual(HttpStatusCode.BadRequest, setParentRes.StatusCode);
         }
@@ -62,8 +63,8 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             var child1 = await helper.CreateIssue().Parse<IssueDTO>();
             var child2 = await helper.CreateIssue().Parse<IssueDTO>();
             //Set Parent
-            await helper.AddIssueChild(child1.Id);
-            await helper.AddIssueChild(child2.Id);
+            await helper.SetIssueChild(child1.Id);
+            await helper.SetIssueChild(child2.Id);
             var setParentRes = await helper.Helper.SetParentIssue(child1.Id, child2.Id);
             Assert.AreEqual(HttpStatusCode.BadRequest, setParentRes.StatusCode);
         }
@@ -145,7 +146,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
 
             parentIssueDto.IssueDetail.Priority += 1;
 
-            result = await helper.Helper.PutIssue(parentIssueDto);
+            result = await helper.Helper.UpdateIssue(parentIssueDto);
             Assert.IsTrue(result.IsSuccessStatusCode);
 
             var childIssue = await helper.GetIssueAsync(childIssueDto.Id);
@@ -171,13 +172,30 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
 
             childIssueDto.IssueDetail.Priority = parentIssueDto.IssueDetail.Priority + 1;
 
-            var result = await helper.Helper.PutIssue(parentIssueDto);
+            var result = await helper.Helper.UpdateIssue(parentIssueDto);
             Assert.IsTrue(result.IsSuccessStatusCode);
 
             var childIssue = await helper.GetIssueAsync(childIssueDto.Id);
 
             Assert.AreEqual(parentIssueDto.IssueDetail.Priority, childIssue.IssueDetail.Priority);
 
+        }
+
+        [Test]
+        public async Task CannotAddChildAfterReviewState()
+        {
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            var child = await helper.CreateIssue().Parse<IssueDTO>();
+            await helper.SetState(State.NegotiationState);
+            await helper.SetState(State.ProcessingState);
+            await helper.SetState(State.ReviewState);
+
+            var resReviewState = await helper.SetIssueChild(child.Id);
+            Assert.AreEqual(HttpStatusCode.BadRequest, resReviewState.StatusCode);
+            
+            await helper.SetState(State.CompletedState);
+            var resCompletedState = await helper.SetIssueChild(child.Id);
+            Assert.AreEqual(HttpStatusCode.BadRequest, resCompletedState.StatusCode);
         }
     }
 }
