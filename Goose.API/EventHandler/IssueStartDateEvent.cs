@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Goose.API.Services.issues;
 
 namespace Goose.API.EventHandler
 {
@@ -18,16 +19,18 @@ namespace Goose.API.EventHandler
         private static readonly Dictionary<ObjectId, EventCanceller> _runningStartDates = new Dictionary<ObjectId, EventCanceller>();
         private readonly IIssueRepository _issueRepository;
         private readonly IStateService _stateService;
+        private readonly IIssueStateService _issueStateService;
 
         public DateTime Time { get; }
         public Issue Issue { get; }
 
-        public IssueStartDateEvent(Issue issue, IIssueRepository issueRepository, IStateService stateService)
+        public IssueStartDateEvent(Issue issue, IIssueRepository issueRepository, IStateService stateService, IIssueStateService issueStateService)
         {
-            Time = (DateTime)issue.IssueDetail.StartDate;
+            Time = (DateTime) issue.IssueDetail.StartDate;
             Issue = issue;
             _issueRepository = issueRepository;
             _stateService = stateService;
+            _issueStateService = issueStateService;
         }
 
         public Task OnCancelled()
@@ -36,6 +39,7 @@ namespace Goose.API.EventHandler
             {
                 _runningStartDates.Remove(Issue.Id);
             }
+
             return Task.CompletedTask;
         }
 
@@ -81,6 +85,7 @@ namespace Goose.API.EventHandler
             {
                 _runningStartDates.Remove(Issue.Id);
             }
+
             await UpdateIssue();
         }
 
@@ -88,15 +93,12 @@ namespace Goose.API.EventHandler
         {
             //TODO get Issue from cunstroctor 
             var issue = await _issueRepository.GetAsync(Issue.Id);
-           
+
             if (issue is null)
                 return;
 
             var state = await GetState(issue.ProjectId, State.ProcessingState);
-
-            issue.StateId = state.Id;
-
-            await _issueRepository.UpdateAsync(issue);
+            await _issueStateService.UpdateState(issue, state);
         }
 
         private async Task<StateDTO> GetState(ObjectId projectId, string stateName)
