@@ -80,7 +80,7 @@ namespace Goose.Tests.Application.IntegrationTests
 
         public async Task<HttpResponseMessage> GenerateProject(ObjectId companyId)
         {
-            return await GenerateProject(companyId, new ProjectDTO { Name = $"{new Random().NextDouble()}" });
+            return await GenerateProject(companyId, new ProjectDTO {Name = $"{new Random().NextDouble()}"});
         }
 
         public async Task<HttpResponseMessage> GenerateProject(ObjectId companyId, ProjectDTO projectDto)
@@ -153,7 +153,7 @@ namespace Goose.Tests.Application.IntegrationTests
 
         public async Task<IssueRequirement> GenerateRequirement(string requirement = "Die Application Testen")
         {
-            IssueRequirement issueRequirement = new() { Requirement = requirement };
+            IssueRequirement issueRequirement = new() {Requirement = requirement};
             var res = await CreateRequirementForIssueAsync(_client, _issues[0], issueRequirement);
             return await res.Content.Parse<IssueRequirement>();
         }
@@ -254,9 +254,9 @@ namespace Goose.Tests.Application.IntegrationTests
             return await _client.GetAsync(uri);
         }
 
-        public async Task<HttpResponseMessage> GetChildrenIssues(ObjectId parentId)
+        public async Task<HttpResponseMessage> GetChildrenIssues(ObjectId parentId, bool recursive = false)
         {
-            var uri = $"api/issues/{parentId}/children";
+            var uri = $"api/issues/{parentId}/children?recursive={recursive}";
             return await _client.GetAsync(uri);
         }
 
@@ -304,6 +304,7 @@ namespace Goose.Tests.Application.IntegrationTests
         {
             return (await GetStateListAsync(projectId)).FirstOrDefault(x => x.Id.Equals(Id));
         }
+
         public async Task<StateDTO> GetStateById(Issue issue)
         {
             return (await GetStateListAsync(issue.ProjectId)).FirstOrDefault(x => x.Id.Equals(issue.StateId));
@@ -314,6 +315,7 @@ namespace Goose.Tests.Application.IntegrationTests
             var uri = $"api/issues/{issueId}/predecessors/";
             return await _client.GetAsync(uri);
         }
+
         public async Task<HttpResponseMessage> GetSuccessors(ObjectId issueId)
         {
             var uri = $"api/issues/{issueId}/successors/";
