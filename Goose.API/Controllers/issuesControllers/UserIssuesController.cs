@@ -1,19 +1,28 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using Goose.API.Services.issues;
 using Goose.Domain.DTOs.Issues;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 
 namespace Goose.API.Controllers.issuesControllers
 {
-    [Route("api/users/{userId}/issues/")]
+    [Route("api/users/{userId}/projects/{projectId}/issues/")]
     [ApiController]
-    public class UserIssuesController
+    public class UserIssuesController: Controller
     {
-        [HttpGet]
-        public async Task<ActionResult<IList<IssueDTO>>> GetAllOfUser(ObjectId userId)
+        private readonly IUserIssueService _userIssueService;
+
+        public UserIssuesController(IUserIssueService userIssueService)
         {
-            return null;
+            _userIssueService = userIssueService;
+        }
+
+        [HttpGet]
+        public async Task<ActionResult<IList<IssueDTO>>> GetAllOfUser(ObjectId projectId, ObjectId userId)
+        {
+            var res = await _userIssueService.GetAllOfUser(projectId, userId);
+            return Ok(res);
         }
     }
 }
