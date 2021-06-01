@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Goose.API.Utils
 {
@@ -93,5 +94,6 @@ namespace Goose.API.Utils
         }
 
         public static bool HasWhere<T>(this IList<T> list, Func<T, bool> fun) => list.FirstOrDefault(fun) != null;
+        public static async Task<IList<T>> AwaitAll<T>(this IEnumerable<Task<T>> list) => await Task.WhenAll(list);
     }
 }

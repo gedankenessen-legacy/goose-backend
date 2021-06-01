@@ -9,7 +9,7 @@ namespace Goose.API.Controllers.issuesControllers
 {
     public interface IIssueChildrenController
     {
-        public Task<IList<IssueDTO>> GetChildren(ObjectId parentId);
+        public Task<IList<IssueDTO>> GetChildren(ObjectId parentId, bool recursive = false);
     }
 
     [Route("api/issues/{parentId}/children")]
@@ -24,6 +24,6 @@ namespace Goose.API.Controllers.issuesControllers
         }
 
         [HttpGet]
-        public async Task<IList<IssueDTO>> GetChildren(ObjectId parentId) => await _childrenService.GetAll(parentId);
+        public async Task<IList<IssueDTO>> GetChildren(ObjectId parentId, [FromQuery] bool recursive = false) => await _childrenService.GetAll(parentId, recursive);
     }
 }

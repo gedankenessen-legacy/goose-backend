@@ -9,6 +9,7 @@ using Goose.API.Utils.Exceptions;
 using Goose.Domain.DTOs;
 using Goose.Domain.Models.Issues;
 using Goose.Domain.Models.Projects;
+using MongoDB.Bson;
 
 namespace Goose.API.Services.issues
 {

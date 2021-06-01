@@ -56,7 +56,7 @@ namespace Goose.API.Services.Issues
             IIssueRequestValidator issueValidator,
             IHttpContextAccessor httpContextAccessor,
             IAuthorizationService authorizationService,
-            IMessageService messageService, IIssueStateService issueStateService) : base (httpContextAccessor, authorizationService)
+            IMessageService messageService, IIssueStateService issueStateService) : base(httpContextAccessor, authorizationService)
         {
             _issueRepo = issueRepo;
             _stateService = stateService;
@@ -101,7 +101,7 @@ namespace Goose.API.Services.Issues
             await _issueRepo.CreateAsync(issue);
 
             if (issue.IssueDetail.StartDate is not null && issue.IssueDetail.StartDate != default(DateTime))
-                await Scheduler.AddEvent(new IssueStartDateEvent(issue, _issueRepo, _stateService));
+                await Scheduler.AddEvent(new IssueStartDateEvent(issue, _issueRepo, _stateService, _issueStateService));
 
             if (issue.IssueDetail.EndDate is not null && issue.IssueDetail.EndDate != default(DateTime))
                 await Scheduler.AddEvent(new IssueDeadlineEvent(await _projectRepository.GetAsync(issue.ProjectId), issue, _messageService, _issueRepo));
@@ -176,10 +176,21 @@ namespace Goose.API.Services.Issues
                         await UserCanDiscardIssue(old);
                         await CreateCanceledMessage(old);
                     }
+                    else if (newState.Phase.Equals(State.ConclusionPhase))
+                    {
+                        Dictionary<IAuthorizationRequirement, string> req = new()
+                        {
+                            {ProjectRolesRequirement.LeaderRequirement, "Your are not allowed to add a predecessor."},
+                            {CompanyRolesRequirement.CompanyOwner, "Your are not allowed to add a predecessor."},
+                        };
+                        var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User,
+                            await _projectRepository.GetAsync(old.ProjectId), req.Keys);
+                        authorizationResult.ThrowErrorIfAllFailed(req);
+                    }
                     else
                         await AuthenticateRequirmentAsync(old, IssueOperationRequirments.EditState);
 
-                    
+
                     newState = await _issueStateService.UpdateState(old, updated.State);
                     old = await _issueRepo.GetAsync(old.Id);
 
@@ -247,7 +258,7 @@ namespace Goose.API.Services.Issues
                 details.EndDate = updated.EndDate;
 
                 if (details.StartDate is not null && details.StartDate != default(DateTime))
-                    await Scheduler.AddEvent(new IssueStartDateEvent(old, _issueRepo, _stateService));
+                    await Scheduler.AddEvent(new IssueStartDateEvent(old, _issueRepo, _stateService, _issueStateService));
                 else
                     await IssueStartDateEvent.CancelDeadLine(old.Id);
 
@@ -314,7 +325,7 @@ namespace Goose.API.Services.Issues
                 ProjectRolesRequirement.ReadonlyEmployeeRequirement,
                 CompanyRolesRequirement.CompanyOwner
             };
-            
+
 
             // validate requirements with the appropriate handlers.
             var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, project, requirements);
@@ -326,7 +337,7 @@ namespace Goose.API.Services.Issues
         {
             Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
             {
-                { IssueOperationRequirments.DiscardIssue, "Your are not allowed to discard the issue." }
+                {IssueOperationRequirments.DiscardIssue, "Your are not allowed to discard the issue."}
             };
 
             // add additional req. for internal issues.
@@ -336,16 +347,19 @@ namespace Goose.API.Services.Issues
             var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, issue, requirementsWithErrors.Keys);
             authorizationResult.ThrowErrorForFailedRequirements(requirementsWithErrors);
         }
-        
+
         private async Task UserCanCreateOrUpdateIssue(ObjectId projectId)
         {
             var project = await _projectRepository.GetAsync(projectId);
             Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
             {
-                { ProjectRolesRequirement.EmployeeRequirement, "You need to be the employee with write-rights in this project, in order to create or update a issue." },
-                { ProjectRolesRequirement.LeaderRequirement, "You need to be the leader in this project, in order to create or update a issue." },
-                { ProjectRolesRequirement.CustomerRequirement, "You need to be a customer in this project, in order to create or update a issue." },
-                { CompanyRolesRequirement.CompanyOwner, "You need to be a Owner of the Company, in order to create or update a issue"}
+                {
+                    ProjectRolesRequirement.EmployeeRequirement,
+                    "You need to be the employee with write-rights in this project, in order to create or update a issue."
+                },
+                {ProjectRolesRequirement.LeaderRequirement, "You need to be the leader in this project, in order to create or update a issue."},
+                {ProjectRolesRequirement.CustomerRequirement, "You need to be a customer in this project, in order to create or update a issue."},
+                {CompanyRolesRequirement.CompanyOwner, "You need to be a Owner of the Company, in order to create or update a issue"}
             };
 
             // validate requirements with the appropriate handlers.
