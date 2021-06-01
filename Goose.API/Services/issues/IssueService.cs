@@ -44,6 +44,7 @@ namespace Goose.API.Services.Issues
 
         private readonly IIssueRepository _issueRepo;
         private readonly IIssueRequestValidator _issueValidator;
+        private readonly IIssueHelper _issueHelper;
 
         private readonly IMessageService _messageService;
         private readonly IIssueStateService _issueStateService;
@@ -56,7 +57,7 @@ namespace Goose.API.Services.Issues
             IIssueRequestValidator issueValidator,
             IHttpContextAccessor httpContextAccessor,
             IAuthorizationService authorizationService,
-            IMessageService messageService, IIssueStateService issueStateService) : base(httpContextAccessor, authorizationService)
+            IMessageService messageService, IIssueStateService issueStateService, IIssueHelper issueHelper) : base(httpContextAccessor, authorizationService)
         {
             _issueRepo = issueRepo;
             _stateService = stateService;
@@ -65,6 +66,7 @@ namespace Goose.API.Services.Issues
             _issueValidator = issueValidator;
             _messageService = messageService;
             _issueStateService = issueStateService;
+            _issueHelper = issueHelper;
         }
 
         public async Task<IList<IssueDTO>> GetAll()
@@ -246,9 +248,15 @@ namespace Goose.API.Services.Issues
                 details.Priority = updated.Priority;
             }
 
+            if (!Equals(details.ExpectedTime, updated.ExpectedTime))
+            {
+                if (!details.RequirementsNeeded)
+                    await UpdateExpectedTime(old, updated);
+                else throw new HttpStatusException(400, "can only change expected time if negotiation phase was skipped");
+            }
+
             details.Description = updated.Description;
             details.Progress = updated.Progress;
-            details.ExpectedTime = updated.ExpectedTime;
             details.RelevantDocuments = updated.RelevantDocuments ?? details.RelevantDocuments;
             //nur in vorbereitungsphase
             var state = await _stateService.GetState(old.ProjectId, old.StateId);
@@ -269,6 +277,31 @@ namespace Goose.API.Services.Issues
             }
 
             return old.IssueDetail;
+        }
+
+        private async Task UpdateExpectedTime(Issue old, IssueDetail updated)
+        {
+            //T74 falls Verhandlungsphase übersprungen kann ExpectedTime vom Projektleiter nachgetragen werden
+            var project = await _projectRepository.GetAsync(old.ProjectId);
+            Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
+            {
+                {ProjectRolesRequirement.LeaderRequirement, "Your are not allowed to change the expected time."},
+                {ProjectRolesRequirement.EmployeeRequirement, "Your are not allowed to change the expected time."},
+                {CompanyRolesRequirement.CompanyOwner, "Your are not allowed to change the expected time."}
+            };
+            var authorizationResult =
+                await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, project, requirementsWithErrors.Keys);
+            authorizationResult.ThrowErrorIfAllFailed(requirementsWithErrors);
+
+            if (old.ParentIssueId is { } parentId)
+            {
+                var parent = await _issueRepo.GetAsync(parentId);
+                var children = await Task.WhenAll(parent.ChildrenIssueIds.Select(_issueRepo.GetAsync));
+                children.First(it => it.Id == old.Id).IssueDetail.ExpectedTime = updated.ExpectedTime;
+                if(parent.IssueDetail.ExpectedTime < children.Sum(it => it.IssueDetail.ExpectedTime))
+                    throw new HttpStatusException(400, $"Total expected time of children cannot be larger than the expected time of issue {parent.Id}");
+            }
+            old.IssueDetail.ExpectedTime = updated.ExpectedTime;
         }
 
         public async Task<bool> Delete(ObjectId id)

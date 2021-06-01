@@ -8,18 +8,18 @@ using MongoDB.Bson;
 
 namespace Goose.API.Services.issues
 {
-    public interface IIssueAssociationHelper
+    public interface IIssueHelper
     {
         public Task CanAddChild(Issue parent, Issue other);
         public Task CanAddPredecessor(Issue successor, Issue other);
         public Task<IList<Issue>> GetChildrenRecursive(Issue issue);
     }
 
-    public class IssueAssociationHelper : IIssueAssociationHelper
+    public class IssueHelper : IIssueHelper
     {
         private readonly IIssueRepository _issueRepository;
 
-        public IssueAssociationHelper(IIssueRepository issueRepository)
+        public IssueHelper(IIssueRepository issueRepository)
         {
             _issueRepository = issueRepository;
         }
@@ -67,6 +67,10 @@ namespace Goose.API.Services.issues
                 throw new HttpStatusException(400,
                     $"{parent.Id} and {other.Id} belong to the same hierarchy. Cannot associate issue or an endless loop would occur");
 
+            var children = GetChildren(projectIssues, parent);
+            if (parent.IssueDetail.ExpectedTime < other.IssueDetail.ExpectedTime + children.Sum(it => it.IssueDetail.ExpectedTime))
+                throw new HttpStatusException(400, "total expected time would be larger than expected time of parent");
+            
             await CanAddAssociation(projectIssues, parent, other);
         }
 
@@ -108,9 +112,14 @@ namespace Goose.API.Services.issues
 
         private IList<Issue> GetChildrenRecursive(IList<Issue> projectIssues, Issue issue)
         {
-            var children = new List<Issue>(issue.ChildrenIssueIds.Select(it => GetIssue(projectIssues, it)));
+            var children = new List<Issue>(GetChildren(projectIssues, issue));
             children.AddRange(children.SelectMany(it => GetChildrenRecursive(projectIssues, it)));
             return children;
+        }
+
+        private IList<Issue> GetChildren(IList<Issue> projectIssues, Issue issue)
+        {
+            return new List<Issue>(issue.ChildrenIssueIds.Select(it => GetIssue(projectIssues, it)));
         }
 
         /**

@@ -85,6 +85,21 @@ namespace Goose.Tests.Application.IntegrationTests
             return await Helper.GenerateIssue(Project, copy);
         }
 
+        public async Task<IssueDTO> CreateChild()
+        {
+            if (Issue == default) throw new Exception("CreateIssue can only be called after CreateIssue(IssueDTO issue) was called first");
+            var copy = Issue.Copy();
+            copy.Id = ObjectId.Empty;
+            return await CreateChild(copy);
+        }
+
+        public async Task<IssueDTO> CreateChild(IssueDTO issue)
+        {
+            var child = await CreateIssue(issue).Parse<IssueDTO>();
+            await SetIssueChild(child.Id);
+            return child;
+        }
+
         public async Task<UserDTO> GenerateUserAndSetToProject(params Role[] roles)
         {
             client.Auth(SignIn);

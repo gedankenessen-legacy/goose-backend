@@ -27,19 +27,19 @@ namespace Goose.API.Services.Issues
     {
         private readonly IIssueRepository _issueRepo;
         private readonly IIssueService _issueService;
-        private readonly IIssueAssociationHelper _associationHelper;
+        private readonly IIssueHelper _issueHelper;
         private readonly IStateService _stateService;
         private readonly IProjectRepository _projectRepository;
         private readonly IAuthorizationService _authorizationService;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
         public IssuePredecessorService(IIssueRepository issueRepo, IIssueService issueService, IHttpContextAccessor httpContextAccessor,
-            IIssueAssociationHelper associationHelper, IStateService stateService, IProjectRepository projectRepository,
+            IIssueHelper _issueHelper, IStateService stateService, IProjectRepository projectRepository,
             IAuthorizationService authorizationService)
         {
             _issueRepo = issueRepo;
             _httpContextAccessor = httpContextAccessor;
-            _associationHelper = associationHelper;
+            this._issueHelper = _issueHelper;
             _stateService = stateService;
             _projectRepository = projectRepository;
             _authorizationService = authorizationService;
@@ -70,7 +70,7 @@ namespace Goose.API.Services.Issues
                 if (successor.IssueDetail.EndDate is { } successorEndDate)
                     if (predecessorStartDate >= successorEndDate)
                         throw new HttpStatusException(400, "The start date of a predecessor cannot be before the end date of the successor");
-            await _associationHelper.CanAddPredecessor(successor, predecessor);
+            await _issueHelper.CanAddPredecessor(successor, predecessor);
 
             successor.PredecessorIssueIds.Add(predecessorId);
             predecessor.SuccessorIssueIds.Add(successorId);

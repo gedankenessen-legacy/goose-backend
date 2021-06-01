@@ -29,17 +29,17 @@ namespace Goose.API.Services.issues
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IAuthorizationService _authorizationService;
         private readonly IStateService _stateService;
-        private readonly IIssueAssociationHelper _associationHelper;
+        private readonly IIssueHelper _issueHelper;
 
         public IssueParentService(IIssueService issueService, IIssueRepository issueRepository, IAuthorizationService authorizationService,
-            IHttpContextAccessor httpContextAccessor, IStateService stateService, IIssueAssociationHelper associationHelper)
+            IHttpContextAccessor httpContextAccessor, IStateService stateService, IIssueHelper _issueHelper)
         {
             _issueService = issueService;
             _issueRepository = issueRepository;
             _authorizationService = authorizationService;
             _httpContextAccessor = httpContextAccessor;
             _stateService = stateService;
-            _associationHelper = associationHelper;
+            this._issueHelper = _issueHelper;
         }
 
         public async Task<IssueDTO?> GetParent(ObjectId issueId)
@@ -67,7 +67,7 @@ namespace Goose.API.Services.issues
                     "The visibility Status of Parent and Child must be the same");
             }
 
-            await _associationHelper.CanAddChild(parent, issue);
+            await _issueHelper.CanAddChild(parent, issue);
 
             issue.ParentIssueId = parentId;
             parent.ChildrenIssueIds.Add(issueId);
