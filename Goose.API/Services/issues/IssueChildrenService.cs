@@ -23,21 +23,21 @@ namespace Goose.API.Services.issues
     {
         private readonly IProjectRepository _projectRepository;
         private readonly IIssueService _issueService;
-        private readonly IIssueAssociationHelper _associationHelper;
+        private readonly IIssueHelper _issueHelper;
         private readonly IIssueRepository _issueRepository;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IAuthorizationService _authorizationService;
 
 
         public IssueChildrenService(IIssueService issueService, IIssueRepository issueRepository, IAuthorizationService authorizationService,
-            IHttpContextAccessor httpContextAccessor, IProjectRepository projectRepository, IIssueAssociationHelper associationHelper)
+            IHttpContextAccessor httpContextAccessor, IProjectRepository projectRepository, IIssueHelper issueHelper)
         {
             _issueService = issueService;
             _issueRepository = issueRepository;
             _authorizationService = authorizationService;
             _httpContextAccessor = httpContextAccessor;
             _projectRepository = projectRepository;
-            _associationHelper = associationHelper;
+            _issueHelper = issueHelper;
         }
 
         public async Task<IList<IssueDTO>> GetAll(ObjectId issueId, bool recursive)
@@ -49,7 +49,7 @@ namespace Goose.API.Services.issues
             if (issue.ChildrenIssueIds == null) return new List<IssueDTO>();
 
             IList<Issue> children;
-            if (recursive) children = await _associationHelper.GetChildrenRecursive(issue);
+            if (recursive) children = await _issueHelper.GetChildrenRecursive(issue);
             else children = await Task.WhenAll(issue.ChildrenIssueIds.Select(it => _issueRepository.GetAsync(it)));
             if (await _authorizationService.HasAtLeastOneRequirement(_httpContextAccessor.HttpContext.User,
                 await _projectRepository.GetAsync(issue.ProjectId), ProjectRolesRequirement.CustomerRequirement))

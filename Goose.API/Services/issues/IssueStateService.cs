@@ -22,15 +22,15 @@ namespace Goose.API.Services.issues
     {
         private readonly IIssueRepository _issueRepository;
         private readonly IStateService _stateService;
-        private readonly IIssueAssociationHelper _associationHelper;
+        private readonly IIssueHelper _issueHelper;
 
         private readonly IFsmHandler<Func<Issue, StateDTO, StateDTO, Task<StateDTO>>, StateDTO> _updateStateHandler = new FsmHandler();
 
-        public IssueStateService(IIssueRepository issueRepository, IStateService stateService, IIssueAssociationHelper associationHelper)
+        public IssueStateService(IIssueRepository issueRepository, IStateService stateService, IIssueHelper _issueHelper)
         {
             _issueRepository = issueRepository;
             _stateService = stateService;
-            _associationHelper = associationHelper;
+            this._issueHelper = _issueHelper;
 
             RegisterFsmEvents();
         }
@@ -91,7 +91,7 @@ namespace Goose.API.Services.issues
                 {
                     //Cancels all children
                     await SetState(issue, newState);
-                    var children = await _associationHelper.GetChildrenRecursive(issue);
+                    var children = await _issueHelper.GetChildrenRecursive(issue);
                     await Task.WhenAll(children.Select(it => UpdateState(it, newState)));
                     await OnIssueReachedCompletionPhase(issue);
                     return newState;
