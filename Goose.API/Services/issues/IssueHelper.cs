@@ -113,7 +113,7 @@ namespace Goose.API.Services.issues
         private IList<Issue> GetChildrenRecursive(IList<Issue> projectIssues, Issue issue)
         {
             var children = new List<Issue>(GetChildren(projectIssues, issue));
-            children.AddRange(children.SelectMany(it => GetChildrenRecursive(projectIssues, it)));
+            children.AddRange(children.SelectMany(it => GetChildrenRecursive(projectIssues, it)).ToList());
             return children;
         }
 

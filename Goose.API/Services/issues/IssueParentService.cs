@@ -4,6 +4,7 @@ using Goose.API.Authorization;
 using Goose.API.Authorization.Requirements;
 using Goose.API.Repositories;
 using Goose.API.Services.Issues;
+using Goose.API.Utils;
 using Goose.API.Utils.Authentication;
 using Goose.API.Utils.Exceptions;
 using Goose.Domain.DTOs.Issues;
@@ -71,9 +72,6 @@ namespace Goose.API.Services.issues
 
             issue.ParentIssueId = parentId;
             parent.ChildrenIssueIds.Add(issueId);
-            await Task.WhenAll(_issueRepository.UpdateAsync(issue), _issueRepository.UpdateAsync(parent));
-
-            await _issueService.PropagateDependentProperties(parent);
 
             // ConversationItem im Oberticket hinzufügen
             parent.ConversationItems.Add(new IssueConversation()
@@ -84,7 +82,8 @@ namespace Goose.API.Services.issues
                 Data = null,
                 OtherTicketId = issueId,
             });
-            await _issueRepository.UpdateAsync(parent);
+            await Task.WhenAll(_issueRepository.UpdateAsync(issue), _issueRepository.UpdateAsync(parent));
+            await _issueService.PropagateDependentProperties(parent);
         }
 
         private async Task UserCanAddParent(Issue issue)
@@ -100,14 +99,13 @@ namespace Goose.API.Services.issues
         public async Task RemoveParent(ObjectId issueId)
         {
             var issue = await _issueRepository.GetAsync(issueId);
-            var mightBeParentId = issue.ParentIssueId;
-            issue.ParentIssueId = null;
-            await _issueRepository.UpdateAsync(issue);
-
-            if (mightBeParentId is ObjectId parentId)
+            if (issue.ParentIssueId is { } parentId)
             {
-                // ConversationItem im Oberticket hinzufügen
                 var parent = await _issueRepository.GetAsync(parentId);
+                issue.ParentIssueId = null;
+                parent.ChildrenIssueIds.Remove(it => it == issue.Id);
+                // ConversationItem im Oberticket hinzufügen
+                
                 parent.ConversationItems.Add(new IssueConversation()
                 {
                     Id = ObjectId.GenerateNewId(),
@@ -116,7 +114,8 @@ namespace Goose.API.Services.issues
                     Data = null,
                     OtherTicketId = issueId,
                 });
-                await _issueRepository.UpdateAsync(parent);
+                
+                await Task.WhenAll(_issueRepository.UpdateAsync(issue), _issueRepository.UpdateAsync(parent));
             }
         }
     }
