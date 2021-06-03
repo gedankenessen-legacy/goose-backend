@@ -3,13 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Goose.API.Repositories;
-using Goose.API.Services.Issues;
+using Goose.API.Services.issues.IssueStateHandler;
 using Goose.API.Utils;
 using Goose.API.Utils.Exceptions;
 using Goose.Domain.DTOs;
 using Goose.Domain.Models.Issues;
 using Goose.Domain.Models.Projects;
-using MongoDB.Bson;
 
 namespace Goose.API.Services.issues
 {
@@ -24,15 +23,17 @@ namespace Goose.API.Services.issues
         private readonly IStateService _stateService;
         private readonly IIssueHelper _issueHelper;
 
-        private readonly IFsmHandler<Func<Issue, StateDTO, StateDTO, Task<StateDTO>>, StateDTO> _updateStateHandler = new FsmHandler();
+        private readonly FsmHandler _updateStateHandler;
 
         public IssueStateService(IIssueRepository issueRepository, IStateService stateService, IIssueHelper _issueHelper)
         {
             _issueRepository = issueRepository;
             _stateService = stateService;
             this._issueHelper = _issueHelper;
+            _updateStateHandler = new FsmHandler(issueRepository);
 
             RegisterFsmEvents();
+            RegisterPossibleUsergeneratedStates();
         }
 
         public void RegisterFsmEvents()
@@ -71,18 +72,32 @@ namespace Goose.API.Services.issues
                 return await SetState(issue, newState);
             };
 
-            _updateStateHandler.AddEvent(new FsmEvent<Func<Issue, StateDTO, StateDTO, Task<StateDTO>>> //CheckingState -> NegotiationState
+            _updateStateHandler.AddEvent(
+                new FsmEvent<Func<Issue, StateDTO, StateDTO, Task<StateDTO>>> //CheckingState -> NegotiationState
+                {
+                    OldState = State.CheckingState,
+                    NewState = State.NegotiationState,
+                    Func = async (issue, oldState, newState) => await SetState(issue, newState)
+                });
+            _updateStateHandler.AddEvent(
+                new FsmEvent<Func<Issue, StateDTO, StateDTO, Task<StateDTO>>> //NegotiationState -> ProcessingState
+                {
+                    OldState = State.NegotiationState,
+                    NewState = State.ProcessingState,
+                    Func = moveToProcessingPhase
+                });
+            _updateStateHandler.AddEvent(new FsmEvent<Func<Issue, StateDTO, StateDTO, Task<StateDTO>>> //BlockedState -> ProcessingState
             {
-                OldState = State.CheckingState,
-                NewState = State.NegotiationState,
-                Func = async (issue, oldState, newState) => await SetState(issue, newState)
+                OldState = State.BlockedState,
+                NewState = State.ProcessingState,
+                Func = moveToProcessingPhase
             });
-            _updateStateHandler.AddEvent(new List<string>() //NegotiationState/WaitingState/BlockedState -> ProcessingState
+            _updateStateHandler.AddEvent(new FsmEvent<Func<Issue, StateDTO, StateDTO, Task<StateDTO>>> //WaitingState -> ProcessingState
             {
-                State.NegotiationState,
-                State.BlockedState,
-                State.WaitingState
-            }, State.ProcessingState, moveToProcessingPhase);
+                OldState = State.WaitingState,
+                NewState = State.ProcessingState,
+                Func = moveToProcessingPhase
+            });
             _updateStateHandler.AddEvent(new FsmEvent<Func<Issue, StateDTO, StateDTO, Task<StateDTO>>> //Cancel Issue
             {
                 OldState = "",
@@ -97,49 +112,53 @@ namespace Goose.API.Services.issues
                     return newState;
                 }
             });
-            _updateStateHandler.AddEvent(new FsmEvent<Func<Issue, StateDTO, StateDTO, Task<StateDTO>>> //CheckingState -> NegotiationState
-            {
-                OldState = State.CheckingState,
-                NewState = State.NegotiationState,
-                Func = async (issue, oldState, newState) => await SetState(issue, newState)
-            });
-            _updateStateHandler.AddEvent(new FsmEvent<Func<Issue, StateDTO, StateDTO, Task<StateDTO>>> //ProcessingState -> ReviewState
-            {
-                OldState = State.ProcessingState,
-                NewState = State.ReviewState,
-                Func = async (issue, oldState, newState) =>
+            _updateStateHandler.AddEvent(
+                new FsmEvent<Func<Issue, StateDTO, StateDTO, Task<StateDTO>>> //ProcessingState -> ReviewState
                 {
-                    var children = await Task.WhenAll(issue.ChildrenIssueIds.Select(_issueRepository.GetAsync));
-                    var childrenStates = await Task.WhenAll(children.Select(it => _stateService.GetState(it.ProjectId, it.StateId)));
-                    if (childrenStates.HasWhere(it => it.Phase != State.ConclusionPhase))
-                        throw new HttpStatusException(400, "At least one sub issue is not in conclusion phase");
-                    return await SetState(issue, newState);
-                }
-            });
-            _updateStateHandler.AddEvent(new FsmEvent<Func<Issue, StateDTO, StateDTO, Task<StateDTO>>> //ReviewState -> CompletedState
-            {
-                OldState = State.ReviewState,
-                NewState = State.CompletedState,
-                Func = async (issue, oldState, newState) =>
+                    OldState = State.ProcessingState,
+                    NewState = State.ReviewState,
+                    Func = async (issue, oldState, newState) =>
+                    {
+                        var children = await Task.WhenAll(issue.ChildrenIssueIds.Select(_issueRepository.GetAsync));
+                        var childrenStates = await Task.WhenAll(children.Select(it => _stateService.GetState(it.ProjectId, it.StateId)));
+                        if (childrenStates.HasWhere(it => it.Phase != State.ConclusionPhase))
+                            throw new HttpStatusException(400, "At least one sub issue is not in conclusion phase");
+                        return await SetState(issue, newState);
+                    }
+                });
+            _updateStateHandler.AddEvent(
+                new FsmEvent<Func<Issue, StateDTO, StateDTO, Task<StateDTO>>> //ReviewState -> CompletedState
                 {
-                    //TODO Projektleiter überprüft ticket
-                    await SetState(issue, newState);
-                    await OnIssueReachedCompletionPhase(issue);
-                    return newState;
-                }
-            });
-            _updateStateHandler.AddEvent(new FsmEvent<Func<Issue, StateDTO, StateDTO, Task<StateDTO>>> //CompletedState -> ArchivedState
-            {
-                OldState = State.CompletedState,
-                NewState = State.ArchivedState,
-                Func = async (issue, oldState, newState) =>
+                    OldState = State.ReviewState,
+                    NewState = State.CompletedState,
+                    Func = async (issue, oldState, newState) =>
+                    {
+                        //TODO Projektleiter überprüft ticket
+                        await SetState(issue, newState);
+                        await OnIssueReachedCompletionPhase(issue);
+                        return newState;
+                    }
+                });
+            _updateStateHandler.AddEvent(
+                new FsmEvent<Func<Issue, StateDTO, StateDTO, Task<StateDTO>>> //CompletedState -> ArchivedState
                 {
-                    //TODO Abschlusskommentar
-                    await SetState(issue, newState);
-                    await OnIssueReachedCompletionPhase(issue);
-                    return newState;
-                }
-            });
+                    OldState = State.CompletedState,
+                    NewState = State.ArchivedState,
+                    Func = async (issue, oldState, newState) =>
+                    {
+                        //TODO Abschlusskommentar
+                        await SetState(issue, newState);
+                        await OnIssueReachedCompletionPhase(issue);
+                        return newState;
+                    }
+                });
+        }
+
+        private void RegisterPossibleUsergeneratedStates()
+        {
+            _updateStateHandler.AddUserGeneratedStateCase(State.NegotiationPhase, State.NegotiationState);
+            _updateStateHandler.AddUserGeneratedStateCase(State.ProcessingPhase, State.ProcessingState);
+            _updateStateHandler.AddUserGeneratedStateCase(State.ConclusionPhase, State.CompletedState);
         }
 
         private async Task OnIssueReachedCompletionPhase(Issue issue, Issue? _parent = null, IList<Issue>? _successors = null)
@@ -202,11 +221,6 @@ namespace Goose.API.Services.issues
             return (await _stateService.GetStates(issue.ProjectId)).First(it => it.Name == name);
         }
 
-        private async Task<StateDTO> GetState(Issue issue)
-        {
-            return await _stateService.GetState(issue.ProjectId, issue.StateId);
-        }
-
         private async Task TryCatch(Task task)
         {
             try
@@ -217,91 +231,5 @@ namespace Goose.API.Services.issues
             {
             }
         }
-    }
-
-    class FsmHandler : IFsmHandler<Func<Issue, StateDTO, StateDTO, Task<StateDTO>>, StateDTO>
-    {
-        private List<FsmEvent<Func<Issue, StateDTO, StateDTO, Task<StateDTO>>>> _events1 = new();
-
-        List<FsmEvent<Func<Issue, StateDTO, StateDTO, Task<StateDTO>>>> IFsmHandler<Func<Issue, StateDTO, StateDTO, Task<StateDTO>>, StateDTO>._events
-        {
-            get => _events1;
-            set => _events1 = value;
-        }
-
-        public async Task<StateDTO> CallAction(Func<Issue, StateDTO, StateDTO, Task<StateDTO>> action, Issue issue, StateDTO oldState, StateDTO newState)
-        {
-            return await action(issue, oldState, newState);
-        }
-    }
-
-    interface IFsmHandler<TFunc, TReturn>
-    {
-        protected List<FsmEvent<TFunc>> _events { get; set; }
-
-        public bool AddEvent(FsmEvent<TFunc> e)
-        {
-            if (Contains(e)) return false;
-            _events.Add(e);
-            return true;
-        }
-
-        //returns false if one or more failed
-        public bool AddEvent(IList<string> oldStates, string newState, TFunc fun)
-        {
-            var res = true;
-            foreach (var oldState in oldStates)
-            {
-                if (!AddEvent(new FsmEvent<TFunc>
-                {
-                    OldState = oldState,
-                    NewState = newState,
-                    Func = fun
-                })) res = false;
-            }
-
-            return res;
-        }
-
-        public Task<TReturn> CallAction(TFunc action, Issue issue, StateDTO oldState, StateDTO newState);
-
-        public async Task<TReturn> HandleStateUpdate(Issue issue, StateDTO oldState, StateDTO newState)
-        {
-            if (issue == null || oldState == null || newState == null)
-                throw new HttpStatusException(400, "Invalid request, Issue or State does not exist");
-            var e = Find(oldState.Name, newState.Name);
-            if (e == null) throw new HttpStatusException(400, $"cannot update an issue state from {oldState.Name} to {newState.Name}");
-            return await CallAction(e.Func, issue, oldState, newState);
-        }
-
-        private bool Contains(FsmEvent<TFunc> e) => Find(e.OldState, e.NewState) != null;
-
-        private FsmEvent<TFunc>? Find(string oldState, string newState)
-        {
-            var e = new FsmEvent<TFunc>(oldState, newState, default);
-            return _events.FirstOrDefault(it => Equals(it, e));
-        }
-
-        private bool Equals(FsmEvent<TFunc> first, FsmEvent<TFunc> second) =>
-            //((first.OldState == "" || second.OldState == "") || first.OldState == second.OldState) && first.NewState == second.NewState;
-            first.OldState + second.OldState == second.OldState + first.OldState && first.NewState == second.NewState;
-    }
-
-    class FsmEvent<TFunc>
-    {
-        public FsmEvent(string oldState, string newState, TFunc func)
-        {
-            OldState = oldState;
-            NewState = newState;
-            Func = func;
-        }
-
-        public FsmEvent()
-        {
-        }
-
-        public string OldState { get; set; }
-        public string NewState { get; set; }
-        public TFunc Func { get; set; }
     }
 }

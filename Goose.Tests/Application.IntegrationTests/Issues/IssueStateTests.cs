@@ -2,13 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Resources;
 using System.Threading.Tasks;
 using Goose.Domain.DTOs;
 using Goose.Domain.DTOs.Issues;
 using Goose.Domain.Models.Projects;
-using Goose.Tests.Application.IntegrationTests.Issues;
-using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
 using NUnit.Framework;
 
@@ -120,6 +117,103 @@ namespace Goose.Tests.Application.IntegrationTests.issues
 
             var newIssue = await helper.GetIssueAsync(issue.Id);
             Assert.AreEqual(State.WaitingState, (await helper.Helper.GetStateById(newIssue)).Name);
+        }
+
+        [Test]
+        public async Task FromCheckingToUserGeneratedStateInNegotiationPhase()
+        {
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            var state = await helper.CreateState(new StateDTO
+            {
+                Name = $"{State.NegotiationState}22",
+                Phase = State.NegotiationPhase,
+                UserGenerated = true
+            }).Parse<StateDTO>();
+            var res = await helper.SetState(state.Name);
+            Assert.AreEqual(HttpStatusCode.NoContent, res.StatusCode);
+
+            var issue = await helper.GetIssueAsync(helper.Issue.Id);
+            Assert.AreEqual((await helper.Helper.GetStateById(issue.ProjectId, issue.StateId)).Name, state.Name);
+        }
+
+        [Test]
+        public async Task FromNegotiationToUserGeneratedStateInNegotiationPhaseAndBack()
+        {
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            var state = await helper.CreateState(new StateDTO
+            {
+                Name = $"{State.NegotiationState}22",
+                Phase = State.NegotiationPhase,
+                UserGenerated = true
+            }).Parse<StateDTO>();
+            await helper.SetState(state.Name);
+            var res = await helper.SetState((await helper.Helper.GetStateByNameAsync(helper.Project.Id, State.NegotiationState)).Name);
+            Assert.AreEqual(HttpStatusCode.NoContent, res.StatusCode);
+
+            var issue = await helper.GetIssueAsync(helper.Issue.Id);
+            Assert.AreEqual(State.NegotiationState, (await helper.Helper.GetStateById(issue.ProjectId, issue.StateId)).Name);
+        }
+
+        [Test]
+        public async Task FromProcessingStateToUserGeneratedStateInProcessingPhasePhaseAndBack()
+        {
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            await helper.SetState(State.NegotiationState);
+            await helper.SetState(State.ProcessingState);
+            var state = await helper.CreateState(new StateDTO
+            {
+                Name = $"{State.ProcessingState}22",
+                Phase = State.ProcessingPhase,
+                UserGenerated = true
+            }).Parse<StateDTO>();
+            await helper.SetState(state.Name);
+            var res = await helper.SetState((await helper.Helper.GetStateByNameAsync(helper.Project.Id, State.ProcessingState)).Name);
+            Assert.AreEqual(HttpStatusCode.NoContent, res.StatusCode);
+
+            var issue = await helper.GetIssueAsync(helper.Issue.Id);
+            Assert.AreEqual(State.ProcessingState, (await helper.Helper.GetStateById(issue.ProjectId, issue.StateId)).Name);
+        }
+
+        [Test]
+        public async Task FromCustomPrecessingStateToReview()
+        {
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            await helper.SetState(State.NegotiationState);
+            await helper.SetState(State.ProcessingState);
+            var state = await helper.CreateState(new StateDTO
+            {
+                Name = $"{State.ProcessingState}22",
+                Phase = State.ProcessingPhase,
+                UserGenerated = true
+            }).Parse<StateDTO>();
+            await helper.SetState(state.Name);
+            var res = await helper.SetState(State.ReviewState);
+            Assert.AreEqual(HttpStatusCode.NoContent, res.StatusCode);
+
+            var issue = await helper.GetIssueAsync(helper.Issue.Id);
+            Assert.AreEqual(State.ReviewState, (await helper.Helper.GetStateById(issue.ProjectId, issue.StateId)).Name);
+        }
+
+        [Test]
+        public async Task FromCompletionStateToUserGeneratedStateInConclusionPhasePhaseAndBack()
+        {
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            await helper.SetState(State.NegotiationState);
+            await helper.SetState(State.ProcessingState);
+            await helper.SetState(State.ReviewState);
+            await helper.SetState(State.CompletedState);
+            var state = await helper.CreateState(new StateDTO
+            {
+                Name = $"{State.CompletedState}22",
+                Phase = State.ConclusionPhase,
+                UserGenerated = true
+            }).Parse<StateDTO>();
+            await helper.SetState(state.Name);
+            var res = await helper.SetState((await helper.Helper.GetStateByNameAsync(helper.Project.Id, State.CompletedState)).Name);
+            Assert.AreEqual(HttpStatusCode.NoContent, res.StatusCode);
+
+            var issue = await helper.GetIssueAsync(helper.Issue.Id);
+            Assert.AreEqual(State.CompletedState, (await helper.Helper.GetStateById(issue.ProjectId, issue.StateId)).Name);
         }
 
     }

@@ -100,6 +100,11 @@ namespace Goose.Tests.Application.IntegrationTests
             return child;
         }
 
+        public async Task<HttpResponseMessage> CreateState(StateDTO newState)
+        {
+            return await Helper.CreateStateInProject(Project.Id, newState: newState);
+        }
+
         public async Task<UserDTO> GenerateUserAndSetToProject(params Role[] roles)
         {
             client.Auth(SignIn);
