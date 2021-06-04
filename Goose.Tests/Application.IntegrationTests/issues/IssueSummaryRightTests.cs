@@ -57,7 +57,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             await helper.Helper.IssueRequirementService.CreateAsync(issue.Id, issueRequirement);
 
             var uri = $"/api/issues/{issue.Id}/summaries";
-            var response = await helper.client.PostAsync(uri, new object().ToStringContent());
+            var response = await helper.client.PostAsync(uri, 1.0.ToStringContent());
             Assert.IsTrue(response.IsSuccessStatusCode);
 
             uri = $"/api/issues/{issue.Id}/summaries";
@@ -94,7 +94,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             await helper.Helper.IssueRequirementService.CreateAsync(issue.Id, issueRequirement);
 
             var uri = $"/api/issues/{issue.Id}/summaries";
-            var response = await helper.client.PostAsync(uri, new object().ToStringContent());
+            var response = await helper.client.PostAsync(uri, 1.0.ToStringContent());
             Assert.IsFalse(response.IsSuccessStatusCode);
         }
 
@@ -110,7 +110,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             await helper.Helper.IssueRequirementService.CreateAsync(issue.Id, issueRequirement);
 
             var uri = $"/api/issues/{issue.Id}/summaries";
-            var response = await helper.client.PostAsync(uri, new object().ToStringContent());
+            var response = await helper.client.PostAsync(uri, 1.0.ToStringContent());
             Assert.IsTrue(response.IsSuccessStatusCode);
 
             var signIn = await helper.Helper.SignIn(new SignInRequest()
@@ -122,7 +122,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             helper.Helper.SetAuth(signIn);
 
             uri = $"/api/issues/{issue.Id}/summaries?accept=true";
-            response = await helper.client.PutAsync(uri, new object().ToStringContent());
+            response = await helper.client.PutAsync(uri, 1.0.ToStringContent());
             Assert.IsTrue(response.IsSuccessStatusCode);
 
             var newIssue = await helper.GetIssueAsync(issue.Id);
@@ -148,11 +148,11 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             await helper.Helper.IssueRequirementService.CreateAsync(issue.Id, issueRequirement);
 
             var uri = $"/api/issues/{issue.Id}/summaries";
-            var response = await helper.client.PostAsync(uri, new object().ToStringContent());
+            var response = await helper.client.PostAsync(uri, 1.0.ToStringContent());
             Assert.IsTrue(response.IsSuccessStatusCode);
 
             uri = $"/api/issues/{issue.Id}/summaries?accept=true";
-            response = await helper.client.PutAsync(uri, new object().ToStringContent());
+            response = await helper.client.PutAsync(uri, 1.0.ToStringContent());
             Assert.IsFalse(response.IsSuccessStatusCode);
         }
 
@@ -168,7 +168,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             await helper.Helper.IssueRequirementService.CreateAsync(issue.Id, issueRequirement);
 
             var uri = $"/api/issues/{issue.Id}/summaries";
-            var response = await helper.client.PostAsync(uri, new object().ToStringContent());
+            var response = await helper.client.PostAsync(uri, 1.0.ToStringContent());
             Assert.IsTrue(response.IsSuccessStatusCode);
 
             var signIn = await helper.Helper.SignIn(new SignInRequest()
@@ -180,7 +180,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             helper.Helper.SetAuth(signIn);
 
             uri = $"/api/issues/{issue.Id}/summaries?accept=true";
-            response = await helper.client.PutAsync(uri, new object().ToStringContent());
+            response = await helper.client.PutAsync(uri, 1.0.ToStringContent());
             Assert.IsTrue(response.IsSuccessStatusCode);
 
             var newIssue = await helper.GetIssueAsync(issue.Id);
@@ -207,11 +207,11 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             await helper.Helper.IssueRequirementService.CreateAsync(issue.Id, issueRequirement);
 
             var uri = $"/api/issues/{issue.Id}/summaries";
-            var response = await helper.client.PostAsync(uri, new object().ToStringContent());
+            var response = await helper.client.PostAsync(uri, 1.0.ToStringContent());
             Assert.IsTrue(response.IsSuccessStatusCode);
 
             uri = $"/api/issues/{issue.Id}/summaries?accept=true";
-            response = await helper.client.PutAsync(uri, new object().ToStringContent());
+            response = await helper.client.PutAsync(uri, 1.0.ToStringContent());
             Assert.IsTrue(response.IsSuccessStatusCode);
 
             var newIssue = await helper.GetIssueAsync(issue.Id);
@@ -236,7 +236,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             await helper.Helper.IssueRequirementService.CreateAsync(helper.Issue.Id, issueRequirement);
 
             var uri = $"/api/issues/{helper.Issue.Id}/summaries";
-            var responce = await helper.client.PostAsync(uri, new object().ToStringContent());
+            var responce = await helper.client.PostAsync(uri, 1.0.ToStringContent());
             Assert.IsTrue(responce.IsSuccessStatusCode);
 
             var customerSignIn = await helper.Helper.SignIn(new SignInRequest()
@@ -248,7 +248,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             helper.Helper.SetAuth(customerSignIn);
 
             uri = $"/api/issues/{helper.Issue.Id}/summaries?accept=false";
-            responce = await helper.client.PutAsync(uri, new object().ToStringContent());
+            responce = await helper.client.PutAsync(uri, 1.0.ToStringContent());
             Assert.IsTrue(responce.IsSuccessStatusCode);
 
             var issue = await helper.GetIssueAsync(helper.Issue.Id);
@@ -274,11 +274,11 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             await helper.Helper.IssueRequirementService.CreateAsync(helper.Issue.Id, issueRequirement);
 
             var uri = $"/api/issues/{helper.Issue.Id}/summaries";
-            var responce = await helper.client.PostAsync(uri, new object().ToStringContent());
+            var responce = await helper.client.PostAsync(uri, 1.0.ToStringContent());
             Assert.IsTrue(responce.IsSuccessStatusCode);
 
             uri = $"/api/issues/{helper.Issue.Id}/summaries?accept=false";
-            responce = await helper.client.PutAsync(uri, new object().ToStringContent());
+            responce = await helper.client.PutAsync(uri, 1.0.ToStringContent());
             Assert.IsFalse(responce.IsSuccessStatusCode);
 
             var issue = await helper.GetIssueAsync(helper.Issue.Id);
@@ -302,7 +302,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             await helper.Helper.IssueRequirementService.CreateAsync(helper.Issue.Id, issueRequirement);
 
             var uri = $"/api/issues/{helper.Issue.Id}/summaries";
-            var responce = await helper.client.PostAsync(uri, new object().ToStringContent());
+            var responce = await helper.client.PostAsync(uri, 1.0.ToStringContent());
             Assert.IsTrue(responce.IsSuccessStatusCode);
 
             var signIn = await helper.Helper.SignIn(new SignInRequest()
@@ -314,7 +314,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             helper.Helper.SetAuth(signIn);
 
             uri = $"/api/issues/{helper.Issue.Id}/summaries?accept=false";
-            responce = await helper.client.PutAsync(uri, new object().ToStringContent());
+            responce = await helper.client.PutAsync(uri, 1.0.ToStringContent());
             Assert.IsTrue(responce.IsSuccessStatusCode);
 
             var issue = await helper.GetIssueAsync(helper.Issue.Id);
@@ -338,11 +338,11 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             await helper.Helper.IssueRequirementService.CreateAsync(helper.Issue.Id, issueRequirement);
 
             var uri = $"/api/issues/{helper.Issue.Id}/summaries";
-            var responce = await helper.client.PostAsync(uri, new object().ToStringContent());
+            var responce = await helper.client.PostAsync(uri, 1.0.ToStringContent());
             Assert.IsTrue(responce.IsSuccessStatusCode);
 
             uri = $"/api/issues/{helper.Issue.Id}/summaries?accept=false";
-            responce = await helper.client.PutAsync(uri, new object().ToStringContent());
+            responce = await helper.client.PutAsync(uri, 1.0.ToStringContent());
             Assert.IsTrue(responce.IsSuccessStatusCode);
 
             var issue = await helper.GetIssueAsync(helper.Issue.Id);

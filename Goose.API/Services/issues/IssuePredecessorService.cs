@@ -79,7 +79,7 @@ namespace Goose.API.Services.Issues
             successor.PredecessorIssueIds.Add(predecessorId);
             predecessor.SuccessorIssueIds.Add(successorId);
 
-            if ((await _stateService.GetState(successor.ProjectId, successor.StateId)).Phase == State.ProcessingPhase)
+            if ((await successorState).Phase == State.ProcessingPhase  && (await successorState).Name != State.ReviewState)
                 successor.StateId = (await _stateService.GetStates(successor.ProjectId)).First(it => it.Name == State.BlockedState).Id;
             successor.ConversationItems.Add(new IssueConversation()
             {

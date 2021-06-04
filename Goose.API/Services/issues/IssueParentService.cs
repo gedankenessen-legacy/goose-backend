@@ -73,7 +73,7 @@ namespace Goose.API.Services.issues
 
             issue.ParentIssueId = parentId;
             parent.ChildrenIssueIds.Add(issueId);
-            if(parentState.Phase == State.ProcessingPhase)
+            if(parentState.Phase == State.ProcessingPhase && parentState.Name != State.ReviewState)
                 parent.StateId = (await _stateService.GetStates(parent.ProjectId)).First(it => it.Name == State.BlockedState).Id;
                 
             // ConversationItem im Oberticket hinzufügen

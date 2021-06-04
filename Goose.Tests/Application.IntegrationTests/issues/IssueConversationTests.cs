@@ -164,7 +164,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
 
             // Create a summary
             var uri = $"/api/issues/{issue.Id}/summaries";
-            var response = await helper.client.PostAsync(uri, null);
+            var response = await helper.client.PostAsync(uri, 1.0.ToStringContent());
             Assert.IsTrue(response.IsSuccessStatusCode);
 
             // Test if the SummaryCreated Conversation Item is there
@@ -206,7 +206,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
 
             // Create a summary
             var uri = $"/api/issues/{issue.Id}/summaries";
-            var response = await helper.client.PostAsync(uri, null);
+            var response = await helper.client.PostAsync(uri, 1.0.ToStringContent());
             Assert.IsTrue(response.IsSuccessStatusCode);
 
             // Test if the SummaryCreated Conversation Item is there
