@@ -107,7 +107,7 @@ namespace Goose.API.Services.Issues
             var conversations = getAll || getConversations ? _conversationService.GetConversationsFromIssueAsync(issue.Id.ToString()) : null;
             var timeSheets = getAll || getTimeSheets ? _timeSheetService.GetAllOfIssueAsync(issue.Id) : null;
             var parent = getAll || getParent ? _issueParentService.GetParent(issue.Id) : null;
-            var children = getAll || getChildren ? _issueChildrenService.GetAll(issue.Id) : null;
+            var children = getAll || getChildren ? _issueChildrenService.GetAll(issue.Id, false) : null;
             var predecessors = getAll || getPredecessors ? Task.WhenAll(issue.PredecessorIssueIds.Select(_issueService.Get)) : null;
             var successors = getAll || getSuccessors ? Task.WhenAll(issue.SuccessorIssueIds.Select(_issueService.Get)) : null;
 

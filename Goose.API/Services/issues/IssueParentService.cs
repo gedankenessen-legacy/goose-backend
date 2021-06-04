@@ -1,9 +1,11 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Goose.API.Authorization;
 using Goose.API.Authorization.Requirements;
 using Goose.API.Repositories;
 using Goose.API.Services.Issues;
+using Goose.API.Utils;
 using Goose.API.Utils.Authentication;
 using Goose.API.Utils.Exceptions;
 using Goose.Domain.DTOs.Issues;
@@ -29,17 +31,17 @@ namespace Goose.API.Services.issues
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IAuthorizationService _authorizationService;
         private readonly IStateService _stateService;
-        private readonly IIssueAssociationHelper _associationHelper;
+        private readonly IIssueHelper _issueHelper;
 
         public IssueParentService(IIssueService issueService, IIssueRepository issueRepository, IAuthorizationService authorizationService,
-            IHttpContextAccessor httpContextAccessor, IStateService stateService, IIssueAssociationHelper associationHelper)
+            IHttpContextAccessor httpContextAccessor, IStateService stateService, IIssueHelper _issueHelper)
         {
             _issueService = issueService;
             _issueRepository = issueRepository;
             _authorizationService = authorizationService;
             _httpContextAccessor = httpContextAccessor;
             _stateService = stateService;
-            _associationHelper = associationHelper;
+            this._issueHelper = _issueHelper;
         }
 
         public async Task<IssueDTO?> GetParent(ObjectId issueId)
@@ -67,14 +69,13 @@ namespace Goose.API.Services.issues
                     "The visibility Status of Parent and Child must be the same");
             }
 
-            await _associationHelper.CanAddChild(parent, issue);
+            await _issueHelper.CanAddChild(parent, issue);
 
             issue.ParentIssueId = parentId;
             parent.ChildrenIssueIds.Add(issueId);
-            await Task.WhenAll(_issueRepository.UpdateAsync(issue), _issueRepository.UpdateAsync(parent));
-
-            await _issueService.PropagateDependentProperties(parent);
-
+            if(parentState.Phase == State.ProcessingPhase)
+                parent.StateId = (await _stateService.GetStates(parent.ProjectId)).First(it => it.Name == State.BlockedState).Id;
+                
             // ConversationItem im Oberticket hinzufügen
             parent.ConversationItems.Add(new IssueConversation()
             {
@@ -84,7 +85,8 @@ namespace Goose.API.Services.issues
                 Data = null,
                 OtherTicketId = issueId,
             });
-            await _issueRepository.UpdateAsync(parent);
+            await Task.WhenAll(_issueRepository.UpdateAsync(issue), _issueRepository.UpdateAsync(parent));
+            await _issueService.PropagateDependentProperties(parent);
         }
 
         private async Task UserCanAddParent(Issue issue)
@@ -100,14 +102,13 @@ namespace Goose.API.Services.issues
         public async Task RemoveParent(ObjectId issueId)
         {
             var issue = await _issueRepository.GetAsync(issueId);
-            var mightBeParentId = issue.ParentIssueId;
-            issue.ParentIssueId = null;
-            await _issueRepository.UpdateAsync(issue);
-
-            if (mightBeParentId is ObjectId parentId)
+            if (issue.ParentIssueId is { } parentId)
             {
-                // ConversationItem im Oberticket hinzufügen
                 var parent = await _issueRepository.GetAsync(parentId);
+                issue.ParentIssueId = null;
+                parent.ChildrenIssueIds.Remove(it => it == issue.Id);
+                // ConversationItem im Oberticket hinzufügen
+                
                 parent.ConversationItems.Add(new IssueConversation()
                 {
                     Id = ObjectId.GenerateNewId(),
@@ -116,7 +117,8 @@ namespace Goose.API.Services.issues
                     Data = null,
                     OtherTicketId = issueId,
                 });
-                await _issueRepository.UpdateAsync(parent);
+                
+                await Task.WhenAll(_issueRepository.UpdateAsync(issue), _issueRepository.UpdateAsync(parent));
             }
         }
     }

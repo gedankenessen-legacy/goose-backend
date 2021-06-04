@@ -30,19 +30,15 @@ namespace Goose.Tests.Application.IntegrationTests.Event
         public async Task StartDateReached()
         {
             using var helper = await new SimpleTestHelperBuilderStartDate().Build();
+            Assert.AreEqual(State.CheckingState, helper.Issue.State.Name);
+            await helper.SetState(State.NegotiationState);
+
+            await Task.Delay(6000);
 
             var uri = $"api/projects/{helper.Project.Id}/issues/{helper.Issue.Id}";
             var responce = await helper.client.GetAsync(uri);
             Assert.IsTrue(responce.IsSuccessStatusCode);
             var issueDTO = await responce.Parse<IssueDTO>();
-            Assert.AreEqual(State.CheckingState, issueDTO.State.Name);
-
-            await Task.Delay(6000);
-
-            uri = $"api/projects/{helper.Project.Id}/issues/{helper.Issue.Id}";
-            responce = await helper.client.GetAsync(uri);
-            Assert.IsTrue(responce.IsSuccessStatusCode);
-            issueDTO = await responce.Parse<IssueDTO>();
             Assert.AreEqual(State.ProcessingState, issueDTO.State.Name);
         }
     }

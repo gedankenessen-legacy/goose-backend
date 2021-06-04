@@ -8,32 +8,32 @@ using MongoDB.Bson;
 
 namespace Goose.API.Services.issues
 {
-    public interface IIssueAssociationHelper
+    public interface IIssueHelper
     {
         public Task CanAddChild(Issue parent, Issue other);
         public Task CanAddPredecessor(Issue successor, Issue other);
         public Task<IList<Issue>> GetChildrenRecursive(Issue issue);
     }
 
-    public class IssueAssociationHelper : IIssueAssociationHelper
+    public class IssueHelper : IIssueHelper
     {
         private readonly IIssueRepository _issueRepository;
 
-        public IssueAssociationHelper(IIssueRepository issueRepository)
+        public IssueHelper(IIssueRepository issueRepository)
         {
             _issueRepository = issueRepository;
         }
 
 
-        public async Task CanAddAssociation(IList<Issue> projectIssues, Issue issue, Issue other)
+        public async Task CanAddAssociation(IList<Issue> projectIssues, Issue successor, Issue other)
         {
             //TODO mom. wird ticket mehrmals abgearbeitet
             Queue<Issue> tickets = new Queue<Issue>();
 
             //fügt sich selber und alle Kinder hinzu. Die Kinder werden hinzugefügt, da der Vorgänger eines Obertickets der Vorgänger aller 
             //Untertickets ist
-            tickets.Enqueue(issue);
-            foreach (var ticket in GetChildrenRecursive(projectIssues, issue))
+            tickets.Enqueue(successor);
+            foreach (var ticket in GetChildrenRecursive(projectIssues, successor))
                 tickets.Enqueue(ticket);
 
             /*
@@ -45,7 +45,7 @@ namespace Goose.API.Services.issues
                 var element = tickets.Dequeue();
                 if (element == null) continue;
                 if (element.Id.Equals(other.Id))
-                    throw new HttpStatusException(400, $"An endless loop would occur if {issue.Id} and {other.Id} were to be associated");
+                    throw new HttpStatusException(400, $"An endless loop would occur if {successor.Id} and {other.Id} were to be associated");
 
                 if (element.ParentIssueId is ObjectId parentId) tickets.Enqueue(GetIssue(projectIssues, parentId));
                 foreach (var ticket in GetSuccessorsAdvanced(projectIssues, element))
@@ -67,6 +67,10 @@ namespace Goose.API.Services.issues
                 throw new HttpStatusException(400,
                     $"{parent.Id} and {other.Id} belong to the same hierarchy. Cannot associate issue or an endless loop would occur");
 
+            var children = GetChildren(projectIssues, parent);
+            if (parent.IssueDetail.ExpectedTime < other.IssueDetail.ExpectedTime + children.Sum(it => it.IssueDetail.ExpectedTime))
+                throw new HttpStatusException(400, "total expected time would be larger than expected time of parent");
+            
             await CanAddAssociation(projectIssues, parent, other);
         }
 
@@ -83,7 +87,8 @@ namespace Goose.API.Services.issues
                                                    $"Issue {successor.Id} belongs to project {successor.ProjectId}, issue {other.Id} belongs to {other.ProjectId}");
             if (successor.Id == other.Id)
                 throw new HttpStatusException(400, "Cannot associate an issue with itself");
-
+            if(successor.PredecessorIssueIds.Contains(other.Id))
+                throw new HttpStatusException(400, "you cannot add the same predecessor multiple times");
             var projectIssues = await _issueRepository.GetAllOfProjectAsync(successor.ProjectId);
             if (IsChildOf(projectIssues, successor, other) || IsChildOf(projectIssues, other, successor))
                 throw new HttpStatusException(400,
@@ -108,9 +113,14 @@ namespace Goose.API.Services.issues
 
         private IList<Issue> GetChildrenRecursive(IList<Issue> projectIssues, Issue issue)
         {
-            var children = new List<Issue>(issue.ChildrenIssueIds.Select(it => GetIssue(projectIssues, it)));
-            children.AddRange(children.SelectMany(it => GetChildrenRecursive(projectIssues, it)));
+            var children = new List<Issue>(GetChildren(projectIssues, issue));
+            children.AddRange(children.SelectMany(it => GetChildrenRecursive(projectIssues, it)).ToList());
             return children;
+        }
+
+        private IList<Issue> GetChildren(IList<Issue> projectIssues, Issue issue)
+        {
+            return new List<Issue>(issue.ChildrenIssueIds.Select(it => GetIssue(projectIssues, it)));
         }
 
         /**
