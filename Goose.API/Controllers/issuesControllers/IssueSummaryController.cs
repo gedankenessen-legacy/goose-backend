@@ -27,9 +27,9 @@ namespace Goose.API.Controllers.issuesControllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<IList<IssueRequirement>>> CreateSummary([FromRoute] string issueId)
+        public async Task<ActionResult<IList<IssueRequirement>>> CreateSummary([FromRoute] string issueId, [FromBody] double expectedTime)
         {
-            var requirements = await _issueSummaryService.CreateSummary(issueId);
+            var requirements = await _issueSummaryService.CreateSummary(issueId, expectedTime);
             return Ok(requirements);
         }
 
