@@ -54,6 +54,9 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             await helper.Helper.SetParentIssue(parent.Id, helper.Issue.Id);
             var res = await helper.SetPredecessor(parent.Id);
             Assert.AreEqual(HttpStatusCode.BadRequest, res.StatusCode);
+
+            var child = await helper.GetIssueAsync(helper.Issue.Id);
+            Assert.IsTrue(child.PredecessorIssueIds.Count == 0);
         }
 
         [Test]
@@ -88,6 +91,16 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             tempPredecessor.Id = ObjectId.Empty;
             tempPredecessor.IssueDetail.StartDate = DateTime.Now.AddHours(3);
             var predecessor = await helper.CreateIssue(tempPredecessor).Parse<IssueDTO>();
+            var res = await helper.SetPredecessor(predecessor.Id);
+            Assert.AreEqual(HttpStatusCode.BadRequest, res.StatusCode);
+        }
+
+        [Test]
+        public async Task CannotAddSamePredecessorMultipleTimes()
+        {
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            var predecessor = await helper.CreateIssue().Parse<IssueDTO>();
+            await helper.SetPredecessor(predecessor.Id);
             var res = await helper.SetPredecessor(predecessor.Id);
             Assert.AreEqual(HttpStatusCode.BadRequest, res.StatusCode);
         }
