@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Goose.API.Services.issues;
 using Goose.Domain.DTOs;
+using Goose.Domain.DTOs.Issues;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
@@ -23,10 +24,10 @@ namespace Goose.API.Controllers.IssuesControllers
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<IList<UserDTO>>> Get([FromRoute] ObjectId issueId)
+    public async Task<ActionResult<IList<IssueDTO>>> Get([FromRoute] ObjectId issueId)
     {
         var issue = await _issueParentService.GetParent(issueId);
-        if (issue == null) return NotFound();
+        if (issue == null) return Ok(new List<IssueDTO>());
         return Ok(issue);
     }
 
