@@ -100,7 +100,7 @@ namespace Goose.API.Services.issues
                 StateChange = new()
                 {
                     Before = State.NegotiationState,
-                    After = State.WaitingState
+                    After = state.Name
                 }
             });
             await _issueRepository.UpdateAsync(issue);
