@@ -20,7 +20,7 @@ namespace Goose.API.Services.issues
 {
     public interface IIssueSummaryService
     {
-        public Task<IList<IssueRequirement>> CreateSummary(string issueId);
+        public Task<IList<IssueRequirement>> CreateSummary(string issueId, double expectedTime);
         public Task<IList<IssueRequirement>> GetSummary(string issueId);
         public Task AcceptSummary(string issueId);
         public Task DeclineSummary(string issueId);
@@ -106,7 +106,7 @@ namespace Goose.API.Services.issues
             await _issueRepository.UpdateAsync(issue);
         }
 
-        public async Task<IList<IssueRequirement>> CreateSummary(string issueId)
+        public async Task<IList<IssueRequirement>> CreateSummary(string issueId, double expectedTime)
         {
             var issue = await _issueRepository.GetAsync(issueId.ToObjectId());
 
@@ -123,6 +123,7 @@ namespace Goose.API.Services.issues
                     "Um eine Zusammenfassung erstellen zu können muss mindestens eine Anforderung oder eine geschätze Zeit vorhanden sein");
 
             issue.IssueDetail.RequirementsSummaryCreated = true;
+            issue.IssueDetail.ExpectedTime = expectedTime;
             issue.ConversationItems.Add(new IssueConversation()
             {
                 Id = ObjectId.GenerateNewId(),

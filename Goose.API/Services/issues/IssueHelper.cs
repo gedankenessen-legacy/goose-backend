@@ -25,15 +25,15 @@ namespace Goose.API.Services.issues
         }
 
 
-        public async Task CanAddAssociation(IList<Issue> projectIssues, Issue issue, Issue other)
+        public async Task CanAddAssociation(IList<Issue> projectIssues, Issue successor, Issue other)
         {
             //TODO mom. wird ticket mehrmals abgearbeitet
             Queue<Issue> tickets = new Queue<Issue>();
 
             //fügt sich selber und alle Kinder hinzu. Die Kinder werden hinzugefügt, da der Vorgänger eines Obertickets der Vorgänger aller 
             //Untertickets ist
-            tickets.Enqueue(issue);
-            foreach (var ticket in GetChildrenRecursive(projectIssues, issue))
+            tickets.Enqueue(successor);
+            foreach (var ticket in GetChildrenRecursive(projectIssues, successor))
                 tickets.Enqueue(ticket);
 
             /*
@@ -45,7 +45,7 @@ namespace Goose.API.Services.issues
                 var element = tickets.Dequeue();
                 if (element == null) continue;
                 if (element.Id.Equals(other.Id))
-                    throw new HttpStatusException(400, $"An endless loop would occur if {issue.Id} and {other.Id} were to be associated");
+                    throw new HttpStatusException(400, $"An endless loop would occur if {successor.Id} and {other.Id} were to be associated");
 
                 if (element.ParentIssueId is ObjectId parentId) tickets.Enqueue(GetIssue(projectIssues, parentId));
                 foreach (var ticket in GetSuccessorsAdvanced(projectIssues, element))
@@ -87,7 +87,8 @@ namespace Goose.API.Services.issues
                                                    $"Issue {successor.Id} belongs to project {successor.ProjectId}, issue {other.Id} belongs to {other.ProjectId}");
             if (successor.Id == other.Id)
                 throw new HttpStatusException(400, "Cannot associate an issue with itself");
-
+            if(successor.PredecessorIssueIds.Contains(other.Id))
+                throw new HttpStatusException(400, "you cannot add the same predecessor multiple times");
             var projectIssues = await _issueRepository.GetAllOfProjectAsync(successor.ProjectId);
             if (IsChildOf(projectIssues, successor, other) || IsChildOf(projectIssues, other, successor))
                 throw new HttpStatusException(400,

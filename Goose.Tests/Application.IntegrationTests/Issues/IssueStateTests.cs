@@ -156,6 +156,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
 
         [Test]
         public async Task FromProcessingStateToUserGeneratedStateInProcessingPhasePhaseAndBack()
+
         {
             using var helper = await new SimpleTestHelperBuilder().Build();
             await helper.SetState(State.NegotiationState);
@@ -216,5 +217,18 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             Assert.AreEqual(State.CompletedState, (await helper.Helper.GetStateById(issue.ProjectId, issue.StateId)).Name);
         }
 
+        [Test]
+        public async Task ParentIsBlockedIfPredecessorAddedInPrecessingPhase()
+        {
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            var predecessor = await helper.CreateIssue().Parse<IssueDTO>();
+            await helper.SetState(State.NegotiationState);
+            await helper.SetState(State.ProcessingState);
+            var issue = await helper.GetIssueAsync(helper.Issue.Id);
+            Assert.AreEqual(State.ProcessingState, (await helper.Helper.GetStateById(issue.ProjectId, issue.StateId)).Name);
+            await helper.SetPredecessor(predecessor.Id);
+            issue = await helper.GetIssueAsync(helper.Issue.Id);
+            Assert.AreEqual(State.BlockedState, (await helper.Helper.GetStateById(issue.ProjectId, issue.StateId)).Name);
+        }
     }
 }
