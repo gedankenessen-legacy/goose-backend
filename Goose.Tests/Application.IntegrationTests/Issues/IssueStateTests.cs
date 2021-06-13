@@ -230,5 +230,21 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             issue = await helper.GetIssueAsync(helper.Issue.Id);
             Assert.AreEqual(State.BlockedState, (await helper.Helper.GetStateById(issue.ProjectId, issue.StateId)).Name);
         }
+
+        [Test]
+        public async Task CanChangeStartDateInProcessingPhaseIfRequirementsSkipped()
+        {
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            var copy = helper.Issue.Copy();
+            copy.IssueDetail.RequirementsNeeded = false;
+            copy.Id = ObjectId.Empty;
+            var issue = await helper.CreateIssue(copy).Parse<IssueDTO>();
+            Assert.AreEqual(State.ProcessingState, (await helper.Helper.GetStateById(issue)).Name);
+            var oldTime = issue.IssueDetail.StartDate;
+            issue.IssueDetail.StartDate = DateTime.Now;
+            await helper.Helper.UpdateIssue(issue);
+            var updatedIssue = await helper.GetIssueAsync(issue.Id);
+            Assert.AreNotEqual(oldTime, updatedIssue.IssueDetail.StartDate);
+        }
     }
 }
