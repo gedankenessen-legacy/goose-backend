@@ -73,9 +73,7 @@ namespace Goose.API.Services.issues
 
             issue.ParentIssueId = parentId;
             parent.ChildrenIssueIds.Add(issueId);
-            if(parentState.Phase == State.ProcessingPhase && parentState.Name != State.ReviewState)
-                parent.StateId = (await _stateService.GetStates(parent.ProjectId)).First(it => it.Name == State.BlockedState).Id;
-                
+            
             // ConversationItem im Oberticket hinzufügen
             parent.ConversationItems.Add(new IssueConversation()
             {
@@ -99,6 +97,7 @@ namespace Goose.API.Services.issues
             var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, issue, requirementsWithErrors.Keys);
             authorizationResult.ThrowErrorForFailedRequirements(requirementsWithErrors);
         }
+
         public async Task RemoveParent(ObjectId issueId)
         {
             var issue = await _issueRepository.GetAsync(issueId);
@@ -108,7 +107,7 @@ namespace Goose.API.Services.issues
                 issue.ParentIssueId = null;
                 parent.ChildrenIssueIds.Remove(it => it == issue.Id);
                 // ConversationItem im Oberticket hinzufügen
-                
+
                 parent.ConversationItems.Add(new IssueConversation()
                 {
                     Id = ObjectId.GenerateNewId(),
@@ -117,7 +116,7 @@ namespace Goose.API.Services.issues
                     Data = null,
                     OtherTicketId = issueId,
                 });
-                
+
                 await Task.WhenAll(_issueRepository.UpdateAsync(issue), _issueRepository.UpdateAsync(parent));
             }
         }

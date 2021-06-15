@@ -309,6 +309,10 @@ namespace Goose.Tests.Application.IntegrationTests
         {
             return (await GetStateListAsync(issue.ProjectId)).FirstOrDefault(x => x.Id.Equals(issue.StateId));
         }
+        public async Task<StateDTO> GetStateById(IssueDTO issue)
+        {
+            return (await GetStateListAsync(issue.Project.Id)).FirstOrDefault(x => x.Id.Equals(issue.State.Id));
+        }
 
         public async Task<HttpResponseMessage> GetPredecessors(ObjectId issueId)
         {
