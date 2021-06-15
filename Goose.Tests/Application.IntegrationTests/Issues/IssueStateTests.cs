@@ -246,5 +246,34 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             var updatedIssue = await helper.GetIssueAsync(issue.Id);
             Assert.AreNotEqual(oldTime, updatedIssue.IssueDetail.StartDate);
         }
+        [Test]
+        public async Task CannotChangeStartDateInProcessingPhaseIfRequirementsSkipped()
+        {
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            await helper.SetState(State.NegotiationState);
+            await helper.SetState(State.ProcessingState);
+            Assert.AreEqual(State.ProcessingState, (await helper.Helper.GetStateById(await helper.GetIssueAsync(helper.Issue.Id))).Name);
+            var oldTime = helper.Issue.IssueDetail.StartDate;
+            helper.Issue.IssueDetail.StartDate = DateTime.Now;
+            await helper.Helper.UpdateIssue(helper.Issue);
+            var updatedIssue = await helper.GetIssueAsync(helper.Issue.Id);
+            Assert.AreEqual(oldTime, updatedIssue.IssueDetail.StartDate);
+        }
+
+        [Test]
+        public async Task ParentNotBlockedIfChildAddedInProcessingPhase()
+        {
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            await helper.SetState(State.NegotiationState);
+            await helper.SetState(State.ProcessingState);
+            var child = await helper.CreateChild();
+            Assert.AreEqual(State.ProcessingState, (await helper.Helper.GetStateById(await helper.GetIssueAsync(helper.Issue.Id))).Name);
+            await helper.SetState(State.ReviewState);
+            Assert.AreEqual(HttpStatusCode.BadRequest, (await helper.SetState(State.ReviewState)).StatusCode);
+            
+            await helper.Helper.SetStateOfIssue(child, State.CancelledState);
+            await helper.SetState(State.ReviewState);
+            Assert.AreEqual(State.ReviewState, (await helper.Helper.GetStateById(await helper.GetIssueAsync(helper.Issue.Id))).Name);
+        }
     }
 }
