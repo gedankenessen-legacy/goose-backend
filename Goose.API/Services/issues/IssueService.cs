@@ -260,7 +260,9 @@ namespace Goose.API.Services.Issues
             details.RelevantDocuments = updated.RelevantDocuments ?? details.RelevantDocuments;
             //nur in vorbereitungsphase
             var state = await _stateService.GetState(old.ProjectId, old.StateId);
-            if (state.Phase.Equals(State.NegotiationPhase))
+            if (state.Phase == State.NegotiationPhase ||
+                //Wenn Verhandlungsphase übersprungen wird, kann auch in der bearbeitungsphase das Startdatum gesetzt werden
+                (!old.IssueDetail.RequirementsNeeded && state <= (await _stateService.GetStates(old.ProjectId)).First(it => it.Name == State.ProcessingState)))
             {
                 details.StartDate = updated.StartDate;
                 details.EndDate = updated.EndDate;
@@ -298,9 +300,10 @@ namespace Goose.API.Services.Issues
                 var parent = await _issueRepo.GetAsync(parentId);
                 var children = await Task.WhenAll(parent.ChildrenIssueIds.Select(_issueRepo.GetAsync));
                 children.First(it => it.Id == old.Id).IssueDetail.ExpectedTime = updated.ExpectedTime;
-                if(parent.IssueDetail.ExpectedTime < children.Sum(it => it.IssueDetail.ExpectedTime))
+                if (parent.IssueDetail.ExpectedTime < children.Sum(it => it.IssueDetail.ExpectedTime))
                     throw new HttpStatusException(400, $"Total expected time of children cannot be larger than the expected time of issue {parent.Id}");
             }
+
             old.IssueDetail.ExpectedTime = updated.ExpectedTime;
         }
 
@@ -379,25 +382,6 @@ namespace Goose.API.Services.Issues
 
             var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, issue, requirementsWithErrors.Keys);
             authorizationResult.ThrowErrorForFailedRequirements(requirementsWithErrors);
-        }
-
-        private async Task UserCanCreateOrUpdateIssue(ObjectId projectId)
-        {
-            var project = await _projectRepository.GetAsync(projectId);
-            Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
-            {
-                {
-                    ProjectRolesRequirement.EmployeeRequirement,
-                    "You need to be the employee with write-rights in this project, in order to create or update a issue."
-                },
-                {ProjectRolesRequirement.LeaderRequirement, "You need to be the leader in this project, in order to create or update a issue."},
-                {ProjectRolesRequirement.CustomerRequirement, "You need to be a customer in this project, in order to create or update a issue."},
-                {CompanyRolesRequirement.CompanyOwner, "You need to be a Owner of the Company, in order to create or update a issue"}
-            };
-
-            // validate requirements with the appropriate handlers.
-            var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, project, requirementsWithErrors.Keys);
-            authorizationResult.ThrowErrorIfAllFailed(requirementsWithErrors);
         }
 
         /// <summary>

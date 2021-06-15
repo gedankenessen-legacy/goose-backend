@@ -28,36 +28,52 @@ namespace Goose.Domain.DTOs
         public string Phase { get; set; }
         public bool UserGenerated { get; set; }
 
+        private static int GetValueOfState(StateDTO state)
+        {
+            var value = 0;
+            switch (state.Phase)
+            {
+                case State.NegotiationPhase:
+                    if (state.Name == State.CheckingState) value += 1;
+                    else value += 2;
+                    break;
+                case State.ProcessingPhase:
+                    value += 10;
+                    if (state.Name == State.BlockedState || state.Name == State.WaitingState) value += 1;
+                    else if (state.Name == State.ReviewState) value += 3;
+                    else value += 2;
+                    break;
+                case State.ConclusionPhase:
+                    value += 20;
+                    if (state.Name == State.ArchivedState) value += 2;
+                    else value += 1;
+                    break;
+            }
+
+            if (state.Phase == State.ProcessingPhase) value += 10;
+            if (state.Phase == State.ConclusionPhase) value += 20;
+
+            return value;
+        }
+
         public static bool operator <(StateDTO state, StateDTO other)
         {
-            if (state.Phase == other.Phase) return false;
-            if (state.Phase == State.NegotiationPhase) return true;
-            if (other.Phase == State.NegotiationPhase) return false;
-            if (state.Phase == State.ProcessingPhase) return true;
-            if (other.Phase == State.ProcessingPhase) return false;
-            throw new Exception($"could not compare {state.Phase} and {other.Phase}");
+            return GetValueOfState(state) < GetValueOfState(other);
         }
 
         public static bool operator >(StateDTO state, StateDTO other)
         {
-            if (state.Phase == other.Phase) return false;
-            if (state.Phase == State.NegotiationPhase) return false;
-            if (other.Phase == State.NegotiationPhase) return true;
-            if (state.Phase == State.ProcessingPhase) return false;
-            if (other.Phase == State.ProcessingPhase) return true;
-            throw new Exception($"could not compare {state.Phase} and {other.Phase}");
+            return GetValueOfState(state) > GetValueOfState(other);
         }
 
         public static bool operator >=(StateDTO state, StateDTO other)
         {
-            if (state.Phase == other.Phase) return true;
-            return state > other;
+            return GetValueOfState(state) >= GetValueOfState(other);
         }
 
         public static bool operator <=(StateDTO state, StateDTO other)
         {
-            if (state.Phase == other.Phase) return true;
-            return state < other;
+            return GetValueOfState(state) <= GetValueOfState(other);
         }
     }
 }

@@ -163,10 +163,6 @@ namespace Goose.API.Services.issues
 
         private async Task OnIssueReachedCompletionPhase(Issue issue, Issue? _parent = null, IList<Issue>? _successors = null)
         {
-            Task<Issue> parentAsync = null;
-            if (_parent != null) parentAsync = Task.FromResult(_parent);
-            else if (issue.ParentIssueId is { } parentId) parentAsync = _issueRepository.GetAsync(parentId);
-
             var successors = _successors == null
                 ? Task.WhenAll(issue.SuccessorIssueIds.Select(_issueRepository.GetAsync))
                 : Task.FromResult(_successors.ToArray());
@@ -175,18 +171,9 @@ namespace Goose.API.Services.issues
             {
                 var processingState = await GetStateByName(issue, State.ProcessingState);
                 var blockedState = await GetStateByName(issue, State.BlockedState);
-                var tasks = new List<Task>();
-                var parent = parentAsync != null ? await parentAsync : null;
-                if (parent is { } parentNotNull)
-                {
-                    if (parentNotNull.StateId == blockedState.Id)
-                        tasks.Add(TryCatch(UpdateState(parentNotNull, processingState)));
-                }
-
                 var blockedSuccessors = (await successors).Where(it => it.StateId == blockedState.Id).ToList();
-                tasks.AddRange(blockedSuccessors.Select(it => TryCatch(UpdateState(it, processingState))));
 
-                await Task.WhenAll(tasks);
+                await Task.WhenAll(blockedSuccessors.Select(it => TryCatch(UpdateState(it, processingState))));
             }
             catch (Exception)
             {
