@@ -62,18 +62,18 @@ namespace Goose.API.Services.issues
                  * 2) Nicht alle Vorgänger abgeschlossen sind
                  * 
                  */
-                
-                //hier muss aufgepasst werden !! 
-                //parentSate ist ein Task d.h der Task an sich muss nicht null sein, wenn der Task dann 
-                //aber awaited wird, kann es passieren, dass das ergebniss null ist
-                if (parentState != null && (await parentState).Phase == State.NegotiationPhase ||
+                if (parentState != null && ((await parentState).Phase == State.NegotiationPhase ||
+                                            (await parentState).Phase == State.BlockedState ||
+                                            (await parentState).Phase == State.WaitingState) ||
                     predecessorStates.HasWhere(it => it.Phase != State.ConclusionPhase))
                 {
                     var blockedState = await GetStateByName(issue, State.BlockedState);
                     return await SetState(issue, blockedState);
                 }
 
-                return await SetState(issue, newState);
+                var res = await SetState(issue, newState);
+                await OnIssueReachedProcessingPhase(issue);
+                return res;
             };
 
             _updateStateHandler.AddEvent(
@@ -163,6 +163,24 @@ namespace Goose.API.Services.issues
             _updateStateHandler.AddUserGeneratedStateCase(State.NegotiationPhase, State.NegotiationState);
             _updateStateHandler.AddUserGeneratedStateCase(State.ProcessingPhase, State.ProcessingState);
             _updateStateHandler.AddUserGeneratedStateCase(State.ConclusionPhase, State.CompletedState);
+        }
+
+        private async Task OnIssueReachedProcessingPhase(Issue issue)
+        {
+            var children = await Task.WhenAll(issue.ChildrenIssueIds.Select(_issueRepository.GetAsync));
+
+            try
+            {
+                var processingState = await GetStateByName(issue, State.ProcessingState);
+                var blockedState = await GetStateByName(issue, State.BlockedState);
+                var blockedChildren = children.Where(it => it.StateId == blockedState.Id).ToList();
+
+                await Task.WhenAll(blockedChildren.Select(it => TryCatch(UpdateState(it, processingState))));
+            }
+            catch (Exception)
+            {
+                // ignored
+            }
         }
 
         private async Task OnIssueReachedCompletionPhase(Issue issue, Issue? _parent = null, IList<Issue>? _successors = null)

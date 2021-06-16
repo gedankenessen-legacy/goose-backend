@@ -114,7 +114,12 @@ namespace Goose.API.Services.Issues
         private async Task<Issue> CreateValidIssue(IssueDTO dto)
         {
             if (dto.IssueDetail.RequirementsNeeded) dto.State = await GetState(dto.Project.Id, State.CheckingState);
-            else dto.State = await GetState(dto.Project.Id, State.ProcessingState);
+            else
+            {
+                if (dto.IssueDetail.StartDate > DateTime.Now) dto.State = await GetState(dto.Project.Id, State.WaitingState);
+                else dto.State = await GetState(dto.Project.Id, State.ProcessingState);
+            }
+
             var issue = new Issue
             {
                 Id = dto.Id,
