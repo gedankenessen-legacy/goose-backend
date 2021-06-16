@@ -72,9 +72,11 @@ namespace Goose.API.Services.issues
             if (states is null)
                 throw new HttpStatusException(400, "Es wurden keine Statuse für dieses Project gefunden");
 
+            var oldState = states.First(it => it.Id == issue.StateId);
+            if (oldState.Name == State.CheckingState) await _issueStateService.UpdateState(issue, states.First(it => it.Name == State.NegotiationState));
             var state = await _issueStateService.UpdateState(issue, states.First(it => it.Name == State.ProcessingState));
             issue = await _issueRepository.GetAsync(issueId.ToObjectId());
-            
+
             if (state is null)
                 throw new HttpStatusException(400, "Es wurde kein State gefunden");
 
@@ -99,8 +101,8 @@ namespace Goose.API.Services.issues
                 Data = $"Status von {State.NegotiationState} zu {state.Name} geändert.",
                 StateChange = new()
                 {
-                    Before = State.NegotiationState,
-                    After = State.WaitingState
+                    Before = oldState.Name,
+                    After = state.Name
                 }
             });
             await _issueRepository.UpdateAsync(issue);

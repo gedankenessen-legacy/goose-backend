@@ -275,5 +275,40 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             await helper.SetState(State.ReviewState);
             Assert.AreEqual(State.ReviewState, (await helper.Helper.GetStateById(await helper.GetIssueAsync(helper.Issue.Id))).Name);
         }
+
+        [Test]
+        public async Task IssueBlockedIfParentInNegotiation()
+        {
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            var child = await helper.CreateChild();
+            await helper.Helper.SetStateOfIssue(child, State.NegotiationState);
+            var childState = (await helper.Helper.GetStateById(await helper.GetIssueAsync(child.Id)));
+            await helper.Helper.SetStateOfIssue(child, State.ProcessingState);
+            Assert.AreEqual(State.BlockedState, (await helper.Helper.GetStateById(await helper.GetIssueAsync(child.Id))).Name);
+            
+            await helper.SetState(State.NegotiationState);
+            await helper.SetState(State.ProcessingState);
+            await helper.Helper.SetStateOfIssue(child, State.ProcessingState);
+            Assert.AreEqual(State.ProcessingState, (await helper.Helper.GetStateById(await helper.GetIssueAsync(child.Id))).Name);
+        }
+        [Test]
+        public async Task IssueBlockedIfParentInBlocked()
+        {
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            var predecessor = await helper.CreateIssue().Parse<IssueDTO>();
+            await helper.SetPredecessor(predecessor.Id);
+            
+            var child = await helper.CreateChild();
+            await helper.Helper.SetStateOfIssue(child, State.NegotiationState);
+            var childState = (await helper.Helper.GetStateById(await helper.GetIssueAsync(child.Id)));
+            await helper.Helper.SetStateOfIssue(child, State.ProcessingState);
+            Assert.AreEqual(State.BlockedState, (await helper.Helper.GetStateById(await helper.GetIssueAsync(child.Id))).Name);
+            
+            await helper.SetState(State.NegotiationState);
+            await helper.Helper.SetStateOfIssue(predecessor, State.CancelledState);
+            await helper.SetState(State.ProcessingState);
+            await helper.Helper.SetStateOfIssue(child, State.ProcessingState);
+            Assert.AreEqual(State.ProcessingState, (await helper.Helper.GetStateById(await helper.GetIssueAsync(child.Id))).Name);
+        }
     }
 }

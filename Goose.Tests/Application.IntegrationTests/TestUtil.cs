@@ -23,7 +23,7 @@ namespace Goose.Tests.Application.IntegrationTests
 
         public static async Task<E> Parse<E>(this Task<HttpResponseMessage> message)
         {
-            return await (await message).Content.Parse<E>();
+            return await (await message).Parse<E>();
         }
 
         public static async Task<E> Parse<E>(this HttpResponseMessage message)
