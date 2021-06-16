@@ -53,7 +53,7 @@ namespace Goose.API.Services.issues
 
 
                 Task<StateDTO> parentState = null;
-                if (parent is { } parentNotNull) parentState = _stateService.GetState((await parentNotNull).ProjectId, (await parentNotNull).Id);
+                if (parent is { } parentNotNull) parentState = _stateService.GetState((await parentNotNull).ProjectId, (await parentNotNull).StateId);
                 var predecessorStates = await Task.WhenAll((await predecessors).Select(it => _stateService.GetState(it.ProjectId, it.StateId)));
 
                 /*
@@ -62,6 +62,10 @@ namespace Goose.API.Services.issues
                  * 2) Nicht alle Vorgänger abgeschlossen sind
                  * 
                  */
+                
+                //hier muss aufgepasst werden !! 
+                //parentSate ist ein Task d.h der Task an sich muss nicht null sein, wenn der Task dann 
+                //aber awaited wird, kann es passieren, dass das ergebniss null ist
                 if (parentState != null && (await parentState).Phase == State.NegotiationPhase ||
                     predecessorStates.HasWhere(it => it.Phase != State.ConclusionPhase))
                 {

@@ -216,16 +216,25 @@ namespace Goose.API.Services.issues
                           ?? throw new HttpStatusException(400, $"Es Existiert kein Project mit der ID {issue.ProjectId}");
 
             // Check is Author a customer?
-            var user = project.Users.FirstOrDefault(x => x.UserId.Equals(issue.AuthorId));
+            var author = project.Users.FirstOrDefault(x => x.UserId.Equals(issue.AuthorId));
 
-            if (user is null)
+            if (author is null)
                 throw new HttpStatusException(400, $"something went wrong");
 
-            var isCustomer = user.RoleIds.Any(x => x.Equals(Role.CustomerRole.Id));
+            var isCustomer = author.RoleIds.Any(x => x.Equals(Role.CustomerRole.Id));
 
             var userId = _httpContextAccessor.HttpContext.User.GetUserId();
 
             if (issue.AuthorId.Equals(userId))
+                return true;
+
+            //Is User Customer?
+            var user = project.Users.FirstOrDefault(x => x.UserId.Equals(userId));
+
+            if (user is null)
+                throw new HttpStatusException(400, $"something went wrong");
+
+            if (user.RoleIds.Any(x => x.Equals(Role.CustomerRole.Id)))
                 return true;
 
             // if no only Author, Projectleader or Company can accept or decline 

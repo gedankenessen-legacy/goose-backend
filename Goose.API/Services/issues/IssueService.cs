@@ -264,7 +264,11 @@ namespace Goose.API.Services.Issues
                 //Wenn Verhandlungsphase übersprungen wird, kann auch in der bearbeitungsphase das Startdatum gesetzt werden
                 (!old.IssueDetail.RequirementsNeeded && state <= (await _stateService.GetStates(old.ProjectId)).First(it => it.Name == State.ProcessingState)))
             {
+                //Can Ticket set the Start Date?
+                await CanSetStartDate(old, updated);
                 details.StartDate = updated.StartDate;
+                //Can Ticket set the End Date?
+                await CanSetEndDate(old, updated);
                 details.EndDate = updated.EndDate;
 
                 if (details.StartDate is not null && details.StartDate != default(DateTime))
@@ -279,6 +283,38 @@ namespace Goose.API.Services.Issues
             }
 
             return old.IssueDetail;
+        }
+
+        private async Task CanSetStartDate(Issue issue, IssueDetail updated)
+        {
+            if (updated.StartDate is null || updated.StartDate == default(DateTime))
+                return;
+
+            var successors = await issue.SuccessorIssueIds.Select(_issueRepo.GetAsync).AwaitAll();
+            foreach(var successor in successors)
+            {
+                if (successor.IssueDetail.EndDate is null)
+                    continue;
+
+                if (updated.StartDate > successor.IssueDetail.EndDate)
+                    throw new HttpStatusException(StatusCodes.Status403Forbidden, "Das Startdartum eines Vorgängers muss vor dem Enddatum eines Nachfolgers sein");
+            }
+        }
+
+        private async Task CanSetEndDate(Issue issue, IssueDetail updated)
+        {
+            if (updated.EndDate is null || updated.EndDate == default(DateTime))
+                return;
+
+            var predecessors = await issue.PredecessorIssueIds.Select(_issueRepo.GetAsync).AwaitAll();
+            foreach (var predecessor in predecessors)
+            {
+                if (predecessor.IssueDetail.StartDate is null)
+                    continue;
+
+                if (updated.EndDate < predecessor.IssueDetail.StartDate)
+                    throw new HttpStatusException(StatusCodes.Status403Forbidden, "Das Enddatum eines Nachfolgers muss nach dem Startdatum eines Vorgängers sein");
+            }
         }
 
         private async Task UpdateExpectedTime(Issue old, IssueDetail updated)

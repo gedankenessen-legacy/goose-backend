@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Goose.API.Utils;
 using Goose.Domain.DTOs.Issues;
@@ -14,6 +15,23 @@ namespace Goose.Tests.Application.IntegrationTests.issues
     [Parallelizable(ParallelScope.All)]
     public class IssueSuccessorTests
     {
+        private class SimpleTestHelperBuilderSuccessor : SimpleTestHelperBuilder
+        {
+            public override async Task<SimpleTestHelper> Build()
+            {
+                var helper = await base.Build();
+                var issue = base.GetIssueDTOCopy(helper.client, helper);
+                issue.IssueDetail.Visibility = true;
+                issue.IssueDetail.EndDate = DateTime.Now.AddHours(2);
+                var responce = await helper.CreateIssue(issue);
+                helper.Issue = await responce.Parse<IssueDTO>();
+                return helper;
+            }
+
+            public override Task<IssueDTO> CreateIssue(HttpClient client, SimpleTestHelper helper) => null;
+
+        }
+
         [Test]
         public async Task CanAddSuccessor()
         {
@@ -86,13 +104,107 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         [Test]
         public async Task StartDateOfPredecessorCannotBeAfterEndDateOfSuccessor()
         {
-            using var helper = await new SimpleTestHelperBuilder().Build();
+            using var helper = await new SimpleTestHelperBuilderSuccessor().Build();
             var tempPredecessor = helper.Issue.Copy();
             tempPredecessor.Id = ObjectId.Empty;
             tempPredecessor.IssueDetail.StartDate = DateTime.Now.AddHours(3);
             var predecessor = await helper.CreateIssue(tempPredecessor).Parse<IssueDTO>();
             var res = await helper.SetPredecessor(predecessor.Id);
             Assert.AreEqual(HttpStatusCode.BadRequest, res.StatusCode);
+        }
+
+        [Test]
+        public async Task StartDateOfPredecessorCannotBeAfterEndDateOfSuccessorThrewUpdate()
+        {
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            var tempPredecessor = helper.Issue.Copy();
+            tempPredecessor.Id = ObjectId.Empty;
+            var predecessor = await helper.CreateIssue(tempPredecessor).Parse<IssueDTO>();
+            var res = await helper.SetPredecessor(predecessor.Id);
+
+            //Issue Nachfolger
+            //predeccessor Vorgänger
+            var issue = await helper.Helper.GetIssueThroughClientAsync(helper.Issue.Project.Id, helper.Issue.Id);
+            issue.IssueDetail.EndDate = DateTime.Now.AddHours(2);
+
+            var uri = $"api/projects/{issue.Project.Id}/issues/{issue.Id}";
+
+            var response = await helper.client.PutAsync(uri, issue.ToStringContent());
+
+            Assert.IsTrue(response.IsSuccessStatusCode);
+
+            var predecessorToUpdate = await helper.Helper.GetIssueThroughClientAsync(predecessor.Project.Id, predecessor.Id);
+
+            predecessorToUpdate.IssueDetail.StartDate = DateTime.Now.AddHours(3);
+
+            uri = $"api/projects/{predecessorToUpdate.Project.Id}/issues/{predecessorToUpdate.Id}";
+
+            response = await helper.client.PutAsync(uri, predecessorToUpdate.ToStringContent());
+
+            Assert.IsFalse(response.IsSuccessStatusCode);
+        }
+
+        [Test]
+        public async Task EnddateOfSuccessorCannotBeBeforStartDateOfPredeccessorThrewUpdate()
+        {
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            var tempPredecessor = helper.Issue.Copy();
+            tempPredecessor.Id = ObjectId.Empty;
+            var predecessor = await helper.CreateIssue(tempPredecessor).Parse<IssueDTO>();
+            var res = await helper.SetPredecessor(predecessor.Id);
+
+            //Issue Nachfolger
+            //predeccessor Vorgänger
+
+            var predecessorToUpdate = await helper.Helper.GetIssueThroughClientAsync(predecessor.Project.Id, predecessor.Id);
+
+            predecessorToUpdate.IssueDetail.StartDate = DateTime.Now.AddHours(3);
+
+            var uri = $"api/projects/{predecessorToUpdate.Project.Id}/issues/{predecessorToUpdate.Id}";
+
+            var response = await helper.client.PutAsync(uri, predecessorToUpdate.ToStringContent());
+
+            Assert.IsTrue(response.IsSuccessStatusCode);
+
+            var issue = await helper.Helper.GetIssueThroughClientAsync(helper.Issue.Project.Id, helper.Issue.Id);
+            issue.IssueDetail.EndDate = DateTime.Now.AddHours(2);
+
+            uri = $"api/projects/{issue.Project.Id}/issues/{issue.Id}";
+
+            response = await helper.client.PutAsync(uri, issue.ToStringContent());
+
+            Assert.IsFalse(response.IsSuccessStatusCode);
+        }
+
+        [Test]
+        public async Task EndDateOfPredecessorCanBeAfterStartDateOfSuccessorThrewUpdate()
+        {
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            var tempPredecessor = helper.Issue.Copy();
+            tempPredecessor.Id = ObjectId.Empty;
+            var predecessor = await helper.CreateIssue(tempPredecessor).Parse<IssueDTO>();
+            var res = await helper.SetPredecessor(predecessor.Id);
+
+            //Issue Nachfolger
+            //predeccessor Vorgänger
+            var issue = await helper.Helper.GetIssueThroughClientAsync(helper.Issue.Project.Id, helper.Issue.Id);
+            issue.IssueDetail.EndDate = DateTime.Now.AddHours(2);
+
+            var uri = $"api/projects/{issue.Project.Id}/issues/{issue.Id}";
+
+            var response = await helper.client.PutAsync(uri, issue.ToStringContent());
+
+            Assert.IsTrue(response.IsSuccessStatusCode);
+
+            var predecessorToUpdate = await helper.Helper.GetIssueThroughClientAsync(predecessor.Project.Id, predecessor.Id);
+
+            predecessorToUpdate.IssueDetail.StartDate = DateTime.Now.AddHours(1);
+
+            uri = $"api/projects/{predecessorToUpdate.Project.Id}/issues/{predecessorToUpdate.Id}";
+
+            response = await helper.client.PutAsync(uri, predecessorToUpdate.ToStringContent());
+
+            Assert.IsTrue(response.IsSuccessStatusCode);
         }
 
         [Test]

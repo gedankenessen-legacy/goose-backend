@@ -46,6 +46,36 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
 
         }
 
+        private class SimpleTestHelperBuilderSummaryRights2 : SimpleTestHelperBuilder
+        {
+            public UserDTO Employee { get; set; }
+            public UserDTO Customer { get; set; }
+
+            public SimpleTestHelperBuilderSummaryRights2()
+            {
+            }
+
+            public override async Task<SimpleTestHelper> Build()
+            {
+                var helper = await base.Build();
+                var customer = await helper.GenerateUserAndSetToProject(Role.CustomerRole);
+                Customer = new UserDTO(await helper.Helper.UserRepository.GetAsync(customer.Id));
+                var employee = await helper.GenerateUserAndSetToProject(Role.EmployeeRole);
+                Employee = new UserDTO(await helper.Helper.UserRepository.GetAsync(employee.Id));
+                var issue = base.GetIssueDTOCopy(helper.client, helper);
+                issue.Author = Employee;
+                issue.Client = Customer;
+                issue.IssueDetail.Visibility = true;
+                var responce = await helper.CreateIssue(issue);
+                helper.Issue = await responce.Parse<IssueDTO>();
+                helper.Helper.SetAuth(helper.SignIn);
+                return helper;
+            }
+
+            public override Task<IssueDTO> CreateIssue(HttpClient client, SimpleTestHelper helper) => null;
+
+        }
+
 
         [Test]
         public async Task CreateSummary1()
@@ -227,6 +257,45 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
         }
 
         [Test]
+        public async Task AcceptSummary5()
+        {
+            var builder = new SimpleTestHelperBuilderSummaryRights2();
+            using var helper = await builder.Build();
+            await helper.SetState(State.NegotiationState);
+
+            var issue = helper.Issue;
+            IssueRequirement issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen" };
+            await helper.Helper.IssueRequirementService.CreateAsync(issue.Id, issueRequirement);
+
+            var uri = $"/api/issues/{issue.Id}/summaries";
+            var response = await helper.client.PostAsync(uri, 1.0.ToStringContent());
+            Assert.IsTrue(response.IsSuccessStatusCode);
+
+            var signIn = await helper.Helper.SignIn(new SignInRequest()
+            {
+                Username = builder.Customer.Username,
+                Password = helper.Helper.UsedPasswordForTests
+            });
+
+            helper.Helper.SetAuth(signIn);
+
+            uri = $"/api/issues/{issue.Id}/summaries?accept=true";
+            response = await helper.client.PutAsync(uri, 1.0.ToStringContent());
+            Assert.IsTrue(response.IsSuccessStatusCode);
+
+            var newIssue = await helper.GetIssueAsync(issue.Id);
+            Assert.IsTrue(newIssue.IssueDetail.RequirementsAccepted);
+
+            Assert.AreEqual(State.ProcessingState, (await helper.Helper.GetStateById(newIssue)).Name);
+
+            issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen2" };
+            uri = $"/api/issues/{issue.Id}/requirements/";
+            response = await helper.client.PostAsync(uri, issueRequirement.ToStringContent());
+            Assert.IsFalse(response.IsSuccessStatusCode);
+
+        }
+
+        [Test]
         public async Task DeclineSummary1()
         {
             var builder = new SimpleTestHelperBuilderSummaryRights(Role.CustomerRole);
@@ -353,6 +422,46 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             uri = $"/api/issues/{issue.Id}/requirements/";
             responce = await helper.client.PostAsync(uri, issueRequirement.ToStringContent());
             Assert.IsTrue(responce.IsSuccessStatusCode);
+
+        }
+
+        [Test]
+        public async Task DeclineSummary5()
+        {
+            var builder = new SimpleTestHelperBuilderSummaryRights2();
+            using var helper = await builder.Build();
+            await helper.SetState(State.NegotiationState);
+
+            var issue = helper.Issue;
+            IssueRequirement issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen" };
+            await helper.Helper.IssueRequirementService.CreateAsync(issue.Id, issueRequirement);
+
+            var uri = $"/api/issues/{issue.Id}/summaries";
+            var response = await helper.client.PostAsync(uri, 1.0.ToStringContent());
+            Assert.IsTrue(response.IsSuccessStatusCode);
+
+            var signIn = await helper.Helper.SignIn(new SignInRequest()
+            {
+                Username = builder.Customer.Username,
+                Password = helper.Helper.UsedPasswordForTests
+            });
+
+            helper.Helper.SetAuth(signIn);
+
+            uri = $"/api/issues/{issue.Id}/summaries?accept=false";
+            response = await helper.client.PutAsync(uri, 1.0.ToStringContent());
+            Assert.IsTrue(response.IsSuccessStatusCode);
+
+            var issueUpdated = await helper.GetIssueAsync(helper.Issue.Id);
+            Assert.IsFalse(issueUpdated.IssueDetail.RequirementsAccepted);
+            Assert.IsFalse(issueUpdated.IssueDetail.RequirementsSummaryCreated);
+
+            helper.Helper.SetAuth(helper.SignIn);
+
+            issueRequirement = new IssueRequirement() { Requirement = "Die Application Testen2" };
+            uri = $"/api/issues/{issue.Id}/requirements/";
+            response = await helper.client.PostAsync(uri, issueRequirement.ToStringContent());
+            Assert.IsTrue(response.IsSuccessStatusCode);
 
         }
     }
