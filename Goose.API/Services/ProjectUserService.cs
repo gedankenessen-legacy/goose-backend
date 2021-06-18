@@ -22,11 +22,12 @@ namespace Goose.API.Services
         Task<IList<PropertyUserDTO>> GetProjectUsers(ObjectId projectId);
         Task<PropertyUserDTO> GetProjectUser(ObjectId projectId, ObjectId userId);
         Task UpdateProjectUser(ObjectId projectId, ObjectId userId, PropertyUserDTO projectUserDTO);
-        Task RemoveUserFromProject(ObjectId projectId, ObjectId userId);
+        Task DeleteUserFromProject(ObjectId projectId, ObjectId userId);
     }
 
     public class ProjectUserService : IProjectUserService
     {
+        private readonly IIssueRepository _issueRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly IUserRepository _userRepository;
         private readonly IRoleRepository _roleRepository;
@@ -34,8 +35,9 @@ namespace Goose.API.Services
         private readonly IAuthorizationService _authorizationService;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public ProjectUserService(IProjectRepository projectRepository, IUserRepository userRepository, IRoleRepository roleRepository, IAuthorizationService authorizationService, IHttpContextAccessor httpContextAccessor, ICompanyRepository companyRepository)
+        public ProjectUserService(IIssueRepository issueRepository, IProjectRepository projectRepository, IUserRepository userRepository, IRoleRepository roleRepository, IAuthorizationService authorizationService, IHttpContextAccessor httpContextAccessor, ICompanyRepository companyRepository)
         {
+            _issueRepository = issueRepository;
             _projectRepository = projectRepository;
             _userRepository = userRepository;
             _roleRepository = roleRepository;
@@ -177,7 +179,7 @@ namespace Goose.API.Services
             return true;
         }
 
-        public async Task RemoveUserFromProject(ObjectId projectId, ObjectId userId)
+        public async Task DeleteUserFromProject(ObjectId projectId, ObjectId userId)
         {
             var existingProject = await _projectRepository.GetAsync(projectId);
 
@@ -194,7 +196,8 @@ namespace Goose.API.Services
             }
 
             await _projectRepository.UpdateAsync(existingProject);
-        }
 
+            await _issueRepository.UnassignUserFromAllTickets(projectId, userId);
+        }
     }
 }
