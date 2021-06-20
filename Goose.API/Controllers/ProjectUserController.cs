@@ -64,7 +64,7 @@ namespace Goose.API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult> DeleteUserFromProject([FromRoute] ObjectId projectId, ObjectId userId)
         {
-            await _projectUserService.RemoveUserFromProject(projectId, userId);
+            await _projectUserService.DeleteUserFromProject(projectId, userId);
 
             return Ok();
         }
