@@ -87,8 +87,8 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             var secondTimeSheet = new IssueTimeSheetDTO()
             {
                 User = primaryUser,
-                Start = now.AddDays(-1),
-                End = now.AddHours(-2),
+                Start = now.AddDays(-2),
+                End = now.AddHours(-1),
             };
 
             result = await helper.client.PostAsync(timeSheetsUri, secondTimeSheet.ToStringContent());
@@ -168,6 +168,47 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
 
             var issue = await helper.Helper.GetIssueThroughClientAsync(helper.Issue);
             Assert.AreEqual(2, issue.IssueDetail.TotalWorkTime);
+        }
+
+        [Test]
+        public async Task TimeSheetTest2()
+        {
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            IssueTimeSheetDTO timeSheetDTO = new IssueTimeSheetDTO()
+            {
+                User = helper.User,
+                Start = DateTime.Now.AddDays(-1),
+                End = DateTime.Now.AddDays(-2)
+            };
+
+            var uri = $"/api/issues/{helper.Issue.Id}/timesheets";
+            var responce = await helper.client.PostAsync(uri, timeSheetDTO.ToStringContent());
+            Assert.IsFalse(responce.IsSuccessStatusCode);            
+        }
+
+        [Test]
+        public async Task TimeSheetTest3()
+        {
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            IssueTimeSheetDTO timeSheetDTO = new IssueTimeSheetDTO()
+            {
+                User = helper.User,
+                Start = DateTime.Now
+            };
+
+            var uri = $"/api/issues/{helper.Issue.Id}/timesheets";
+            var responce = await helper.client.PostAsync(uri, timeSheetDTO.ToStringContent());
+            Assert.IsTrue(responce.IsSuccessStatusCode);
+            var result = await responce.Parse<IssueTimeSheetDTO>();
+
+            uri = $"/api/issues/{helper.Issue.Id}/timesheets/{result.Id}";
+            responce = await helper.client.GetAsync(uri);
+            Assert.IsTrue(responce.IsSuccessStatusCode);
+            var createdSheet = await responce.Parse<IssueTimeSheetDTO>();
+
+            createdSheet.End = DateTime.Now.AddHours(-2);
+            responce = await helper.client.PutAsync(uri, createdSheet.ToStringContent());
+            Assert.IsFalse(responce.IsSuccessStatusCode);
         }
 
         public static void AssertTimeSheetsAreEqualExceptId(IssueTimeSheetDTO expected, IssueTimeSheetDTO actual)
