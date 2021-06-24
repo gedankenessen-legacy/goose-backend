@@ -98,12 +98,13 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             var uri = $"/api/issues/{issue.Id}/summaries";
             var response = await helper.client.PostAsync(uri, 1.0.ToStringContent());
             Assert.IsTrue(response.IsSuccessStatusCode);
-
+            var newIssue = await helper.GetIssueAsync(issue.Id);
+            Assert.AreEqual(State.NegotiationState, (await helper.Helper.GetStateById(newIssue)).Name);
             uri = $"/api/issues/{issue.Id}/summaries?accept=true";
             response = await helper.client.PutAsync(uri, 1.0.ToStringContent());
             Assert.IsTrue(response.IsSuccessStatusCode);
 
-            var newIssue = await helper.GetIssueAsync(issue.Id);
+            newIssue = await helper.GetIssueAsync(issue.Id);
             Assert.IsTrue(newIssue.IssueDetail.RequirementsAccepted);
 
             Assert.AreEqual(State.ProcessingState, (await helper.Helper.GetStateById(newIssue)).Name);
