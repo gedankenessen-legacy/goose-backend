@@ -67,20 +67,15 @@ namespace Goose.API.Services.issues
                 throw new HttpStatusException(400, "Es wurde noch kein Zusammenfassung für dieses Ticket erstellt");
 
             issue.IssueDetail.RequirementsAccepted = true;
+            await _issueRepository.UpdateAsync(issue);
             var states = await _stateService.GetStates(issue.ProjectId);
 
             if (states is null)
                 throw new HttpStatusException(400, "Es wurden keine Statuse für dieses Project gefunden");
 
             var oldState = states.First(it => it.Id == issue.StateId);
-            if (oldState.Name == State.CheckingState) await _issueStateService.UpdateState(issue, states.First(it => it.Name == State.NegotiationState));
             var state = await _issueStateService.UpdateState(issue, states.First(it => it.Name == State.ProcessingState));
-            issue = await _issueRepository.GetAsync(issueId.ToObjectId());
 
-            if (state is null)
-                throw new HttpStatusException(400, "Es wurde kein State gefunden");
-
-            issue.IssueDetail.RequirementsAccepted = true;
             issue.StateId = state.Id;
 
             issue.ConversationItems.Add(new IssueConversation()
@@ -120,9 +115,13 @@ namespace Goose.API.Services.issues
             if (issue.IssueDetail.Requirements is null)
                 throw new HttpStatusException(400, "Die Requirements waren null");
 
-            if (issue.IssueDetail.Requirements.Count <= 0 && issue.IssueDetail.ExpectedTime <= 0)
+            if (issue.IssueDetail.Requirements.Count <= 0 || expectedTime <= 0)
                 throw new HttpStatusException(400,
-                    "Um eine Zusammenfassung erstellen zu können muss mindestens eine Anforderung oder eine geschätze Zeit vorhanden sein");
+                    "Um eine Zusammenfassung erstellen zu können muss mindestens eine Anforderung und eine geschätze Zeit vorhanden sein");
+
+            var states = await _stateService.GetStates(issue.ProjectId);
+            var oldState = states.First(it => it.Id == issue.StateId);
+            if (oldState.Name == State.CheckingState) await _issueStateService.UpdateState(issue, states.First(it => it.Name == State.NegotiationState));
 
             issue.IssueDetail.RequirementsSummaryCreated = true;
             issue.IssueDetail.ExpectedTime = expectedTime;

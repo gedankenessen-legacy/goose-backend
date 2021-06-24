@@ -47,14 +47,13 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
         {
             using var helper = await new SimpleTestHelperBuilder().Build();
 
-            var issue = helper.Issue;
-
-            var uri = $"/api/issues/{issue.Id}/summaries";
+            var uri = $"/api/issues/{helper.Issue.Id}/summaries";
             var responce = await helper.client.PostAsync(uri, 1.0.ToStringContent());
             Assert.IsFalse(responce.IsSuccessStatusCode);
 
-            uri = $"/api/issues/{issue.Id}/summaries";
+            uri = $"/api/issues/{helper.Issue.Id}/summaries";
             responce = await helper.client.GetAsync(uri);
+            
             Assert.IsFalse(responce.IsSuccessStatusCode);
         }
 
@@ -98,12 +97,13 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
             var uri = $"/api/issues/{issue.Id}/summaries";
             var response = await helper.client.PostAsync(uri, 1.0.ToStringContent());
             Assert.IsTrue(response.IsSuccessStatusCode);
-
+            var newIssue = await helper.GetIssueAsync(issue.Id);
+            Assert.AreEqual(State.NegotiationState, (await helper.Helper.GetStateById(newIssue)).Name);
             uri = $"/api/issues/{issue.Id}/summaries?accept=true";
             response = await helper.client.PutAsync(uri, 1.0.ToStringContent());
             Assert.IsTrue(response.IsSuccessStatusCode);
 
-            var newIssue = await helper.GetIssueAsync(issue.Id);
+            newIssue = await helper.GetIssueAsync(issue.Id);
             Assert.IsTrue(newIssue.IssueDetail.RequirementsAccepted);
 
             Assert.AreEqual(State.ProcessingState, (await helper.Helper.GetStateById(newIssue)).Name);
@@ -197,8 +197,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
         public async Task AcceptSummaryOfChild()
         {
             using var helper = await new SimpleTestHelperBuilder().Build();
-            await helper.SetState(State.NegotiationState);
-            await helper.SetState(State.ProcessingState);
+            await helper.AcceptSummary();
 
             var issue = await helper.CreateChild();
             IssueRequirement issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen"};

@@ -114,6 +114,10 @@ namespace Goose.API.Services
 
         public async Task UpdateProjectUser(ObjectId projectId, ObjectId userId, PropertyUserDTO projectUserDTO)
         {
+            var user = await _userRepository.GetAsync(userId);
+            if (user == null)
+                throw new HttpStatusException(400, $"The user {userId} does not exist");
+            
             if (userId != projectUserDTO.User.Id)
             {
                 throw new HttpStatusException(400, "User id does not match");

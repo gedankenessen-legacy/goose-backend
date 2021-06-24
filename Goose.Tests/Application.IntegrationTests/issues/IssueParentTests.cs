@@ -186,8 +186,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
         {
             using var helper = await new SimpleTestHelperBuilder().Build();
             var child = await helper.CreateIssue().Parse<IssueDTO>();
-            await helper.SetState(State.NegotiationState);
-            await helper.SetState(State.ProcessingState);
+            await helper.AcceptSummary();
             await helper.SetState(State.ReviewState);
 
             var resReviewState = await helper.SetIssueChild(child.Id);
