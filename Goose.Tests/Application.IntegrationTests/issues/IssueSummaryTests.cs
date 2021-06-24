@@ -47,14 +47,13 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
         {
             using var helper = await new SimpleTestHelperBuilder().Build();
 
-            var issue = helper.Issue;
-
-            var uri = $"/api/issues/{issue.Id}/summaries";
+            var uri = $"/api/issues/{helper.Issue.Id}/summaries";
             var responce = await helper.client.PostAsync(uri, 1.0.ToStringContent());
             Assert.IsFalse(responce.IsSuccessStatusCode);
 
-            uri = $"/api/issues/{issue.Id}/summaries";
+            uri = $"/api/issues/{helper.Issue.Id}/summaries";
             responce = await helper.client.GetAsync(uri);
+            
             Assert.IsFalse(responce.IsSuccessStatusCode);
         }
 
@@ -198,8 +197,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
         public async Task AcceptSummaryOfChild()
         {
             using var helper = await new SimpleTestHelperBuilder().Build();
-            await helper.SetState(State.NegotiationState);
-            await helper.SetState(State.ProcessingState);
+            await helper.AcceptSummary();
 
             var issue = await helper.CreateChild();
             IssueRequirement issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen"};

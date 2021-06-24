@@ -361,6 +361,14 @@ namespace Goose.Tests.Application.IntegrationTests
             return await UpdateIssue(copy);
         }
 
+        public async Task AcceptSummary(ObjectId issueId, double expectedTime = 1.0)
+        {
+            IssueRequirement issueRequirement = new IssueRequirement() {Requirement = "Die Application Testen"};
+            await IssueRequirementService.CreateAsync(issueId, issueRequirement);
+            await _client.PostAsync($"/api/issues/{issueId}/summaries", expectedTime.ToStringContent());
+            await _client.PutAsync($"/api/issues/{issueId}/summaries?accept=true", expectedTime.ToStringContent());
+        }
+
         #endregion
 
         #region Utils

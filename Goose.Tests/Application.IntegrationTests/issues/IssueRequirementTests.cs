@@ -87,8 +87,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
         public async Task AddRequirementInProcessingPhaseFalse()
         {
             using var helper = await new SimpleTestHelperBuilder().Build();
-            await helper.SetState(State.NegotiationState);
-            await helper.SetState(State.ProcessingState);
+            await helper.AcceptSummary();
 
             var res = await helper.Helper.GenerateRequirement();
             Assert.True(ObjectId.Empty.Equals(res.Id));
@@ -98,8 +97,7 @@ namespace Goose.Tests.Application.IntegrationTests.Issues
         public async Task AddRequirementInConclusionPhaseFalse()
         {
             using var helper = await new SimpleTestHelperBuilder().Build();
-            await helper.SetState(State.NegotiationState);
-            await helper.SetState(State.ProcessingState);
+            await helper.AcceptSummary();
             await helper.SetState(State.ReviewState);
             await helper.SetState(State.CompletedState);
 
