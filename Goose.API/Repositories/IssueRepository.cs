@@ -20,6 +20,7 @@ namespace Goose.API.Repositories
         public Task CreateOrUpdateConversationItemAsync(string issueId, IssueConversation issueConversation);
         public Task<IssueRequirement> GetRequirementByIdAsync(ObjectId issueId, ObjectId requirementId);
         public Task<IList<Issue>> GetIssuesWithOpenTimeSheetsAsync(ObjectId userId);
+        Task UnassignUserFromAllTickets(ObjectId projectId, ObjectId userId);
     }
 
     public class IssueRepository : Repository<Issue>, IIssueRepository
@@ -120,6 +121,12 @@ namespace Goose.API.Repositories
 
             var result = await _dbCollection.FindAsync(query);
             return await result.ToListAsync();
+        }
+
+        public async Task UnassignUserFromAllTickets(ObjectId projectId, ObjectId userId)
+        {
+            var updateQuery = Builders<Issue>.Update.Pull(x => x.AssignedUserIds, userId);
+            await _dbCollection.UpdateManyAsync(x => x.ProjectId == projectId, updateQuery);
         }
     }
 }

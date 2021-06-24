@@ -31,7 +31,7 @@ namespace Goose.Tests.Application.IntegrationTests.Event
         {
             using var helper = await new SimpleTestHelperBuilderStartDate().Build();
             Assert.AreEqual(State.CheckingState, helper.Issue.State.Name);
-            await helper.SetState(State.NegotiationState);
+            await helper.AcceptSummary();
 
             await Task.Delay(6000);
 

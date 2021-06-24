@@ -72,6 +72,7 @@ namespace Goose.API.Services.Issues
 
         public async Task<IssueTimeSheetDTO> CreateAsync(ObjectId issueId, IssueTimeSheetDTO timeSheetDto)
         {
+            ThrowErrorIfEndIsBeforStart(timeSheetDto);
             var issue = await _issueRepo.GetAsync(issueId);
 
             var user = _httpContextAccessor.HttpContext.User;
@@ -114,6 +115,7 @@ namespace Goose.API.Services.Issues
 
         public async Task UpdateAsync(ObjectId issueId, ObjectId id, IssueTimeSheetDTO timeSheetDto)
         {
+            ThrowErrorIfEndIsBeforStart(timeSheetDto);
             var issue = await _issueRepo.GetAsync(issueId);
 
             // updating own timesheets require other requirements.
@@ -133,6 +135,18 @@ namespace Goose.API.Services.Issues
             issue.IssueDetail.TotalWorkTime = CalculateWorkedTime(issue);
             await _issueRepo.UpdateAsync(issue);
             await CreateTimeExccededMessage(issueId, timeSheetDto);
+        }
+
+        private void ThrowErrorIfEndIsBeforStart(IssueTimeSheetDTO timeSheetDto)
+        {
+            if (timeSheetDto.Start == default(DateTime))
+                return;
+
+            if (timeSheetDto.End == default(DateTime))
+                return;
+
+            if (timeSheetDto.End < timeSheetDto.Start)
+                throw new HttpStatusException(StatusCodes.Status400BadRequest, "Das Enddatum darf nicht vor dem Startdatum sein");
         }
 
         private async Task CanUserReadTimeSheetsAsync(Issue issue)

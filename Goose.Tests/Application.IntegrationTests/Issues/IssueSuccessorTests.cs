@@ -54,8 +54,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             await helper.SetPredecessor(predecessor.Id);
 
 
-            await helper.SetState(State.NegotiationState);
-            await helper.SetState(State.ProcessingState);
+            await helper.AcceptSummary();
             var newIssue = await helper.GetIssueAsync(helper.Issue.Id);
             Assert.AreEqual(State.BlockedState, (await helper.Helper.GetStateById(newIssue.ProjectId, newIssue.StateId)).Name);
 
@@ -92,8 +91,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         {
             using var helper = await new SimpleTestHelperBuilder().Build();
             var predecessor = await helper.CreateIssue().Parse<IssueDTO>();
-            await helper.Helper.SetStateOfIssue(predecessor, State.NegotiationState);
-            await helper.Helper.SetStateOfIssue(predecessor, State.ProcessingState);
+            await helper.Helper.AcceptSummary(predecessor.Id);
             await helper.Helper.SetStateOfIssue(predecessor, State.ReviewState);
             await helper.Helper.SetStateOfIssue(predecessor, State.CompletedState);
 

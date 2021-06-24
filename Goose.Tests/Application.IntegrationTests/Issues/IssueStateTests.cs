@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Goose.Domain.DTOs;
 using Goose.Domain.DTOs.Issues;
@@ -31,9 +32,17 @@ namespace Goose.Tests.Application.IntegrationTests.issues
 
             foreach (var state in updateStates)
             {
-                issue.State = state;
-                var res = await helper.Helper.UpdateIssue(issue);
-                Assert.AreEqual(HttpStatusCode.NoContent, res.StatusCode);
+                HttpResponseMessage res;
+                if (state.Name == State.ProcessingState)
+                {
+                    await helper.AcceptSummary();
+                }
+                else
+                {
+                    issue.State = state;
+                    res = await helper.Helper.UpdateIssue(issue);
+                    Assert.AreEqual(HttpStatusCode.NoContent, res.StatusCode);
+                }
             }
         }
 
@@ -86,8 +95,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             await helper.SetPredecessor(predecessor1.Id);
             await helper.SetPredecessor(predecessor2.Id);
 
-            await helper.SetState(State.NegotiationState);
-            await helper.SetState(State.ProcessingState);
+            await helper.AcceptSummary();
 
             var states = helper.Helper.GetStateListAsync(helper.Project.Id);
             var newIssue = await helper.GetIssueAsync(helper.Issue.Id);
@@ -112,11 +120,10 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             var res = await helper.CreateIssue(copy);
             Assert.AreEqual(HttpStatusCode.Created, res.StatusCode);
             var issue = await res.Parse<IssueDTO>();
-            await helper.Helper.SetStateOfIssue(issue, State.NegotiationState);
-            await helper.Helper.SetStateOfIssue(issue, State.ProcessingState);
+            await helper.Helper.AcceptSummary(issue.Id);
 
-            var newIssue = await helper.GetIssueAsync(issue.Id);
-            Assert.AreEqual(State.WaitingState, (await helper.Helper.GetStateById(newIssue)).Name);
+            var newCopy = await helper.GetIssueAsync(issue.Id);
+            Assert.AreEqual(State.WaitingState, (await helper.Helper.GetStateById(newCopy)).Name);
         }
 
         [Test]
@@ -159,8 +166,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
 
         {
             using var helper = await new SimpleTestHelperBuilder().Build();
-            await helper.SetState(State.NegotiationState);
-            await helper.SetState(State.ProcessingState);
+            await helper.AcceptSummary();
             var state = await helper.CreateState(new StateDTO
             {
                 Name = $"{State.ProcessingState}22",
@@ -179,8 +185,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         public async Task FromCustomPrecessingStateToReview()
         {
             using var helper = await new SimpleTestHelperBuilder().Build();
-            await helper.SetState(State.NegotiationState);
-            await helper.SetState(State.ProcessingState);
+            await helper.AcceptSummary();
             var state = await helper.CreateState(new StateDTO
             {
                 Name = $"{State.ProcessingState}22",
@@ -199,8 +204,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         public async Task FromCompletionStateToUserGeneratedStateInConclusionPhasePhaseAndBack()
         {
             using var helper = await new SimpleTestHelperBuilder().Build();
-            await helper.SetState(State.NegotiationState);
-            await helper.SetState(State.ProcessingState);
+            await helper.AcceptSummary();
             await helper.SetState(State.ReviewState);
             await helper.SetState(State.CompletedState);
             var state = await helper.CreateState(new StateDTO
@@ -222,8 +226,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         {
             using var helper = await new SimpleTestHelperBuilder().Build();
             var predecessor = await helper.CreateIssue().Parse<IssueDTO>();
-            await helper.SetState(State.NegotiationState);
-            await helper.SetState(State.ProcessingState);
+            await helper.AcceptSummary();
             var issue = await helper.GetIssueAsync(helper.Issue.Id);
             Assert.AreEqual(State.ProcessingState, (await helper.Helper.GetStateById(issue.ProjectId, issue.StateId)).Name);
             await helper.SetPredecessor(predecessor.Id);
@@ -246,12 +249,12 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             var updatedIssue = await helper.GetIssueAsync(issue.Id);
             Assert.AreNotEqual(oldTime, updatedIssue.IssueDetail.StartDate);
         }
+
         [Test]
         public async Task CannotChangeStartDateInProcessingPhaseIfRequirementsSkipped()
         {
             using var helper = await new SimpleTestHelperBuilder().Build();
-            await helper.SetState(State.NegotiationState);
-            await helper.SetState(State.ProcessingState);
+            await helper.AcceptSummary();
             Assert.AreEqual(State.ProcessingState, (await helper.Helper.GetStateById(await helper.GetIssueAsync(helper.Issue.Id))).Name);
             var oldTime = helper.Issue.IssueDetail.StartDate;
             helper.Issue.IssueDetail.StartDate = DateTime.Now;
@@ -264,13 +267,12 @@ namespace Goose.Tests.Application.IntegrationTests.issues
         public async Task ParentNotBlockedIfChildAddedInProcessingPhase()
         {
             using var helper = await new SimpleTestHelperBuilder().Build();
-            await helper.SetState(State.NegotiationState);
-            await helper.SetState(State.ProcessingState);
+            await helper.AcceptSummary();
             var child = await helper.CreateChild();
             Assert.AreEqual(State.ProcessingState, (await helper.Helper.GetStateById(await helper.GetIssueAsync(helper.Issue.Id))).Name);
             await helper.SetState(State.ReviewState);
             Assert.AreEqual(HttpStatusCode.BadRequest, (await helper.SetState(State.ReviewState)).StatusCode);
-            
+
             await helper.Helper.SetStateOfIssue(child, State.CancelledState);
             await helper.SetState(State.ReviewState);
             Assert.AreEqual(State.ReviewState, (await helper.Helper.GetStateById(await helper.GetIssueAsync(helper.Issue.Id))).Name);
@@ -283,32 +285,40 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             var child = await helper.CreateChild();
             await helper.Helper.SetStateOfIssue(child, State.NegotiationState);
             var childState = (await helper.Helper.GetStateById(await helper.GetIssueAsync(child.Id)));
-            await helper.Helper.SetStateOfIssue(child, State.ProcessingState);
+            await helper.Helper.AcceptSummary(child.Id);
             Assert.AreEqual(State.BlockedState, (await helper.Helper.GetStateById(await helper.GetIssueAsync(child.Id))).Name);
-            
-            await helper.SetState(State.NegotiationState);
-            await helper.SetState(State.ProcessingState);
+
+            await helper.AcceptSummary();
             await helper.Helper.SetStateOfIssue(child, State.ProcessingState);
             Assert.AreEqual(State.ProcessingState, (await helper.Helper.GetStateById(await helper.GetIssueAsync(child.Id))).Name);
         }
+
         [Test]
         public async Task IssueBlockedIfParentInBlocked()
         {
             using var helper = await new SimpleTestHelperBuilder().Build();
             var predecessor = await helper.CreateIssue().Parse<IssueDTO>();
             await helper.SetPredecessor(predecessor.Id);
-            
             var child = await helper.CreateChild();
-            await helper.Helper.SetStateOfIssue(child, State.NegotiationState);
-            var childState = (await helper.Helper.GetStateById(await helper.GetIssueAsync(child.Id)));
-            await helper.Helper.SetStateOfIssue(child, State.ProcessingState);
-            Assert.AreEqual(State.BlockedState, (await helper.Helper.GetStateById(await helper.GetIssueAsync(child.Id))).Name);
             
+            await helper.Helper.SetStateOfIssue(child, State.NegotiationState);
+            await helper.Helper.AcceptSummary(child.Id);
+            Assert.AreEqual(State.BlockedState, (await helper.Helper.GetStateById(await helper.GetIssueAsync(child.Id))).Name);
+
             await helper.SetState(State.NegotiationState);
             await helper.Helper.SetStateOfIssue(predecessor, State.CancelledState);
-            await helper.SetState(State.ProcessingState);
+            await helper.AcceptSummary();
             await helper.Helper.SetStateOfIssue(child, State.ProcessingState);
             Assert.AreEqual(State.ProcessingState, (await helper.Helper.GetStateById(await helper.GetIssueAsync(child.Id))).Name);
+        }
+
+        [Test]
+        public async Task CannotMoveToProcessingPhaseIfRequirementsNotAccepted()
+        {
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            await helper.SetState(State.NegotiationState);
+            var res = await helper.SetState(State.ProcessingState);
+            Assert.AreEqual(HttpStatusCode.BadRequest, res.StatusCode);
         }
     }
 }

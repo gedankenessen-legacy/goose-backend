@@ -131,6 +131,12 @@ namespace Goose.Tests.Application.IntegrationTests
             return await Helper.SetStateOfIssue(Issue, stateName);
         }
 
+        public async Task AcceptSummary()
+        {
+            Issue.IssueDetail.ExpectedTime = 1.0;
+            await Helper.AcceptSummary(Issue.Id);
+        }
+
 
         public void Dispose()
         {
