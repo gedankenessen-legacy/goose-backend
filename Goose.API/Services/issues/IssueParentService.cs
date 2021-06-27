@@ -91,7 +91,7 @@ namespace Goose.API.Services.issues
         {
             Dictionary<IAuthorizationRequirement, string> requirementsWithErrors = new()
             {
-                {IssueOperationRequirments.AddSubIssue, "Your are not allowed to add a parent to this issue."}
+                {IssueOperationRequirments.AddSubIssue, "You are not allowed to add a parent to this issue."}
             };
 
             var authorizationResult = await _authorizationService.AuthorizeAsync(_httpContextAccessor.HttpContext.User, issue, requirementsWithErrors.Keys);
