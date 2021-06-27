@@ -300,7 +300,7 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             var predecessor = await helper.CreateIssue().Parse<IssueDTO>();
             await helper.SetPredecessor(predecessor.Id);
             var child = await helper.CreateChild();
-            
+
             await helper.Helper.SetStateOfIssue(child, State.NegotiationState);
             await helper.Helper.AcceptSummary(child.Id);
             Assert.AreEqual(State.BlockedState, (await helper.Helper.GetStateById(await helper.GetIssueAsync(child.Id))).Name);
@@ -319,6 +319,35 @@ namespace Goose.Tests.Application.IntegrationTests.issues
             await helper.SetState(State.NegotiationState);
             var res = await helper.SetState(State.ProcessingState);
             Assert.AreEqual(HttpStatusCode.BadRequest, res.StatusCode);
+        }
+
+        [Test]
+        public async Task FromReviewStateToProcessingState()
+        {
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            await helper.AcceptSummary();
+            await helper.SetState(State.ReviewState);
+            var res = await helper.SetState(State.ProcessingState);
+            Assert.AreEqual(HttpStatusCode.NoContent, res.StatusCode);
+            var state = await helper.GetState();
+            Assert.AreEqual(State.ProcessingState, state.Name);
+        }
+
+        [Test]
+        public async Task FromReviewStateToCustomProcessingState()
+        {
+            using var helper = await new SimpleTestHelperBuilder().Build();
+            var customState = await helper.CreateState(new StateDTO
+            {
+                Name = "Custom Processingphase",
+                Phase = State.ProcessingPhase
+            }).Parse<StateDTO>();
+            await helper.AcceptSummary();
+            await helper.SetState(State.ReviewState);
+            var res = await helper.SetState(customState.Name);
+            Assert.AreEqual(HttpStatusCode.NoContent, res.StatusCode);
+            var state = await helper.GetState();
+            Assert.AreEqual(customState.Name, state.Name);
         }
     }
 }

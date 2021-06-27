@@ -40,9 +40,10 @@ namespace Goose.API.Services.issues
         {
             Func<Issue, StateDTO, StateDTO, Task<StateDTO>> moveToProcessingPhase = async (Issue issue, StateDTO oldState, StateDTO newState) =>
             {
-                if(oldState.Phase == State.NegotiationPhase && newState.Phase == State.ProcessingPhase)
+                if (oldState.Phase == State.NegotiationPhase && newState.Phase == State.ProcessingPhase)
                     if (!issue.IssueDetail.RequirementsAccepted)
-                        throw new HttpStatusException(400, "An issue can only be moved from negotiation phase to processing phase if the requirements are accepted");
+                        throw new HttpStatusException(400,
+                            "An issue can only be moved from negotiation phase to processing phase if the requirements are accepted");
                 //Das Issue wird in Waiting gesetzt wenn das Startdatum noch nicht erreicht ist
                 if (issue.IssueDetail.StartDate > DateTime.Now)
                 {
@@ -159,6 +160,12 @@ namespace Goose.API.Services.issues
                         return newState;
                     }
                 });
+            _updateStateHandler.AddEvent(new FsmEvent<Func<Issue, StateDTO, StateDTO, Task<StateDTO>>>
+            {
+                OldState = State.ReviewState,
+                NewState = State.ProcessingState,
+                Func = async (issue, oldState, newState) => await SetState(issue, newState)
+            });
         }
 
         private void RegisterPossibleUsergeneratedStates()
