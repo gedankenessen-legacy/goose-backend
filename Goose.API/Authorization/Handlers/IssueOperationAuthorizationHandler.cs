@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc.ApplicationModels;
 
 namespace Goose.API.Authorization.Handlers
 {
@@ -180,7 +181,7 @@ namespace Goose.API.Authorization.Handlers
                 },
                 {
                     IssueOperationRequirments.AddSubIssue,
-                    x => x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id)
+                    x => x.Contains(Role.ProjectLeaderRole.Id) || x.Contains(Role.CompanyRole.Id) || x.Contains(Role.CustomerRole.Id)
                 },
                 {
                     IssueOperationRequirments.ReadTimeSheets,

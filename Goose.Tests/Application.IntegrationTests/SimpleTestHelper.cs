@@ -32,6 +32,11 @@ namespace Goose.Tests.Application.IntegrationTests
         public ProjectDTO Project { get; set; }
         public IssueDTO Issue { get; set; }
 
+        public async Task<StateDTO> GetState()
+        {
+            return await Helper.GetState(Issue);
+        }
+
         public async Task<HttpResponseMessage> SignUp(SignUpRequest signUpRequest)
         {
             return await Helper.GenerateCompany();
