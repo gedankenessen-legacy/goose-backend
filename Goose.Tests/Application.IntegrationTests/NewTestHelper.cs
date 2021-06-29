@@ -300,6 +300,11 @@ namespace Goose.Tests.Application.IntegrationTests
             return list.FirstOrDefault(x => x.Name.Equals(name));
         }
 
+        public async Task<StateDTO> GetState(IssueDTO issue)
+        {
+            var newIssue = await GetIssueAsync(issue.Id);
+            return await GetStateById(newIssue);
+        }
         public async Task<StateDTO> GetStateById(ObjectId projectId, ObjectId Id)
         {
             return (await GetStateListAsync(projectId)).FirstOrDefault(x => x.Id.Equals(Id));

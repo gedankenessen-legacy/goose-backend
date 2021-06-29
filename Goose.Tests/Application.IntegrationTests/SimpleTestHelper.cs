@@ -34,8 +34,7 @@ namespace Goose.Tests.Application.IntegrationTests
 
         public async Task<StateDTO> GetState()
         {
-            var issue = await Helper.GetIssueAsync(Issue.Id);
-            return await Helper.GetStateById(issue);
+            return await Helper.GetState(Issue);
         }
 
         public async Task<HttpResponseMessage> SignUp(SignUpRequest signUpRequest)

@@ -265,9 +265,7 @@ namespace Goose.API.Services.Issues
             details.RelevantDocuments = updated.RelevantDocuments ?? details.RelevantDocuments;
             //nur in vorbereitungsphase
             var state = await _stateService.GetState(old.ProjectId, old.StateId);
-            if (state.Phase == State.NegotiationPhase ||
-                //Wenn Verhandlungsphase übersprungen wird, kann auch in der bearbeitungsphase das Startdatum gesetzt werden
-                (!old.IssueDetail.RequirementsNeeded && state <= (await _stateService.GetStates(old.ProjectId)).First(it => it.Name == State.ProcessingState)))
+            if (state.Phase == State.NegotiationPhase)
             {
                 //Can Ticket set the Start Date?
                 await CanSetStartDate(old, updated);
