@@ -120,7 +120,7 @@ namespace Goose.API.Services.issues
 
         private IList<Issue> GetChildren(IList<Issue> projectIssues, Issue issue)
         {
-            return new List<Issue>(issue.ChildrenIssueIds.Select(it => GetIssue(projectIssues, it)));
+            return new List<Issue>(issue.ChildrenIssueIds.Select(it => GetIssue(projectIssues, it)).ToList());
         }
 
         /**
@@ -129,7 +129,7 @@ namespace Goose.API.Services.issues
         private IList<Issue> GetSuccessorsAdvanced(IList<Issue> projectIssues, Issue issue)
         {
             var result = new List<Issue>(issue.SuccessorIssueIds.Select(it => GetIssue(projectIssues, it)));
-            result.AddRange(result.SelectMany(child => GetChildrenRecursive(projectIssues, child)));
+            result.AddRange(result.SelectMany(child => GetChildrenRecursive(projectIssues, child)).ToList());
             return result;
         }
 
